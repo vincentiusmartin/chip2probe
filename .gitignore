@@ -1,0 +1,9 @@
+.DS_Store
+*.pdf
+*.tsv
+*.csv
+*.pickle
+*.pyc
+__pycache__
+libsvm-3.23
+result
