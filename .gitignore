@@ -1,4 +1,7 @@
 .DS_Store
+.pydevproject
+.project
+
 *.pdf
 *.tsv
 *.csv
@@ -7,3 +10,4 @@
 __pycache__
 libsvm-3.23
 result
+
