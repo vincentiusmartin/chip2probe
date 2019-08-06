@@ -1,0 +1,7 @@
+chip_name	id	encode_access_num
+ets1_k562	r1	ENCFF006UXO
+ets1_k562	r2	ENCFF468AKT
+ets1_k562	c1	ENCFF750MIM
+ets1_k562	c2	ENCFF235CSW
+e2f6_hela	r1	ENCFF000XDH
+e2f6_hela	r2	ENCFF000XDI

@@ -3,16 +3,20 @@ import os
 import subprocess
 
 from tqdm import tqdm
+from collections import defaultdict
 
 import pandas as pd
 
 # we need to import the package folder and libsvm
 # TODO: need to make this cleaner
+import sys
+sys.path.append("probefilter")
+sys.path.append("probefilter/libsvm-3.23/python")
 from sitesfinder.imads import iMADS
 from sitesfinder.imadsmodel import iMADSModel
 from sitesfinder.plotcombiner import PlotCombiner
 from sitesfinder.pbmescore import PBMEscore
-from sitesfinder.bindingsites import BindingSites
+from sitesfinder.sequence import Sequence
 
 '''
 Summarize
@@ -20,13 +24,6 @@ lab-archive -> note the result
 information about the data in the plot
 '''
 
-chipname = "ets1_k562"
-chipurls = {
-    "r1":"https://www.encodeproject.org/files/ENCFF006UXO/@@download/ENCFF006UXO.bam",
-    "r2":"https://www.encodeproject.org/files/ENCFF468AKT/@@download/ENCFF468AKT.bam",
-    "c1":"https://www.encodeproject.org/files/ENCFF750MIM/@@download/ENCFF750MIM.bam",
-    "c2":"https://www.encodeproject.org/files/ENCFF235CSW/@@download/ENCFF235CSW.bam",
-}
 tagsize = 36
 
 #bedpath = "/data/gordanlab/vincentius/cooperative_probe/hg19_0005_Ets1.bed"
@@ -48,7 +45,7 @@ escore_cutoff = 0.4
 
 # ============================
 
-outdir = "../result/%s" % chipname
+# outdir = "../result/%s" % chipname
 init_analysis_file = "sitefiles_list.txt" # this is file obtained after running Rscript
 
 # From https://stackoverflow.com/questions/15644964/python-progress-bar-and-downloads
@@ -63,26 +60,59 @@ def download_url(url, output_path):
                              miniters=1, desc=url.split('/')[-1]) as t:
         urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
 
+def get_file_info(filename):
+	file_info = defaultdict(dict)
+	with open(filename, "r") as f:
+		next(f)
+		for line in f.readlines():
+			items = line.strip().split("\t")
+			chip_name, chip_id, encode_access_num = items[0], items[1], items[2]
+			file_info[chip_name][chip_id] = encode_access_num
+	return file_info
+	
+def download_chip(chipname, chip_download_ids):
+	# -------- setup paths ----------- #
+	outdir = "../result/%s" % chipname
+	if not os.path.exists(outdir):
+		os.makedirs(outdir)
+	chipdata_path = "%s/chipseq_data" % (outdir)
+	if not os.path.exists(chipdata_path):
+		os.makedirs(chipdata_path)
+	# --------- download files --------- #
+	chipdata = {}
+	chip_info = chipname+"\n"
+	for chip_id, encode_access_num in chip_download_ids.items():
+		chipurl = "https://www.encodeproject.org/files/{0}/@@download/{0}.bam".format(encode_access_num)
+		fname = encode_access_num + ".bam"
+		saveto = os.path.join(chipdata_path, fname)      
+		chipdata[chip_id] = saveto
+		chip_info += "\t%s: %s\n" % (chip_id, fname)
+		print("Downloading %s to %s:" % (chip_id, saveto))
+		download_url(chipurl, saveto)
+
+	with open("../result/downloaded_chip_info.txt", 'a+') as f:
+		f.write(chip_info)
+		f.write("\n")
+
+	return chipdata
+
+def main():
+	file_info = get_file_info("to_download.txt")
+	for chipname, chip_download_ids in file_info.items():
+		saved_chip_path = download_chip(chipname, chip_download_ids) #previous "chipdata"
+
+		print(saved_chip_path)
+		
+
 if __name__=="__main__":
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
+	main()
+    
 
-    chipdata_path = "%s/chipseq_data" % (outdir)
-    if not os.path.exists(chipdata_path):
-        os.makedirs(chipdata_path)
-    chipdata = {}
-    chip_info = "ChIP-seq data for %s:\n" % chipname
-    # ===== Download ChIP-seq data =====
-    for key in chipurls:
-        fname = os.path.basename(chipurls[key])
-        saveto = os.path.join(chipdata_path, fname)
-        chipdata[key] = saveto
-        chip_info += "%s: %s\n" % (key,fname)
-        print("Downloading %s to %s:" % (key,saveto))
-        #download_url(chipurls[key], saveto)
-    with open("%s/chipinfo.txt" % (outdir), 'w') as f:
-        f.write(chip_info)
+    
 
+    
+    
+'''
     macs_result_path = "%s/macs_result" % (outdir)
     if not os.path.exists(macs_result_path):
         os.makedirs(macs_result_path)
@@ -154,3 +184,4 @@ if __name__=="__main__":
         pd.DataFrame(site_list).to_csv(dfpath, index=False, columns=columns, float_format='%.4f')
 
     print("Done")
+'''
