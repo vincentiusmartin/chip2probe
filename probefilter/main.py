@@ -63,9 +63,10 @@ def main():
     seqdict = {}
     funcdict = {}
     for key in filtered_sites:
+    #for key in ["sequence6"]:
         seqdict["%s-wild" % key] = filtered_sites[key].sequence
-        for idx,mut in enumerate([[0],[1],[0,1]]): #  # [0],[1],
-            mutseq = filtered_sites[key].mutate_sites(mut,escore)
+        for idx,mut in enumerate([[0],[1],[0,1]]): # [0],[1],[0,1]
+            mutseq = filtered_sites[key].abolish_sites(mut,escore)
             seqdict["%s-mut%d" % (key,idx + 1)] = mutseq.sequence
             funcdict["%s-mut%d" % (key,idx + 1)] = mutseq.plot_functions
 

@@ -4,6 +4,7 @@ Created on Jul 25, 2019
 @author: vincentiusmartin
 '''
 import collections
+import copy
 
 class BindingSite(object):
     '''
@@ -11,9 +12,9 @@ class BindingSite(object):
     '''
 
 
-    def __init__(self, site_pos, imads_score, site_start, site_end, core_start, core_end, sequence_in_site):
+    def __init__(self, site_pos, imads_score, site_start, site_end, core_start, core_end, sequence_in_site, barrier = 1):
         '''
-        barrier: unmutable regions around the cores
+        barrier: #bp from the core that shouldn't be mutated
         '''
         self.site_pos = site_pos
         self.imads_score = imads_score
@@ -22,7 +23,7 @@ class BindingSite(object):
         self.core_start = core_start
         self.core_end = core_end
         self.site_sequence = sequence_in_site
-        #self.barrier = barrier
+        self.barrier = barrier
         
     def __str__(self):
         return "site_pos: {}, imads_score: {}, site_start: {}, site_end: {}, core_start: {}, core_end: {}, site_sequence {}".format(self.site_pos, self.imads_score, self.site_start, self.site_end, self.core_start, self.core_end, self.site_sequence)
@@ -33,7 +34,6 @@ class Sequence(object):
     '''
     classdocs
     '''
-
 
     def __init__(self, escore_preds, imads_preds, sequence, escore_cutoff=0.4):
         self.sequence = sequence
@@ -56,24 +56,68 @@ class Sequence(object):
         minseq = min(all_muts, key=lambda x:all_muts[x]['score'])
         return minseq
     
-    def eliminate_site(self, site_sequence, pbmescore, mutpos):
+    def get_non_core_intersecting_maxescore(self, full_seq, site_index, pbmescore):
+        """
+        we need to include bsite_to_mutate as parameter since we will keep mutating this
+        """
+        s_start = self.bsites[site_index].site_start
+        s_end = self.bsites[site_index].site_end
+        site_seq = full_seq[s_start:s_end]
+        epreds = pbmescore.predict_sequence(site_seq)
+        
+        max_escore = -1
+        while max_escore == -1 and epreds:
+            max_val = max(epreds.predictions, key=lambda x:x['score'])
+            max_val_seqpos = self.bsites[site_index].site_start + max_val['position']
+            for i in range(len(self.bsites)):
+                if i == site_index:
+                    continue
+                # if the maximum escore is within core of another binding site, then don't mutate
+                unmutated_start = self.bsites[i].core_start - self.bsites[i].barrier
+                unmutated_end = self.bsites[i].core_end + self.bsites[i].barrier
+                if max_val_seqpos >= unmutated_start and max_val_seqpos < unmutated_end:
+                    epreds.predictions.remove(max_val)
+                else:
+                    max_escore = copy.copy(max_val)
+        return max_escore
+        
+    
+    def eliminate_site(self, sequence, site_index, pbmescore, escore_threshold = 0.3):
         """
         This assumes that input is a sequence of a site
         """
-        epreds = pbmescore.predict_sequence(site_sequence)
-        maxepreds = max(epreds.predictions, key=lambda x:x['score'])
+        maxescore = 1 # just to initialize with a large value
+        prevmax = -1 # just to avoid infinite loop
+        site_mutpos = []
+        full_sequence = str(sequence)
         
-        if maxepreds['score'] < 0.4: # base
-            return site_sequence
-        else: # recursion
-            seq_tomutate = maxepreds["escore_seq"]
-            midpos = len(seq_tomutate) // 2
-            mutated_escore_seq = self.mutate_escore_seq_at_pos(seq_tomutate, midpos, pbmescore)
-            mutated_site = site_sequence[:maxepreds["start_idx"]] + mutated_escore_seq + site_sequence[maxepreds["start_idx"] + len(mutated_escore_seq):]
-            mutpos.append(maxepreds["start_idx"] + midpos)
-            return self.eliminate_site(mutated_site, pbmescore, mutpos = mutpos)
+        flag = True
+        while flag or prevmax == maxescore:    
+            # INITIALIZE max escore calculation
+            maxepreds = self.get_non_core_intersecting_maxescore(full_sequence, site_index, pbmescore)
+            maxescore = maxepreds['score'] 
+            if maxescore < escore_threshold: # our conidition is met
+                flag = False
+            else:
+                # if we don't need non-core-intersecting: 
+                # epreds = pbmescore.predict_sequence(site_sequence)
+                # maxepreds = max(epreds.predictions, key=lambda x:x['score'])
+                if maxepreds == -1: # no e-score that can be chosen
+                    print("No e-score site can be mutated for sequence %s" % full_sequence)
+                    return full_sequence
+                seq_tomutate = maxepreds["escore_seq"]
+                midpos = len(seq_tomutate) // 2
+                mutated_escore_seq = self.mutate_escore_seq_at_pos(seq_tomutate, midpos, pbmescore)
+                
+                # mutate the sequence
+                mut_start = self.bsites[site_index].site_start + maxepreds["start_idx"]
+                mut_end = mut_start + len(mutated_escore_seq)
+                full_sequence = full_sequence[:mut_start] + mutated_escore_seq + full_sequence[mut_end:]
+                site_mutpos.append(mut_start + midpos)
+                prevmax = float(maxescore)
+        return full_sequence, site_mutpos
         
-    def mutate_sites(self, sites, pbmescore, mode = "to_eliminate"):
+    def abolish_sites(self, sites, pbmescore, mode = "to_eliminate"):
         """
         type can either be to_eliminate or to_keep
         """
@@ -85,22 +129,17 @@ class Sequence(object):
         else:
             raise Exception("type should either be to_eliminate or to_keep")
         
-        seq = str(self.sequence)
         mutpos = []
-        
+        mutated = str(self.sequence)
         for i in sites_to_mutate:
-            site_mutpos = []
-            site_to_mutate = seq[self.bsites[i].site_start:self.bsites[i].site_end]
-            mutated = self.eliminate_site(site_to_mutate, pbmescore, site_mutpos)
-            # update the sequence to the mutated version
-            seq = seq[:self.bsites[i].site_start] + mutated + seq[self.bsites[i].site_start + len(mutated):]
-            mutpos.extend([self.bsites[i].site_start + p for p in site_mutpos])
+            mutated, site_mutpos = self.eliminate_site(mutated, i, pbmescore)
+            mutpos.extend(site_mutpos)
         
         functions = []
         for pos in mutpos:
             functions.append({"func":"axvline","args":[pos],"kwargs":{"color":"purple", "linestyle":"dashed", "linewidth":1}})
 
-        return MutatedSequence(seq, mutpos, functions)
+        return MutatedSequence(mutated, mutpos, functions)
                 
     """  
     prev_idx = idx - 1
