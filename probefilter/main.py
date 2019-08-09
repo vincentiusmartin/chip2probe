@@ -14,6 +14,7 @@ from sitesfinder.sequence import Sequence
 from sitesfinder.prediction.basepred import BasePrediction
 
 import pickle
+from cooperative import coopfilter
 
 
 def main():
@@ -31,6 +32,7 @@ def main():
     escore = PBMEscore(escore_short_path, escore_map_path)
     es_preds = escore.predict_sequences(seqdf)
     #esplots = escore.plot(es_preds)
+    
     """
     modelcores = ["GGAA",  "GGAT"]
     modelpaths = ["/Users/vincentiusmartin/Research/chip2gcPBM/imads_files/models/ets1/ETS1_100nM_Bound_filtered_normalized_transformed_20bp_GGAA_1a2a3mer_format.model",
@@ -39,6 +41,7 @@ def main():
     ims = iMADS(models, 0.2128) # 0.2128 is for the ETS1 cutoff
     ims_preds = ims.predict_sequences(seqdf)
     #imadsplots = ims.plot(ims_preds)
+    
     
     pc = PlotCombiner()
     #pc.plot_seq_combine([imadsplots,esplots], filepath="plot.pdf")
@@ -62,16 +65,26 @@ def main():
     ###
     seqdict = {}
     funcdict = {}
+    filtered_probes = []
+    # TODO: tmr look at 110,271
     for key in filtered_sites:
-    #for key in ["sequence6"]:
-        seqdict["%s-wild" % key] = filtered_sites[key].sequence
-        for idx,mut in enumerate([[0],[1],[0,1]]): # [0],[1],[0,1]
+    #for key in ["sequence11"]:
+        # Visualization part
+        seqdict["%s-wt" % key] = filtered_sites[key].sequence
+        for idx,mut in enumerate([[0],[1],[0,1]]): 
             mutseq = filtered_sites[key].abolish_sites(mut,escore)
-            seqdict["%s-mut%d" % (key,idx + 1)] = mutseq.sequence
-            funcdict["%s-mut%d" % (key,idx + 1)] = mutseq.plot_functions
+            seqdict["%s-m%d" % (key,idx + 1)] = mutseq.sequence
+            funcdict["%s-m%d" % (key,idx + 1)] = mutseq.plot_functions
+        if coopfilter.filter_coopseq(seqdict["%s-wt"%key], seqdict["%s-m1"%key],
+                                     seqdict["%s-m2"%key], seqdict["%s-m3"%key],
+                                     filtered_sites[key].get_sites_dict(), escore):
+            filtered_probes.append({"key":key, "wt":seqdict["%s-wt"%key], "m1":seqdict["%s-m1"%key],
+                                    "m2":seqdict["%s-m2"%key], "m3":seqdict["%s-m3"%key]})
 
     pp = escore.plot(escore.predict_sequences(seqdict),additional_functions=funcdict)
     pc.plot_seq_combine([pp], filepath="plot-mut.pdf")
+    
+    pd.DataFrame(filtered_probes).to_csv("mutated_probes.tsv",sep="\t",index=False,columns=["key","wt","m1","m2","m3"])
     
     print("Done")
     

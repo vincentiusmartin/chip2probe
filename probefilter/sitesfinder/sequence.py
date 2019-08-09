@@ -92,16 +92,17 @@ class Sequence(object):
         full_sequence = str(sequence)
         
         flag = True
-        while flag or prevmax == maxescore:    
+        while flag and prevmax != maxescore:    
             # INITIALIZE max escore calculation
+            # if we don't need non-core-intersecting: 
+            #epreds = pbmescore.predict_sequence(full_sequence)
+            #maxepreds = max(epreds.predictions, key=lambda x:x['score'])
+            prevmax = float(maxescore)
             maxepreds = self.get_non_core_intersecting_maxescore(full_sequence, site_index, pbmescore)
             maxescore = maxepreds['score'] 
             if maxescore < escore_threshold: # our conidition is met
                 flag = False
             else:
-                # if we don't need non-core-intersecting: 
-                # epreds = pbmescore.predict_sequence(site_sequence)
-                # maxepreds = max(epreds.predictions, key=lambda x:x['score'])
                 if maxepreds == -1: # no e-score that can be chosen
                     print("No e-score site can be mutated for sequence %s" % full_sequence)
                     return full_sequence
@@ -114,7 +115,6 @@ class Sequence(object):
                 mut_end = mut_start + len(mutated_escore_seq)
                 full_sequence = full_sequence[:mut_start] + mutated_escore_seq + full_sequence[mut_end:]
                 site_mutpos.append(mut_start + midpos)
-                prevmax = float(maxescore)
         return full_sequence, site_mutpos
         
     def abolish_sites(self, sites, pbmescore, mode = "to_eliminate"):

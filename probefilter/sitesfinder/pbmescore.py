@@ -41,6 +41,31 @@ class PBMEscore(SitesFinder):
             prediction.append({"position":i+(self.kmer+1)//2,"escore_seq":sequence[i:i+self.kmer],"score":score,"start_idx":i})
         return BasePrediction(sequence, prediction)
     
+    # TODO: modify sequence to use this function instead
+    def get_escores_specific(self, sequence, escore_cutoff = 0.4):
+        escores = self.predict_sequence(sequence).predictions
+        signifcount = 0
+        startidx = -1
+        escore_signifsites = []
+        for i in range(0, len(escores)):
+            escoresite = escores[i]
+            if escoresite["score"] > escore_cutoff:
+                if signifcount == 0:
+                    startidx = i
+                signifcount += 1
+            elif escoresite["score"] < escore_cutoff or i == len(escores)-1:
+                if signifcount > 0:
+                    # if we have found sufficient e-scores above the cutoff then get the binding sites
+                    if signifcount >= 2:
+                        # startpos: the start of binding
+                        escore_bind = {"startpos":escores[startidx]['position'],  "escorelength":signifcount, 
+                                "escore_startidx":escores[startidx]['start_idx']}
+                        escore_signifsites.append(escore_bind)
+                    startidx = -1
+                    signifcount = 0  
+        return escore_signifsites
+        
+    
     def predict_sequences(self, sequence_df, sequence_colname = "sequence"):
         """
         input: sequence data frame or sequence dictionary
