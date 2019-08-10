@@ -35,9 +35,10 @@ class Sequence(object):
     classdocs
     '''
 
-    def __init__(self, escore_preds, imads_preds, sequence, escore_cutoff=0.4):
-        self.sequence = sequence
-        self.bsites = self.get_bsite_escore_imads(escore_preds, imads_preds, escore_cutoff, sequence)
+    def __init__(self, escore_preds, imads_preds, escore_cutoff=0.4):
+        # we need to check the order between escore and imads
+        self.sequence = escore_preds.sequence
+        self.bsites = self.get_bsite_escore_imads(escore_preds, imads_preds, escore_cutoff)
         
     def __str__(self):
         return "Sequence object: {}\nsites {}".format(self.sequence,str(self.bsites))
@@ -158,7 +159,8 @@ class Sequence(object):
     print(epreds)
     """
     
-    def get_bsite_escore_imads(self, imads_preds, escore_preds, escore_cutoff, sequence):
+    def get_bsite_escore_imads(self, escore_preds, imads_preds, escore_cutoff):
+        sequence = escore_preds.sequence
         escores = escore_preds.predictions
         signifcount = 0
         startidx = -1

@@ -25,43 +25,38 @@ def main():
     with open(analysis_path + "sitefiles_list.txt", 'r') as f:
         sitelist = [line.strip() for line in f.readlines()]
     
+    print("dsa",sitelist[0])
     seqdf = pd.read_csv(sitelist[0], sep='\t')
     
     escore_short_path = "/Users/vincentiusmartin/Research/chip2gcPBM/escores/ets1_escores.txt"
     escore_map_path = "/Users/vincentiusmartin/Research/chip2gcPBM/escores/index_short_to_long.csv"
     escore = PBMEscore(escore_short_path, escore_map_path)
     es_preds = escore.predict_sequences(seqdf)
-    #esplots = escore.plot(es_preds)
+    esplots = escore.plot(es_preds)
     
-    """
+    
     modelcores = ["GGAA",  "GGAT"]
     modelpaths = ["/Users/vincentiusmartin/Research/chip2gcPBM/imads_files/models/ets1/ETS1_100nM_Bound_filtered_normalized_transformed_20bp_GGAA_1a2a3mer_format.model",
                  "/Users/vincentiusmartin/Research/chip2gcPBM/imads_files/models/ets1/ETS1_100nM_Bound_filtered_normalized_transformed_20bp_GGAT_1a2a3mer_format.model"]
     models = [iMADSModel(modelpath, modelcore, 20, [1,2,3]) for modelpath, modelcore in zip(modelpaths, modelcores)]
     ims = iMADS(models, 0.2128) # 0.2128 is for the ETS1 cutoff
     ims_preds = ims.predict_sequences(seqdf)
-    #imadsplots = ims.plot(ims_preds)
-    
+    imadsplots = ims.plot(ims_preds)
     
     pc = PlotCombiner()
-    #pc.plot_seq_combine([imadsplots,esplots], filepath="plot.pdf")
+    pc.plot_seq_combine([imadsplots,esplots], filepath="plot.pdf")
     
     filtered_sites = {}
     print("Site filtering...")
     for key in es_preds:
-        es_pred1 = es_preds[key]
-        ims_pred1 =  ims_preds[key]
-        bs = Sequence(ims_pred1,es_pred1,es_preds[key].sequence)
+        bs = Sequence(es_preds[key],ims_preds[key])
         if bs.site_count() == 2:
             filtered_sites[key] = bs
-    site_list = [{**{"key":site, "sequence":filtered_sites[site].sequence},**filtered_sites[site].get_sites_dict()} for site in filtered_sites]
-    columns = ["key", "site_start_1", "site_start_2", "site_end_1", "site_end_2", "site_pos_1", "site_pos_2", "imads_score_1", "imads_score_2", "sequence"]
-    pd.DataFrame(site_list).to_csv("out.csv", index=False, columns=columns, float_format='%.4f')
-    """
+    #site_list = [{**{"key":site, "sequence":filtered_sites[site].sequence},**filtered_sites[site].get_sites_dict()} for site in filtered_sites]
+    #columns = ["key", "site_start_1", "site_start_2", "site_end_1", "site_end_2", "site_pos_1", "site_pos_2", "imads_score_1", "imads_score_2", "sequence"
     
-    #pickle.dump(filtered_sites, open("test_fsites.pickle","wb"))
-    filtered_sites = pickle.load(open("test_fsites.pickle","rb"))
-    pc = PlotCombiner()
+    #pickle.dump(filtered_sites, open("test_fsites2.pickle","wb"))
+    #filtered_sites = pickle.load(open("test_fsites2.pickle","rb"))
     ###
     seqdict = {}
     funcdict = {}
