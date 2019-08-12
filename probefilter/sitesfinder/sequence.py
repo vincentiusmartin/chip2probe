@@ -66,8 +66,9 @@ class Sequence(object):
         site_seq = full_seq[s_start:s_end]
         epreds = pbmescore.predict_sequence(site_seq)
         
-        max_escore = -1
-        while max_escore == -1 and epreds:
+        # use large value
+        max_escore = {"score":float("inf")}
+        while max_escore["score"] == float("inf") and epreds.predictions:
             max_val = max(epreds.predictions, key=lambda x:x['score'])
             max_val_seqpos = self.bsites[site_index].site_start + max_val['position']
             for i in range(len(self.bsites)):
@@ -104,9 +105,10 @@ class Sequence(object):
             if maxescore < escore_threshold: # our conidition is met
                 flag = False
             else:
-                if maxepreds == -1: # no e-score that can be chosen
+                if maxescore == float("inf"): # no e-score that can be chosen
                     print("No e-score site can be mutated for sequence %s" % full_sequence)
-                    return full_sequence
+                    # since there is no site to be mutated, then just use empty list
+                    return full_sequence, []
                 seq_tomutate = maxepreds["escore_seq"]
                 midpos = len(seq_tomutate) // 2
                 mutated_escore_seq = self.mutate_escore_seq_at_pos(seq_tomutate, midpos, pbmescore)

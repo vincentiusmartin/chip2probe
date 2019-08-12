@@ -18,6 +18,6 @@ tagsize=$6
 
 # -s $tagsize
 #echo "macs" $r1_bam $r2_bam $c1_bam $c2_bam $name2c $tagsize
-macs2 callpeak -t $r1_bam $r2_bam  -c $c1_bam $c2_bam -f BAM -g hs -n ${name2c}_bothrs -B -s $tagsize -p 0.01
-macs2 callpeak -t $r1_bam  -c $c1_bam $c2_bam -f BAM -g hs -n ${name2c}_r1 -B -s $tagsize -p 0.01
-macs2 callpeak -t $r2_bam  -c $c1_bam $c2_bam -f BAM -g hs -n ${name2c}_r2 -B -s $tagsize -p 0.01
+macs2 callpeak -t $r1_bam $r2_bam  -c $c1_bam -f BAM -g hs -n ${name2c}_bothrs -B -s $tagsize -p 0.01
+macs2 callpeak -t $r1_bam  -c $c1_bam -f BAM -g hs -n ${name2c}_r1 -B -s $tagsize -p 0.01
+macs2 callpeak -t $r2_bam  -c $c1_bam -f BAM -g hs -n ${name2c}_r2 -B -s $tagsize -p 0.01

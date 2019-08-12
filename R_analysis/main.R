@@ -1,7 +1,6 @@
 #.libPaths( c( .libPaths(), "/data/gordanlab/vincentius/cooperative_probe/packages/Rlib") )
-# curwd <- "/Users/vincentiusmartin/Research/chip2gcPBM"
-setwd("/Users/vincentiusmartin/Research/chip2gcPBM/src")
-curwd <- "/Users/vincentiusmartin/Research/chip2gcPBM/src"
+#curwd <- "/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe"
+#setwd(curwd)
 source("R_analysis/chip.info/R/chipreader.R")
 source("R_analysis/chip.info/R/bsite.R")
 source("R_analysis/chip.info/R/plotter.R")
@@ -12,33 +11,33 @@ source("R_analysis/chip.info/R/site_finder.R")
 #setwd("/Users/vincentiusmartin/Research/chip2gcPBM/src/../")
 
 
-setwd("/Users/vincentiusmartin/Research/chip2gcPBM/src")
-curwd <- "/Users/vincentiusmartin/Research/chip2gcPBM/src"
-pu1_path <- "../result/ets1_k562/macs_result/ets1_k562_r1_treat_pileup.bdg"
-pu2_path <- "../result/ets1_k562/macs_result/ets1_k562_r2_treat_pileup.bdg"
-pu_both_path <- "../result/ets1_k562/macs_result/ets1_k562_bothrs_treat_pileup.bdg"
-nrwp_preidr_path <- "../result/ets1_k562/macs_result/ets1_k562_bothrs_peaks.narrowPeak"
-nrwp_postidr_path <- "../result/ets1_k562/idr_result/idr_001p_wlist.005i"
-bed_path <- "../imads_files/predictions/hg19_0005_Ets1_filtered.bed"
-outpath <- "../result/ets1_k562/analysis_result"
-chip_name <- "ets1_k562"
+# #setwd("/Users/vincentiusmartin/Research/chip2gcPBM/src")
+# #curwd <- "/Users/vincentiusmartin/Research/chip2gcPBM/src"
+# pu1_path <- "../result/ets1_k562/macs_result/ets1_k562_r1_treat_pileup.bdg"
+# pu2_path <- "../result/ets1_k562/macs_result/ets1_k562_r2_treat_pileup.bdg"
+# pu_both_path <- "../result/ets1_k562/macs_result/ets1_k562_bothrs_treat_pileup.bdg"
+# nrwp_preidr_path <- "../result/ets1_k562/macs_result/ets1_k562_bothrs_peaks.narrowPeak"
+# nrwp_postidr_path <- "../result/ets1_k562/idr_result/idr_001p_wlist.005i"
+# bed_path <- "../imads_files/predictions/hg19_0005_Ets1_filtered.bed"
+# outpath <- "../result/ets1_A549/analysis_result"
+# chip_name <- "ets1_A549"
 
-# args = commandArgs(trailingOnly=TRUE)
-# print(args)
-# setwd(args[1])
-# curwd <- args[1]
-# pu1_path <- args[2]
-# pu2_path <- args[3]
-# pu_both_path <- args[4]
-# nrwp_preidr_path <- args[5]
-# nrwp_postidr_path <- args[6]
-# bed_path <- args[7]
-# outpath <- args[8]
-# chip_name <- args[9]
+args = commandArgs(trailingOnly=TRUE)
+print(args)
+setwd(args[1])
+curwd <- args[1]
+pu1_path <- args[2]
+pu2_path <- args[3]
+pu_both_path <- args[4]
+nrwp_preidr_path <- args[5]
+nrwp_postidr_path <- args[6]
+bed_path <- args[7]
+outpath <- args[8]
+chip_name <- args[9]
 
 probe_size <- 36
 probeseq_flank <- 10 # n to the left and n to the right
-spans = c(90) # c(50,100,150)
+spans <- c(50,100,150)
 count_sites_per_peak <- c(2,3,4)
 min_bsite_dist <- 1
 max_bsite_dist <- 24
@@ -99,25 +98,22 @@ for (span in spans){
 
     # using http to get genomic seq: https://bioinformatics.stackexchange.com/questions/2543/way-to-get-genomic-sequences-at-given-coordinates-without-downloading-fasta-file
     write.table(sites_all_dist,file=paste(outpath,"/sites_all_d",ct,"_span",span,".tsv",sep=''),sep="\t",row.names = FALSE, quote = FALSE)
-    sitefilename <- paste(outpath,"/sites_within_d",ct,"_span",span,".tsv",sep='')
+    #sitefilename <- paste(outpath,"/sites_within_d",ct,"_span",span,".tsv",sep='')
     write.table(sites_within_range,file=sitefilename,sep="\t",row.names = FALSE, quote = FALSE)
     
-    sitefilepath <- paste(curwd,sitefilename,sep='/')
-    sitefiles <- ifelse(sitefiles == "",sitefilename,paste(sitefilepath,sitefilename,sep="\n"))
+    #sitefilepath <- paste(curwd,sitefilename,sep='/')
+    #sitefiles <- ifelse(sitefiles == "",sitefilename,paste(sitefilepath,sitefilename,sep="\n"))
   }
 }
 
-# sitefiles <- ""
-# for (span in spans){
-#   for (ct in count_sites_per_peak){
-#     sitefilename <- paste(outpath,"/sites_within_d",ct,"_span",span,".tsv",sep='')
-#     sitefilepath <- paste(curwd,sitefilename,sep='/')
-#     print(sitefilepath)
-#     sitefiles <- ifelse(sitefiles == "",sitefilepath,paste(sitefiles,sitefilepath,sep="\n"))
-#   }
-# }
-# 
-# print(sitefiles)
-
+sitefiles <- ""
+for (span in spans){
+  for (ct in count_sites_per_peak){
+    sitefilename <- paste(outpath,"/sites_within_d",ct,"_span",span,".tsv",sep='')
+    sitefilepath <- paste(curwd,sitefilename,sep='/')
+    print(sitefilepath)
+    sitefiles <- ifelse(sitefiles == "",sitefilepath,paste(sitefiles,sitefilepath,sep="\n"))
+  }
+}
 # write all file with sequences to a file to enable parsing
 write(sitefiles,file = paste(outpath,"/sitefiles_list.txt",sep=''))

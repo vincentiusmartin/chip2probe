@@ -22,26 +22,26 @@ lab-archive -> note the result
 information about the data in the plot
 '''
 
-chipname = "ets1_HepG2"
+chipname = "ets1_GM12878"
 chipurls = {
     "r1":"https://www.encodeproject.org/files/ENCFF477EHC/@@download/ENCFF477EHC.bam",
     "r2":"https://www.encodeproject.org/files/ENCFF371ZBY/@@download/ENCFF371ZBY.bam",
     "c1":"https://www.encodeproject.org/files/ENCFF963CVB/@@download/ENCFF963CVB.bam",
-    #"c2":"https://www.encodeproject.org/files/ENCFF956QBZ/@@download/ENCFF956QBZ.bam",
+    "c2":""
 }
 tagsize = 36
 
 #bedpath = "/data/gordanlab/vincentius/cooperative_probe/hg19_0005_Ets1.bed"
-bedpath = "hg19_0005_Ets1.bed"
+bedpath = "/Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_preds/predictions/hg19_0005_Ets1_filtered.bed"
 
 # Analysis directory
-escore_short_path = "../escores/ets1_escores.txt"
-escore_map_path = "../escores/index_short_to_long.csv"
+escore_short_path = "/Users/vincentiusmartin/Research/chip2gcPBM/resources/escores/ets1_escores.txt"
+escore_map_path = "/Users/vincentiusmartin/Research/chip2gcPBM/resources/escores/index_short_to_long.csv"
 
 # for iMADS, must specify cores and model files
 modelcores = ["GGAA",  "GGAT"]
-modelpaths = ["../imads_files/models/ets1/ETS1_100nM_Bound_filtered_normalized_transformed_20bp_GGAA_1a2a3mer_format.model",
-             "../imads_files/models/ets1/ETS1_100nM_Bound_filtered_normalized_transformed_20bp_GGAT_1a2a3mer_format.model"]
+modelpaths = ["/Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_preds/models/ets1/ETS1_100nM_Bound_filtered_normalized_transformed_20bp_GGAA_1a2a3mer_format.model",
+             "/Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_preds/models/ets1/ETS1_100nM_Bound_filtered_normalized_transformed_20bp_GGAT_1a2a3mer_format.model"]
 modelwidth = 20 # TODO: confirm if we can get length without manually specifying it
 imads_cutoff = 0.2128
 model_kmers = [1,2,3]
@@ -88,14 +88,14 @@ if __name__=="__main__":
     if not os.path.exists(macs_result_path):
         os.makedirs(macs_result_path)
     print("Running macs...")
-    #subprocess.call(["srun","macs2.sh",chipdata["r1"],chipdata["r2"],chipdata["c1"],"%s/%s" % (macs_result_path,chipname), str(tagsize)],shell=False)
+    subprocess.call(["./macs2.sh",chipdata["r1"],chipdata["r2"],chipdata["c1"],chipdata["c2"],"%s/%s" % (macs_result_path,chipname), str(tagsize)],shell=False)
     print("Finished running macs, results are saved in %s" % macs_result_path)
 
     idr_result_path = "%s/idr_result" % (outdir)
     if not os.path.exists(idr_result_path):
         os.makedirs(idr_result_path)
     print("Running idrs...")
-    #subprocess.call(["srun","idr.sh","%s/%s" % (macs_result_path,chipname),idr_result_path],shell=False)
+    subprocess.call(["./idr.sh","%s/%s" % (macs_result_path,chipname),idr_result_path],shell=False)
 
     analysis_result_path = "%s/analysis_result" % (outdir)
     if not os.path.exists(analysis_result_path):
@@ -110,9 +110,10 @@ if __name__=="__main__":
     args_rscript = [pu1_path, pu2_path, pu_both_path, nrwp_preidr_path, nrwp_postidr_path, bedpath, analysis_result_path, chipname]
     #print(["R_analysis/main.R",pwd] + args_rscript)
     #subprocess.call(["srun","Rscript","R_analysis/main.R",pwd] + args_rscript,shell=False)
-    #subprocess.call(["Rscript","R_analysis/main.R",pwd + "/../"] + args_rscript,shell=False)
+    subprocess.call(["Rscript","R_analysis/main.R",pwd] + args_rscript,shell=False)
 
     # ============== PLOT AND FILTERING PART ==============
+
 
     # First, we can just load the models to avoid having to reload this on every iteration
     models = [iMADSModel(modelpath, modelcore, modelwidth, model_kmers) for modelpath, modelcore in zip(modelpaths, modelcores)]
@@ -124,7 +125,7 @@ if __name__=="__main__":
     with open(sitelist_path, 'r') as f:
         sitelist = [line.strip() for line in f.readlines()]
     for sitepath in sitelist:
-        print("dsa",sitepath)
+        print(sitepath)
         filename = os.path.basename(os.path.splitext(sitepath)[0])
         print("Making sites plot for %s" % filename)
         seqdf = pd.read_csv(sitepath, sep='\t')
@@ -172,6 +173,7 @@ if __name__=="__main__":
         pp = escore.plot(escore.predict_sequences(seqdict),additional_functions=funcdict)
         pc.plot_seq_combine([pp], filepath="%s/plot_mut_%s.pdf" % (analysis_result_path,filename))
 
+        # probably should check here if filtered_probes is empty
         pd.DataFrame(filtered_probes).to_csv("%s/mutated_probes_%s.tsv" % (analysis_result_path,filename),sep="\t",index=False,columns=["key","wt","m1","m2","m3"])
 
     #print(fname,header)
