@@ -1,6 +1,5 @@
 import urllib.request
-import os
-import subprocess
+import os, subprocess, pathlib
 import configparser
 
 from tqdm import tqdm
@@ -65,44 +64,80 @@ def download_url(url, output_path):
 
 def get_file_info(filename):
     file_info = defaultdict(dict)
+    antibody_info = {}
     with open(filename, "r") as f:
         next(f)
         for line in f.readlines():
-            items = line.strip().split("\t")
-            chip_name, chip_id, encode_access_num = items[0], items[1], items[2]
-            file_info[chip_name][chip_id] = encode_access_num
-    return file_info
+            if line.rstrip() != "" and not line.startswith("#"):
+                items = line.strip().split("\t")
+                exp_num, chip_name, chip_id, file_access_num, quality  = items[0], items[1], items[2], items[3], items[4]
+                chip_name = chip_name + "_" + exp_num 
+                print(items) 
+                if len(items) > 5: # if it's a replicate, it would have output_type and antibody_num
+                    output_type = items[5]
+                    full_chip_id = create_full_id(chip_id, output_type)
+                    file_info[chip_name][full_chip_id] = (file_access_num, quality)
+                    antibody_info[chip_name] = items[6] # one antibody used for one experience
+                else:
+                    file_info[chip_name][chip_id] = (file_access_num, quality)
+    return file_info, antibody_info
 
-def download_chip(file_info):
+def create_full_id(chip_id, output_type):
+    full_chip_id = chip_id + "-"
+    if output_type == "alignments":
+        full_chip_id += "filtered"
+    elif output_type == "unfiltered_alignments":
+        full_chip_id += "unfiltered"
+    return full_chip_id
+
+
+def download_chip(file_info, antibody_info, input_dir):
 
     config_chippath = configparser.ConfigParser()
+    outdir = "../result/chipseq"
+    cntrl_chip_path = "%s/CONTROLS" % (outdir)
+    paths = [outdir, cntrl_chip_path]
+    for p in paths:
+        if not os.path.exists(p):
+            os.makedirs(p)
+
     for chipname, chip_download_ids in file_info.items():
-        # ----- setup paths ----- #
-        outdir = "../result/%s" % chipname
-        if not os.path.exists(outdir):
-            os.makedirs(outdir)
-        chipdata_path = "%s/chipseq_data" % (outdir)
-        if not os.path.exists(chipdata_path):
-            os.makedirs(chipdata_path)
-        # ----- download files ----- #
+        chip_path = "%s/%s" % (outdir, chipname)
+        if not os.path.exists(chip_path):
+            os.makedirs(chip_path)
+        
         saved_chip_path = {}
         chip_info = chipname+"\n"
-        for chip_id, encode_access_num in chip_download_ids.items():
-            chipurl = "https://www.encodeproject.org/files/{0}/@@download/{0}.bam".format(encode_access_num)
-            fname = encode_access_num + ".bam"
-            #saveto = os.path.join(chipdata_path, fname)     
-            saveto = chipdata_path+"/"+fname # not sure why os.path.join() join with \\ instead of /
-            saved_chip_path[chip_id] = saveto
-            chip_info += "\t%s: %s\n" % (chip_id, fname)
-            print("Downloading %s to %s:" % (chip_id, saveto))
-            #download_url(chipurl, saveto)
-        with open("../result/downloaded_chip_info.txt", 'a+') as f:
+        chip_info += "\tAntibody: %s\n" % antibody_info[chipname]
+        for chip_id, accessNum_quality in chip_download_ids.items():
+            isReplicate = False if chip_id.startswith("c") else True
+            fname = accessNum_quality[0] + ".bam"
+            quality = accessNum_quality[1]
+            if isReplicate:
+                saveto = "%s/%s" % (chip_path, fname)
+                print(chip_id)
+                output_type = chip_id.split("-")[1]
+            else:
+                saveto = "%s/%s" % (cntrl_chip_path, fname)
+            
+            if not os.path.exists(saveto):
+                chipurl = "https://www.encodeproject.org/files/{0}/@@download/{0}.bam".format(fname.split(".")[0])  
+                if isReplicate:
+                    chip_info += "\t%s: %s [quality = %s, output_type = %s] \n" % (chip_id, fname, quality, output_type)
+                    full_chip_id = create_full_id(chip_id, output_type)
+                    saved_chip_path[full_chip_id] = saveto
+                else: 
+                    chip_info += "\t%s: %s [quality = %s] \n" % (chip_id, fname, quality)
+                print("Downloading %s ..." % (fname))
+                download_url(chipurl, saveto)  # takes filename?!
+                  
+        with open("../result/chipseq/downloaded_chip_info.txt", 'a+') as f:
             f.write(chip_info)
             f.write("\n")
-
         config_chippath[chipname] = saved_chip_path
-        
-    with open('chip_path.config', 'w') as configfile:
+
+    with open(input_dir + 'chip_path.config', 'w') as configfile:
+        # output the chip_paths to input_dir for call_peaks() to use later
         config_chippath.write(configfile)
 
     
@@ -153,13 +188,6 @@ def call_peaks(chipname, saved_chip_paths, macs_args):
 
 
 
-    
-
-
-
-
-
-
     # ----
     
 
@@ -180,7 +208,7 @@ def call_peaks(chipname, saved_chip_paths, macs_args):
 
 
 '''
-Note: config files need to be in the same dir as the script
+Note: put all inputs in the input dir
 Enforce:  
 - pipeline.config 
 
@@ -190,18 +218,16 @@ If skipped downloadchip:
 '''
 
 def main():
-    
+    input_dir = "../input/"
     config_pipeline = configparser.ConfigParser()
-    config_pipeline.read("pipeline.config") 
+    config_pipeline.read(input_dir + "pipeline.config") 
     # NOTE: set defaults in pipline, in case users don't follow the template
     
-    
     if(config_pipeline['pipeline'].getboolean('downloadchip')):
-        path = config_pipeline['downloadchip_param']['file_path']
         filename = config_pipeline['downloadchip_param']['chip_to_download']
-        file = os.path.join(path, filename)
-        file_info = get_file_info(file)
-        download_chip(file_info)
+        file = os.path.join(input_dir, filename)
+        file_info, antibody_info = get_file_info(file)
+        download_chip(file_info, antibody_info, input_dir)
     else:
         print("Skipping downloadchip!")
 

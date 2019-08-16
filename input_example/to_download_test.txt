@@ -1,0 +1,15 @@
+exp_num		chip_name	id	file_num	quality	output_type	antibody_num
+ENCSR000FCE	etv6_k562	r1	ENCFF636GYT	green	alignments	ENCAB000ABD
+ENCSR000FCE	etv6_k562	r2	ENCFF970YTT	green	alignments	ENCAB000ABD
+ENCSR000FCE	etv6_k562	r1	ENCFF355XHR	green	unfiltered_alignments	ENCAB000ABD	
+ENCSR000FCE	etv6_k562	r2	ENCFF307VES	green	unfiltered_alignments	ENCAB000ABD
+ENCSR000FCE	etv6_k562	c1	ENCSR830KKO	green	
+ENCSR000FCE	etv6_k562	c2	ENCSR000FCA	green	
+
+# can add comments using '#'
+# comments and empty lines will be ignored 
+ENCSR124BJR	etv6_k562	r1	ENCFF890OID	green	alignments	ENCAB997CJG
+ENCSR124BJR	etv6_k562	r2	ENCFF460VLB	green	alignments	ENCAB997CJG
+ENCSR124BJR	etv6_k562	r1	ENCFF380QNJ	green	unfiltered_alignments	ENCAB997CJG	
+ENCSR124BJR	etv6_k562	r2	ENCFF157XWR	green	unfiltered_alignments	ENCAB997CJG	
+ENCSR124BJR	etv6_k562	c1	ENCSR080EOT	green	
