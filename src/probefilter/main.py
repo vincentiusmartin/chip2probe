@@ -18,6 +18,7 @@ import itertools
 from cooperative import coopfilter
 
 
+
 def main():
     curdir = "/Users/vincentiusmartin/Research/chip2gcPBM/"
     analysis_path = curdir + "result/ets1_HepG2/analysis_result/"
