@@ -1,7 +1,7 @@
 import urllib.request
-import os
-import subprocess
+import os, subprocess, pathlib
 import configparser
+import datetime
 
 from tqdm import tqdm
 from collections import defaultdict
@@ -68,43 +68,57 @@ def get_file_info(filename):
     with open(filename, "r") as f:
         next(f)
         for line in f.readlines():
-            items = line.strip().split("\t")
-            chip_name, chip_id, encode_access_num = items[0], items[1], items[2]
-            file_info[chip_name][chip_id] = encode_access_num
+            if line.rstrip() != "" and not line.startswith("#"):
+                items = line.strip().split() # split on space and tab
+                exp_id, chip_name, rep_tag, file_id, quality, output_type, antibody_id  = \
+                items[0], items[1], items[2], items[3], items[4], items[5], items[6]
+                if rep_tag.startswith("r"):
+                    chip_name = chip_name + "_" + exp_id  
+                else:
+                    corresponding_chip = items[7]
+                    chip_name = chip_name + "_"+ corresponding_chip
+                full_tag = rep_tag + "_" + output_type
+                file_info[chip_name][full_tag] = file_id
     return file_info
 
-def download_chip(file_info):
 
-    config_chippath = configparser.ConfigParser()
-    for chipname, chip_download_ids in file_info.items():
-        # ----- setup paths ----- #
-        outdir = "../result/%s" % chipname
-        if not os.path.exists(outdir):
-            os.makedirs(outdir)
-        chipdata_path = "%s/chipseq_data" % (outdir)
-        if not os.path.exists(chipdata_path):
-            os.makedirs(chipdata_path)
-        # ----- download files ----- #
-        saved_chip_path = {}
-        chip_info = chipname+"\n"
-        for chip_id, encode_access_num in chip_download_ids.items():
-            chipurl = "https://www.encodeproject.org/files/{0}/@@download/{0}.bam".format(encode_access_num)
-            fname = encode_access_num + ".bam"
-            #saveto = os.path.join(chipdata_path, fname)     
-            saveto = chipdata_path+"/"+fname # not sure why os.path.join() join with \\ instead of /
-            saved_chip_path[chip_id] = saveto
-            chip_info += "\t%s: %s\n" % (chip_id, fname)
-            print("Downloading %s to %s:" % (chip_id, saveto))
-            #download_url(chipurl, saveto)
-        with open("../result/downloaded_chip_info.txt", 'a+') as f:
-            f.write(chip_info)
-            f.write("\n")
+def download_chip(file_info, input_dir):
 
-        config_chippath[chipname] = saved_chip_path
-        
-    with open('chip_path.config', 'w') as configfile:
-        config_chippath.write(configfile)
+    filtered_file = configparser.ConfigParser()
+    unfiltered_file = configparser.ConfigParser()
+    outdir = "../result/chipseq"
+    timestamp = ""
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
 
+    for chipname, tag_fileID in file_info.items():
+        chip_path = "%s/%s" % (outdir, chipname)
+        if not os.path.exists(chip_path):
+            os.makedirs(chip_path)
+        timestamp += chipname +"\n"
+        unfiltered, filtered = {}, {}
+        for tag, file_id in tag_fileID.items():
+            fname = file_id + ".bam"
+            saveto =  "%s/%s" % (chip_path, fname)
+            if not os.path.exists(saveto): 
+                if "unfiltered" in tag:
+                    unfiltered[tag.split("_")[0]] = fname
+                else:
+                    filtered[tag.split("_")[0]] = fname
+                chipurl = "https://www.encodeproject.org/files/{0}/@@download/{0}.bam".format(file_id)  
+                print("Downloading %s ..." % (fname))
+                download_url(chipurl, saveto)  # takes filename?!
+                now = datetime.datetime.now()
+                timestamp += "\tDownloaded %s on %s at %s \n" % (fname, now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"))
+        filtered_file[chipname] = filtered
+        unfiltered_file[chipname] = unfiltered
+    with open("../result/chipseq/download_timestamp.txt", 'w') as f:
+        f.write(timestamp)
+    with open(input_dir + 'chips_unfiltered.config', 'w') as configfile:
+        # for call_peaks() to use later
+        unfiltered_file.write(configfile)
+    with open(input_dir + 'chips_filtered.config', 'w') as configfile:
+        filtered_file.write(configfile)
     
 
 def remove_inner_list(nested_list):
@@ -153,13 +167,6 @@ def call_peaks(chipname, saved_chip_paths, macs_args):
 
 
 
-    
-
-
-
-
-
-
     # ----
     
 
@@ -180,7 +187,7 @@ def call_peaks(chipname, saved_chip_paths, macs_args):
 
 
 '''
-Note: config files need to be in the same dir as the script
+Note: put all inputs in the input dir
 Enforce:  
 - pipeline.config 
 
@@ -190,18 +197,17 @@ If skipped downloadchip:
 '''
 
 def main():
-    
+    input_dir = "../input/"
     config_pipeline = configparser.ConfigParser()
-    config_pipeline.read("pipeline.config") 
+    config_pipeline.read(input_dir + "pipeline.config") 
     # NOTE: set defaults in pipline, in case users don't follow the template
     
-    
     if(config_pipeline['pipeline'].getboolean('downloadchip')):
-        path = config_pipeline['downloadchip_param']['file_path']
         filename = config_pipeline['downloadchip_param']['chip_to_download']
-        file = os.path.join(path, filename)
-        file_info = get_file_info(file)
-        download_chip(file_info)
+        file = os.path.join(input_dir, filename)
+        file_info  = get_file_info(file)
+        download_chip(file_info, input_dir)
+        print("Finished downloading all files :)")
     else:
         print("Skipping downloadchip!")
 
