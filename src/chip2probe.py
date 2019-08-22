@@ -143,6 +143,7 @@ def download_chip(file_info, input_dir):
     with open(input_dir + 'chips_filtered.config', 'w') as configfile:
         filtered_file.write(configfile)
     
+# trying to test fork
 
 def remove_inner_list(nested_list):
     flat_list = []
