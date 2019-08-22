@@ -2,6 +2,7 @@ import urllib.request
 import os, subprocess, pathlib
 import configparser
 import datetime
+from collections import OrderedDict
 
 from tqdm import tqdm
 from collections import defaultdict
@@ -61,7 +62,12 @@ class DownloadProgressBar(tqdm):
 def download_url(url, output_path):
     with DownloadProgressBar(unit='B', unit_scale=True,
                              miniters=1, desc=url.split('/')[-1]) as t:
-        urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
+        try: 
+            urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
+            return 0
+        except urllib.error.HTTPError:
+            return -1
+
 
 def get_file_info(filename):
     file_info = defaultdict(dict)
@@ -96,22 +102,39 @@ def download_chip(file_info, input_dir):
         if not os.path.exists(chip_path):
             os.makedirs(chip_path)
         timestamp += chipname +"\n"
-        unfiltered, filtered = {}, {}
+        unfiltered, filtered = OrderedDict(), OrderedDict()
         for tag, file_id in tag_fileID.items():
             fname = file_id + ".bam"
             saveto =  "%s/%s" % (chip_path, fname)
             if not os.path.exists(saveto): 
-                if "unfiltered" in tag:
-                    unfiltered[tag.split("_")[0]] = fname
-                else:
-                    filtered[tag.split("_")[0]] = fname
                 chipurl = "https://www.encodeproject.org/files/{0}/@@download/{0}.bam".format(file_id)  
-                print("Downloading %s ..." % (fname))
-                download_url(chipurl, saveto)  # takes filename?!
-                now = datetime.datetime.now()
-                timestamp += "\tDownloaded %s on %s at %s \n" % (fname, now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"))
-        filtered_file[chipname] = filtered
-        unfiltered_file[chipname] = unfiltered
+                #print("Downloading %s ..." % (fname))
+                status = download_url(chipurl, saveto)  # takes filename?!
+                if status == -1:
+                    not_download_msg = "%s was NOT downloaded due to a URL error." % fname
+                    timestamp += "\t"+not_download_msg +"\n"
+                    print(not_download_msg)
+                    continue
+                else:
+                    now = datetime.datetime.now()
+                    timestamp += "\tDownloaded %s on %s at %s \n" % (fname, now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"))
+                    print("Finished downloading %s" % fname)
+            else: # if file already existed
+                skip_msg = "%s already existed. Skipped downloading the file." % fname
+                timestamp += "\t"+ skip_msg +"\n"
+                print(skip_msg)
+
+            # add to config dictionary
+            if "unfiltered" in tag:
+                unfiltered[tag.split("_")[0]] = fname
+            else:
+                filtered[tag.split("_")[0]] = fname
+
+            if len(filtered)!=0:
+                filtered_file[chipname] = filtered
+            if len(unfiltered)!=0:
+                unfiltered_file[chipname] = unfiltered
+
     with open("../result/chipseq/download_timestamp.txt", 'w') as f:
         f.write(timestamp)
     with open(input_dir + 'chips_unfiltered.config', 'w') as configfile:
