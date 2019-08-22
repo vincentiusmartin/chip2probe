@@ -35,10 +35,10 @@ class Sequence(object):
     classdocs
     '''
 
-    def __init__(self, escore_preds, imads_preds, escore_cutoff=0.4):
+    def __init__(self, escore_preds, imads_preds, escore_cutoff=0.4, escore_gap = 0):
         # we need to check the order between escore and imads
         self.sequence = escore_preds.sequence
-        self.bsites = self.get_bsite_escore_imads(escore_preds, imads_preds, escore_cutoff)
+        self.bsites = self.get_bsite_escore_imads(escore_preds, imads_preds, escore_cutoff, escore_gap)
         
     def __str__(self):
         return "Sequence object: {}\nsites {}".format(self.sequence,str(self.bsites))
@@ -161,24 +161,34 @@ class Sequence(object):
     print(epreds)
     """
     
-    def get_bsite_escore_imads(self, escore_preds, imads_preds, escore_cutoff):
+    # TODO: change to pbmescore.get_escores_specific
+    def get_bsite_escore_imads(self, escore_preds, imads_preds, escore_cutoff=0.4, escore_gap = 0):
+        """
+        escore_gap : value below threshold allowed to still say that an 8-mer is still within specific window
+        """
         sequence = escore_preds.sequence
         escores = escore_preds.predictions
         signifcount = 0
         startidx = -1
+        gapcount = 0
         bindingsites = []
         for i in range(0, len(escores)):
             escoresite = escores[i]
-            if escoresite["score"] > escore_cutoff:
+            if escoresite["score"] > escore_cutoff :
                 if signifcount == 0:
                     startidx = i
                 signifcount += 1
-            elif escoresite["score"] < escore_cutoff or i == len(escores)-1:
+                gapcount = 0
+            # we can ignore else if here since we need i == len(esores)-1
+            if escoresite["score"] <= escore_cutoff and i != len(escores)-1 and gapcount < escore_gap:
+                # check if the sequence is still within 
+                gapcount += 1
+            elif escoresite["score"] <= escore_cutoff or i == len(escores)-1: 
                 if signifcount > 0:
                     # if we have found sufficient e-scores above the cutoff then get the binding sites
                     if signifcount >= 2:
                         # startpos: the start of binding
-                        escore_bind = {"startpos":escores[startidx]['position'],  "escorelength":signifcount, 
+                        escore_bind = {"startpos":escores[startidx]['position'],  "escorelength":signifcount + gapcount, 
                                 "escore_startidx":escores[startidx]['start_idx']}
                         # we get e-scores now we look for its imads binding site
                         for imads_pred in imads_preds.predictions:
@@ -201,7 +211,8 @@ class Sequence(object):
                                                     sequence_in_site = sequence[site_start:site_end])
                                 bindingsites.append(bsite)
                     startidx = -1
-                    signifcount = 0        
+                    signifcount = 0 
+                    gapcount = 0       
         return bindingsites
     
     def sites_to_dict(self, bindingsites):
@@ -211,6 +222,9 @@ class Sequence(object):
             for attr in attrs:
                 out_dict["%s_%d" % (attr, i+1)] = getattr(bindingsites[i], attr)
         return out_dict
+    
+    def get_sites_dist(self, site1 = 0, site2 = 1):
+        return abs(self.bsites[site2].core_start - self.bsites[site1].core_start)
     
     def get_sites_dict(self):
         return self.sites_to_dict(self.bsites)

@@ -42,23 +42,29 @@ class PBMEscore(SitesFinder):
         return BasePrediction(sequence, prediction)
     
     # TODO: modify sequence to use this function instead
-    def get_escores_specific(self, sequence, escore_cutoff = 0.4):
+    def get_escores_specific(self, sequence, escore_cutoff = 0.4, escore_gap = 0):
         escores = self.predict_sequence(sequence).predictions
         signifcount = 0
         startidx = -1
+        gapcount = 0
         escore_signifsites = []
         for i in range(0, len(escores)):
             escoresite = escores[i]
-            if escoresite["score"] > escore_cutoff:
+            if escoresite["score"] > escore_cutoff :
                 if signifcount == 0:
                     startidx = i
                 signifcount += 1
-            elif escoresite["score"] < escore_cutoff or i == len(escores)-1:
+                gapcount = 0 
+            # we can ignore else if here since we need i == len(esores)-1
+            if escoresite["score"] <= escore_cutoff and i != len(escores)-1 and gapcount < escore_gap:
+                # check if the sequence is still within 
+                gapcount += 1
+            elif escoresite["score"] <= escore_cutoff or i == len(escores)-1: 
                 if signifcount > 0:
                     # if we have found sufficient e-scores above the cutoff then get the binding sites
                     if signifcount >= 2:
                         # startpos: the start of binding
-                        escore_bind = {"startpos":escores[startidx]['position'],  "escorelength":signifcount, 
+                        escore_bind = {"startpos":escores[startidx]['position'],  "escorelength":signifcount + gapcount, 
                                 "escore_startidx":escores[startidx]['start_idx']}
                         escore_signifsites.append(escore_bind)
                     startidx = -1

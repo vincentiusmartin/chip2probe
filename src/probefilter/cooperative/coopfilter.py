@@ -4,8 +4,8 @@ Created on Aug 8, 2019
 @author: vincentiusmartin
 '''
 
-def are_specific_8mers_within_coords(seq, coord_list, pbmescore, escore_cutoff = 0.4):
-    especific = pbmescore.get_escores_specific(seq, escore_cutoff)
+def are_specific_8mers_within_coords(seq, coord_list, pbmescore, escore_cutoff = 0.4, escore_gap = 0):
+    especific = pbmescore.get_escores_specific(seq, escore_cutoff, escore_gap)
     if len(coord_list) != len(especific):
         return False
     # for now assume both are coord_list and especific results are sorted
@@ -18,7 +18,7 @@ def are_specific_8mers_within_coords(seq, coord_list, pbmescore, escore_cutoff =
             return False
     return True
 
-def filter_coopseq(wt, m1, m2, m3, sites_dict, pbmescore, escore_cutoff=0.4):
+def filter_coopseq(wt, m1, m2, m3, sites_dict, pbmescore, escore_cutoff=0.4, escore_gap = 0):
     """
     return True only if some conditions are met
     this assume that: 
@@ -32,9 +32,9 @@ def filter_coopseq(wt, m1, m2, m3, sites_dict, pbmescore, escore_cutoff=0.4):
         return False
     s1 = [sites_dict["core_start_1"],sites_dict["core_end_1"]]
     s2 = [sites_dict["core_start_2"],sites_dict["core_end_2"]]
-    wt_cond = are_specific_8mers_within_coords(wt, [s1,s2], pbmescore, escore_cutoff)
-    m1_cond = are_specific_8mers_within_coords(m1, [s2], pbmescore, escore_cutoff)
-    m2_cond = are_specific_8mers_within_coords(m2, [s1], pbmescore, escore_cutoff)
-    m3_cond = are_specific_8mers_within_coords(m3, [], pbmescore, escore_cutoff)
+    wt_cond = are_specific_8mers_within_coords(wt, [s1,s2], pbmescore, escore_cutoff, escore_gap)
+    m1_cond = are_specific_8mers_within_coords(m1, [s2], pbmescore, escore_cutoff, escore_gap)
+    m2_cond = are_specific_8mers_within_coords(m2, [s1], pbmescore, escore_cutoff, escore_gap)
+    m3_cond = are_specific_8mers_within_coords(m3, [], pbmescore, escore_cutoff, escore_gap)
     return (wt_cond and m1_cond  and m2_cond and m3_cond)
     

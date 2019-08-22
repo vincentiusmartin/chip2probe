@@ -117,28 +117,31 @@ class iMADS(SitesFinder):
         # f(x) = 1 / ( 1 + exp(-x) )  to obtain only values between 0 and 1.
         return 1.0 / (1.0 + math.exp(0.0 - score))
         
-    def predict_sequence(self, sequence, model, const_intercept, transform_scores):
-        for position, core_pos, matching_sequences in self.generate_matching_sequence(sequence, model.core, model.width):
-            # generator returns a position, and a tuple of 1 or 2 sequences
-            # If two sequences are returned, core is palindromic and can bind on either strand
-            # So generate predictions for both and return the best
-            # 4. Translate the sequences into SVR matrix by kmers
-            best_prediction = None
-            best_match = None
-            for matching_sequence in matching_sequences:
-                features = self.svr_features_from_sequence(matching_sequence, model.kmers)
-                predictions, accuracy, values = model.predict(features, const_intercept)
-                if best_prediction is None or predictions[0] > best_prediction:
-                    best_prediction = predictions[0]
-                    best_match = matching_sequence
-            if best_prediction is None:
-                continue
-            if transform_scores:
-                best_prediction = self.transform_score(best_prediction)
-            yield {"site_start": position, "site_width": model.width,
+    def predict_sequence(self, sequence, const_intercept=False, transform_scores=True):
+        prediction = []
+        for model in self.models:
+            for position, core_pos, matching_sequences in self.generate_matching_sequence(sequence, model.core, model.width):
+                # generator returns a position, and a tuple of 1 or 2 sequences
+                # If two sequences are returned, core is palindromic and can bind on either strand
+                # So generate predictions for both and return the best
+                # 4. Translate the sequences into SVR matrix by kmers
+                best_prediction = None
+                best_match = None
+                for matching_sequence in matching_sequences:
+                    features = self.svr_features_from_sequence(matching_sequence, model.kmers)
+                    predictions, accuracy, values = model.predict(features, const_intercept)
+                    if best_prediction is None or predictions[0] > best_prediction:
+                        best_prediction = predictions[0]
+                        best_match = matching_sequence
+                if best_prediction is None:
+                    continue
+                if transform_scores:
+                    best_prediction = self.transform_score(best_prediction)
+                prediction.append({"site_start": position, "site_width": model.width,
                    "best_match":best_match, "score":best_prediction,
                    "core_start": core_pos, "core_width": len(model.core)
-                   }
+                   })
+        return prediction
     
     # or predict fasta?
     def predict_sequences(self, sequence_df, const_intercept=False, transform_scores=True, sequence_colname="sequence", flank_colname="flank"):
@@ -151,13 +154,18 @@ class iMADS(SitesFinder):
         predictions = {}
         for key in seqdict:
             sequence = flank_left[key] + seqdict[key] + flank_right[key]
-            prediction = []
-            for model in self.models:
-                for result in self.predict_sequence(sequence, model, const_intercept, transform_scores):
-                    # we need to have the start position relative to the main sequence instead of the flank
-                    result['site_start'] = result['site_start'] - len(flank_left[key])
-                    result['core_start'] = result['core_start'] - len(flank_left[key])
-                    prediction.append(result)
+            prediction = self.predict_sequence(sequence, const_intercept, transform_scores)
+            #for model in self.models:
+            #    for result in self.predict_sequence(sequence, model, const_intercept, transform_scores):
+            #        # we need to have the start position relative to the main sequence instead of the flank
+            #        result['site_start'] = result['site_start'] - len(flank_left[key])
+            #        result['core_start'] = result['core_start'] - len(flank_left[key])
+            #        prediction.append(result)
+            
+            # since we use flank, we need to update the result
+            for result in prediction:
+                result['site_start'] = result['site_start'] - len(flank_left[key])
+                result['core_start'] = result['core_start'] - len(flank_left[key])
             predictions[key] = BasePrediction(sequence, prediction)
         return predictions
 

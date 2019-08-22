@@ -2,6 +2,7 @@ import urllib.request
 import os
 import subprocess
 import pandas as pd
+import itertools
 
 from tqdm import tqdm
 
@@ -22,12 +23,12 @@ lab-archive -> note the result
 information about the data in the plot
 '''
 
-chipname = "ets1_GM12878"
+chipname = "cistrome_ets1_37927"
 chipurls = {
-    "r1":"https://www.encodeproject.org/files/ENCFF477EHC/@@download/ENCFF477EHC.bam",
-    "r2":"https://www.encodeproject.org/files/ENCFF371ZBY/@@download/ENCFF371ZBY.bam",
-    "c1":"https://www.encodeproject.org/files/ENCFF963CVB/@@download/ENCFF963CVB.bam",
-    "c2":""
+    "r1":"https://www.encodeproject.org/files/ENCFF006UXO/@@download/ENCFF006UXO.bam",
+    "r2":"https://www.encodeproject.org/files/ENCFF468AKT/@@download/ENCFF468AKT.bam",
+    "c1":"https://www.encodeproject.org/files/ENCFF750MIM/@@download/ENCFF750MIM.bam",
+    "c2":"https://www.encodeproject.org/files/ENCFF235CSW/@@download/ENCFF235CSW.bam"
 }
 tagsize = 36
 
@@ -50,7 +51,7 @@ escore_cutoff = 0.4
 
 # ============================
 
-outdir = "../result/%s" % chipname
+outdir = "../result/cistrome/%s" % chipname
 
 # From https://stackoverflow.com/questions/15644964/python-progress-bar-and-downloads
 class DownloadProgressBar(tqdm):
@@ -88,14 +89,14 @@ if __name__=="__main__":
     if not os.path.exists(macs_result_path):
         os.makedirs(macs_result_path)
     print("Running macs...")
-    subprocess.call(["./macs2.sh",chipdata["r1"],chipdata["r2"],chipdata["c1"],chipdata["c2"],"%s/%s" % (macs_result_path,chipname), str(tagsize)],shell=False)
+    #subprocess.call(["./macs2.sh",chipdata["r1"],chipdata["r2"],chipdata["c1"],chipdata["c2"],"%s/%s" % (macs_result_path,chipname), str(tagsize)],shell=False)
     print("Finished running macs, results are saved in %s" % macs_result_path)
 
     idr_result_path = "%s/idr_result" % (outdir)
     if not os.path.exists(idr_result_path):
         os.makedirs(idr_result_path)
     print("Running idrs...")
-    subprocess.call(["./idr.sh","%s/%s" % (macs_result_path,chipname),idr_result_path],shell=False)
+    #subprocess.call(["./idr.sh","%s/%s" % (macs_result_path,chipname),idr_result_path],shell=False)
 
     analysis_result_path = "%s/analysis_result" % (outdir)
     if not os.path.exists(analysis_result_path):
@@ -110,7 +111,7 @@ if __name__=="__main__":
     args_rscript = [pu1_path, pu2_path, pu_both_path, nrwp_preidr_path, nrwp_postidr_path, bedpath, analysis_result_path, chipname]
     #print(["R_analysis/main.R",pwd] + args_rscript)
     #subprocess.call(["srun","Rscript","R_analysis/main.R",pwd] + args_rscript,shell=False)
-    subprocess.call(["Rscript","R_analysis/main.R",pwd] + args_rscript,shell=False)
+    #subprocess.call(["Rscript","R_analysis/main.R",pwd] + args_rscript,shell=False)
 
     # ============== PLOT AND FILTERING PART ==============
 
@@ -145,7 +146,7 @@ if __name__=="__main__":
         filtered_sites = {}
         print("Site filtering...")
         for key in es_preds:
-            bs = Sequence(es_preds[key],imads_preds[key])
+            bs = Sequence(es_preds[key],imads_preds[key],escore_cutoff=0.35)
             if bs.site_count() == 2:
                 filtered_sites[key] = bs
         #site_list = [{**{"key":site, "sequence":es_preds[site].sequence},**filtered_sites[site].get_sites_dict()} for site in filtered_sites]
@@ -164,16 +165,27 @@ if __name__=="__main__":
                 mutseq = filtered_sites[key].abolish_sites(mut,escore)
                 seqdict["%s-m%d" % (key,idx + 1)] = mutseq.sequence
                 funcdict["%s-m%d" % (key,idx + 1)] = mutseq.plot_functions
-            if coopfilter.filter_coopseq(seqdict["%s-wt"%key], seqdict["%s-m1"%key],
-                                         seqdict["%s-m2"%key], seqdict["%s-m3"%key],
-                                         filtered_sites[key].get_sites_dict(), escore):
-                filtered_probes.append({"key":key, "wt":seqdict["%s-wt"%key], "m1":seqdict["%s-m1"%key],
-                                        "m2":seqdict["%s-m2"%key], "m3":seqdict["%s-m3"%key]})
+            for e in list(itertools.product([0,1,2],[0.41, 0.4, 0.35])): # ,0.35
+                egapthres = e[0]
+                ecutoff = e[1]
+                if coopfilter.filter_coopseq(seqdict["%s-wt"%key], seqdict["%s-m1"%key],
+                                     seqdict["%s-m2"%key], seqdict["%s-m3"%key],
+                                     filtered_sites[key].get_sites_dict(), escore,
+                                     escore_cutoff=ecutoff, escore_gap = egapthres):
+                    filtered_probes.append({"key":key, "wt":seqdict["%s-wt"%key], "m1":seqdict["%s-m1"%key],
+                                        "m2":seqdict["%s-m2"%key], "m3":seqdict["%s-m3"%key], "ecutoff": ecutoff,
+                                        "egapthres":egapthres, "distance":filtered_sites[key].get_sites_dist()})
+                    break
 
         pp = escore.plot(escore.predict_sequences(seqdict),additional_functions=funcdict)
         pc.plot_seq_combine([pp], filepath="%s/plot_mut_%s.pdf" % (analysis_result_path,filename))
 
         # probably should check here if filtered_probes is empty
-        pd.DataFrame(filtered_probes).to_csv("%s/mutated_probes_%s.tsv" % (analysis_result_path,filename),sep="\t",index=False,columns=["key","wt","m1","m2","m3"])
+        fp_df = pd.DataFrame(filtered_probes)
+        req_cols = ["key", "wt", "m1", "m2", "m3", "ecutoff", "egapthres", "distance"]
+        if fp_df.columns.isin(req_cols).all():
+            fp_df.to_csv("%s/mutated_probes_%s.tsv" % (analysis_result_path,filename),sep="\t",index=False,columns=req_cols)
+        else:
+            print("No mutation rows found in %s" % sitepath)
 
     #print(fname,header)
