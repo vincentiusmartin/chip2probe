@@ -3,6 +3,7 @@ library(ggplot2)
 # theme_set(theme_bw())
 
 make.peaklen.dist.plot <- function(lenvec1, lenvec2, chip_name="", dir){
+  # hardcode upper limit to be 1500
   peaklen_hist_plot1 <- ggplot() +
     geom_histogram(aes(x = lenvec1), binwidth=50, colour = "white", fill = "cornflowerblue", size = 0.1) +
     labs(title="ChIP-seq peak length r1",
@@ -10,7 +11,7 @@ make.peaklen.dist.plot <- function(lenvec1, lenvec2, chip_name="", dir){
          x="peak length") +
     coord_cartesian(xlim=c(0,1500)) +
     scale_x_continuous(breaks=seq(0, 1500, by = 100))
-  ggsave(paste(dir,"/peaklen_hist_r1.pdf",sep=''), plot=peaklen_hist_plot1)
+  ggsave(paste(dir,"/peaklen_hist_before_idr.pdf",sep=''), plot=peaklen_hist_plot1)
 
   peaklen_hist_plot2 <- ggplot() +
     geom_histogram(aes(x = lenvec2), binwidth=50, colour = "white", fill = "cornflowerblue", size = 0.1) +
@@ -19,7 +20,7 @@ make.peaklen.dist.plot <- function(lenvec1, lenvec2, chip_name="", dir){
          x="peak length") +
     coord_cartesian(xlim=c(0,1500)) +
     scale_x_continuous(breaks=seq(0, 1500, by = 100))
-  ggsave(paste(dir,"/peaklen_hist_r2.pdf",sep=''), plot=peaklen_hist_plot2)
+  ggsave(paste(dir,"/peaklen_hist_after_idr.pdf",sep=''), plot=peaklen_hist_plot2)
 
   peaklen_dist_plot <- ggplot() +
     geom_density(aes(lenvec1, fill="before idr"), alpha=0.5) +
@@ -62,7 +63,7 @@ count.n <- function(x) {
   return(c(y = median(x)*1.03, label = length(x)))
 }
 
-make.pileup.dist.plot <- function(bsites_ctpile, path, chip_name){
+make.pileup.dist.plot <- function(bsites_ctpile, outpath, chip_name){
   # make boxplot, since we need pileup for the whole distribution, make a copy of the whole table
   # as group "all"
   merged_copy <- bsites_ctpile
@@ -82,9 +83,9 @@ make.pileup.dist.plot <- function(bsites_ctpile, path, chip_name){
          y="log(pileup)",
          x="#sites in a peak") +
     theme(legend.position = "none")
-  ggsave(path)
+  ggsave(outpath)
 
   # count here
-  count_df <- as.data.frame(table(merged_duplicated$count))
-  write.table(count_df,file=paste(outpath,"/bsite_count_",span,".tsv",sep=''),sep="\t",row.names = FALSE, quote = FALSE)
+  #count_df <- as.data.frame(table(merged_duplicated$count))
+  #write.table(count_df,file=paste(outpath,"/bsite_count_",span,".tsv",sep=''),sep="\t",row.names = FALSE, quote = FALSE)
 }

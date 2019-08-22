@@ -1,7 +1,7 @@
 #.libPaths( c( .libPaths(), "/data/gordanlab/vincentius/cooperative_probe/packages/Rlib") )
 #curwd <- "/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe"
 #setwd(curwd)
-source("R_analysis/chip.info/R/chipreader.R")
+source("R_analysis/chip.info/R/peakreader.R")
 source("R_analysis/chip.info/R/bsite.R")
 source("R_analysis/chip.info/R/plotter.R")
 source("R_analysis/chip.info/R/site_finder.R")
@@ -98,7 +98,7 @@ for (span in spans){
 
     # using http to get genomic seq: https://bioinformatics.stackexchange.com/questions/2543/way-to-get-genomic-sequences-at-given-coordinates-without-downloading-fasta-file
     write.table(sites_all_dist,file=paste(outpath,"/sites_all_d",ct,"_span",span,".tsv",sep=''),sep="\t",row.names = FALSE, quote = FALSE)
-    #sitefilename <- paste(outpath,"/sites_within_d",ct,"_span",span,".tsv",sep='')
+    sitefilename <- paste(outpath,"/sites_within_d",ct,"_span",span,".tsv",sep='')
     write.table(sites_within_range,file=sitefilename,sep="\t",row.names = FALSE, quote = FALSE)
     
     #sitefilepath <- paste(curwd,sitefilename,sep='/')
@@ -111,7 +111,6 @@ for (span in spans){
   for (ct in count_sites_per_peak){
     sitefilename <- paste(outpath,"/sites_within_d",ct,"_span",span,".tsv",sep='')
     sitefilepath <- paste(curwd,sitefilename,sep='/')
-    print(sitefilepath)
     sitefiles <- ifelse(sitefiles == "",sitefilepath,paste(sitefiles,sitefilepath,sep="\n"))
   }
 }

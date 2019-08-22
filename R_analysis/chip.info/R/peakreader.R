@@ -15,6 +15,9 @@ read.pileup <- function(pileup_path){
   return(pu)
 }
 
+# =============== PEAK READING ===============
+
+# TODO: change function name
 read.narrow.peak <- function(nrwp_path, span = -1){
   nrwp <- read.table(nrwp_path)[ , c("V1", "V2", "V3", "V10")]
   colnames(nrwp) <- c("chr","start","end","summit")
@@ -26,6 +29,8 @@ read.narrow.peak <- function(nrwp_path, span = -1){
   setkey(nrwp, "chr", "start","end")
   return(nrwp)
 }
+
+# =============== END PEAK READING ===============
 
 get.pileups <- function(nrwp_df, pu_df, logpileup=FALSE, join_type="any"){
   pu_nrwp <- foverlaps(pu_df, nrwp_df, nomatch=NULL, type=join_type)[, .(
