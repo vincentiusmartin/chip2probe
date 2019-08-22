@@ -19,10 +19,10 @@ remove.nosites.peak <- function(nrwp_df, imads_df){
   return(peak_wsites)
 }
 
-get.bsite.count <- function(nrwp_df, imads_df){
+get.bsite.count <- function(nrwp_df, imads_df, summit){
   #setDT(nrwp_df, key = names(nrwp_df))
   #setkey(nrwp_df, "chr", "start","end")
-  sites_peak <- foverlaps(nrwp,imads_df)[, .(
+  sites_peak <- foverlaps(nrwp_df,imads_df)[, .(
     chr, peak.start = i.start, peak.end = i.end,
     summit,
     pref
@@ -35,7 +35,8 @@ get.bsite.count <- function(nrwp_df, imads_df){
   return(counted)
 }
 
-get.bsites.in.peak <- function(pileups_df, imads_df){
+get.bsites.in.peak <- function(pileups_df, imads_df, score_colname = "pileups"){
+  # TODO: need to think about score_colname
   sites_selected <- foverlaps(imads_df, pileups_df, nomatch=NULL, type="within")
   # order the chromosome
   chr_order<-c(paste("chr",1:22,sep=""),"chrX","chrY","chrM")
@@ -54,11 +55,11 @@ get.bsites.in.peak <- function(pileups_df, imads_df){
            bsite2.pref = pref) %>%
     filter(!is.na(distance)) %>%
     #select(-c(count, start, end, pref)) %>%
-    select(c(chr, peak.start, peak.end, pileups, distance,
+    select(c(chr, peak.start, peak.end, score_colname, distance,
              bsite1.start, bsite1.end, bsite2.start, bsite2.end,
              bsite1.pref, bsite2.pref)) %>%
     select(-distance,everything()) %>% # just to put distance as the last col
-    mutate_at("pileups", round, 4)
+    mutate_at(score_colname, round, 4)
 
   return(sites_in_peak_df)
 }
@@ -68,7 +69,7 @@ get.bsites.within.range <- function(sites_in_peak_df, min_dist, max_dist, probes
   # Get binding sites in min_dist .. max_dist
   # if no sites are within distance, a warning message would show up:
   # Factor `chr` contains implicit NA, consider using `forcats::fct_explicit_na`
-  sites_within_range <- sites_all_dist %>%
+  sites_within_range <- sites_in_peak_df %>%
     filter(distance >= min_bsite_dist & distance <= max_bsite_dist)  %>%
     rowwise() %>% # need to calculate each row separately
     mutate(
@@ -98,8 +99,8 @@ get.bsites.within.range <- function(sites_in_peak_df, min_dist, max_dist, probes
           end = seqend + probeseq_flank
         )
       )
-    ) %>%
-    select(-c(seqstart,seqend)) # made just as a tmp variable so remove before returning
+    )
+    # %>% select(-c(seqstart,seqend)) # made just as a tmp variable so remove before returning
   return(sites_within_range)
 }
 
