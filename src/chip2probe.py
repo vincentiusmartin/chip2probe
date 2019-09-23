@@ -1,5 +1,5 @@
-import urllib.request
-import os, subprocess, pathlib
+import urllib
+import os, sys, subprocess, pathlib
 import configparser
 import datetime
 from collections import OrderedDict
@@ -10,9 +10,9 @@ from itertools import chain
 
 import pandas as pd
 
+# create virtual environment with python version 2.7 (required by MCAS2)
+
 # we need to import the package folder and libsvm
-# TODO: need to make this cleaner
-import sys
 sys.path.append("probefilter")
 sys.path.append("probefilter/libsvm-3.23/python")
 # from sitesfinder.imads import iMADS
@@ -65,7 +65,7 @@ def download_url(url, output_path):
         try: 
             urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
             return 0
-        except urllib.error.HTTPError:
+        except:
             return -1
 
 
@@ -88,7 +88,7 @@ def get_file_info(filename):
     return file_info
 
 
-def download_chip(file_info, input_dir):
+def download_chip(file_info, input_dir, macs_args):
 
     filtered_file = configparser.ConfigParser()
     unfiltered_file = configparser.ConfigParser()
@@ -111,7 +111,7 @@ def download_chip(file_info, input_dir):
                 #print("Downloading %s ..." % (fname))
                 status = download_url(chipurl, saveto)  # takes filename?!
                 if status == -1:
-                    not_download_msg = "%s was NOT downloaded due to a URL error." % fname
+                    not_download_msg = "%s was NOT downloaded due to an error." % fname
                     timestamp += "\t"+not_download_msg +"\n"
                     print(not_download_msg)
                     continue
@@ -135,63 +135,34 @@ def download_chip(file_info, input_dir):
             if len(unfiltered)!=0:
                 unfiltered_file[chipname] = unfiltered
 
-    with open("../result/chipseq/download_timestamp.txt", 'w') as f:
+    with open("%s/download_timestamp.txt"% outdir, 'w') as f:
         f.write(timestamp)
-    with open(input_dir + 'chips_unfiltered.config', 'w') as configfile:
+    with open("%s/chips_unfiltered.config"% outdir, 'w') as configfile:
         # for call_peaks() to use later
         unfiltered_file.write(configfile)
-    with open(input_dir + 'chips_filtered.config', 'w') as configfile:
+    with open("%s/chips_filtered.config"%outdir, 'w') as configfile:
         filtered_file.write(configfile)
     
 
-def remove_inner_list(nested_list):
-    flat_list = []
-    for item in nested_list:
-        if isinstance(item, list):
-            for i in item:
-                flat_list.append(i)
-        else:
-            flat_list.append(item)
-    return flat_list
-
-
-def call_peaks(chipname, saved_chip_paths, macs_args):
-    #outdir = "../result/%s" % chipname
-    #macs_result_path = "%s/macs_result/%s" % (outdir, chipname)
-    macs_result_path = "../result/%s/macs_result" % (chipname)
-    if not os.path.exists(macs_result_path):
-        os.makedirs(macs_result_path)
-    print("Running macs...")
-    
-    reps, cntrl = [0]*2, []
-    for chip_id, chip_path in saved_chip_paths.items(): 
-        if chip_id == "r1":
-            reps[0] = chip_path
-        elif chip_id == "r2":
-            reps[1] = chip_path
-        elif chip_id.startswith("c"):
-            cntrl.append(chip_path)
-        #else:
-            # throw exception/warning
-    all_rep = [[r] for r in reps]
-    all_rep.append(reps) # [[r1], [r2], [r1, r2]]
-    tagsize, macs_p = macs_args[0], macs_args[1]
-    for indx, rep in enumerate(all_rep):
-        output_file = (macs_result_path +"/"+ chipname + "_both") if len(rep)==2 else (macs_result_path +"/"+ chipname + "_r" + str(indx+1))
-        args = ["macs2 callpeak", "-t", 0, "-c", 0, "-n", 0, "-s", 0, "-p", 0, "-f BAM -g hs -B"] # don't need shell script anymore
-        args[2], args[4], args[6], args[8], args[10] = rep, cntrl, output_file, tagsize, macs_p
-        arg_list = remove_inner_list(args)
-        arg_str_list = [str(item) for item in arg_list]
-        command = ' '.join(arg_str_list).split()
+def call_peaks(macs_args, config_parser, macs_result_path):
+    for chipname in config_parser.sections():
+        reps, cntrl = [0]*2, []
+        for (tag, filename) in config_parser.items(chipname):
+            if tag == "r1": reps[0] = filename
+            elif tag == "r2": reps[1] = filename
+            elif tag.startswith("c"): cntrl.append(filename)
+        all_rep = [[r] for r in reps]
+        all_rep.append(reps) # [[r1], [r2], [r1, r2]]
+        if 0 in reps: continue
+        tagsize, macs_p = macs_args[0], macs_args[1]
+        for indx, rep in enumerate(all_rep):
+            output_file = ("%s/%s_both"%(macs_result_path, chipname)) if len(rep)==2 else ("%s/%s_r%d"%(macs_result_path, chipname, indx+1))
+            rep_str, cntrl_str = ' '.join(rep), ' '.join(cntrl)
+            #command = f"macs2 callpeak -t {rep_str} -c {cntrl_str} -n {output_file} -s {tagsize} -p {macs_p} -f BAM -g hs -B"
+            command = "macs2 callpeak -t %s -c %s -n %s -s %d -p %f -f BAM -g hs -B" % (rep_str, cntrl_str, output_file, tagsize, macs_p)
+            subprocess.call(command, shell=False)
+            # print(command)
         
-        subprocess.call(command,shell=False)
-
-    print("Finished running macs for %s, results are saved in %s" % (chipname, macs_result_path))
-
-
-
-    # ----
-    
 
     # analysis_result_path = "%s/analysis_result" % (outdir)
     # if not os.path.exists(analysis_result_path):
@@ -234,26 +205,25 @@ def main():
     else:
         print("Skipping downloadchip!")
 
-    
-    if(config_pipeline['pipeline'].getboolean('callpeaks')):
+    # add try-except to ensure the needed input directories and files are in-place
+    if(config_pipeline['pipeline'].getboolean('callpeaks')): # expect to have a 'chipseq' folder in the 'result' folder
         macs_args = (config_pipeline['callpeaks_param']['tagsize'], config_pipeline['callpeaks_param']['macs_p'])
-        config_chippath = configparser.ConfigParser()
-        config_chippath.read("chip_path.config") # enforce filename and format
-        for chipname, saved_chip_path in config_chippath.items():
-            if(chipname!="DEFAULT"):
-                chip_paths = config_chippath[chipname]
-                call_peaks(chipname, chip_paths, macs_args)
-        print("Finished calling all peaks.")
+        chip_result_path = "../result/chipseq"
+        # filtered & unfiltered - might not be necessary for others
+        filtered_file = configparser.ConfigParser()
+        unfiltered_file = configparser.ConfigParser()
+        filtered_file.read("%s/chips_filtered_test.config"%chip_result_path)
+        unfiltered_file.read("%s/chips_unfiltered_test.config"%chip_result_path)
+        call_peaks(macs_args, filtered_file, macs_result_path = "../result/called_peaks/filtered")
+        #call_peaks(chip_result_path, macs_args, unfiltered_file, macs_result_path = "../result/called_peaks/unfiltered")       
+        
+        print("Finished calling peaks.")
     else: 
         print("Skipping callpeaks!")
 
-
-  
-        
-        
+      
 
 if __name__=="__main__":
-
     main()
     
 
