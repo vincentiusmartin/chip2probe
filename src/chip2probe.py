@@ -143,6 +143,7 @@ def download_chip(file_info, input_dir, macs_args):
     with open("%s/chips_filtered.config"%outdir, 'w') as configfile:
         filtered_file.write(configfile)
     
+# trying to test fork
 
 def call_peaks(macs_args, config_parser, macs_result_path):
     for chipname in config_parser.sections():
