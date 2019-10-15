@@ -1,0 +1,375 @@
+exp_id	chip_name	replicate	file_id	quality	output_type	antibody_id	corresponding_chip		
+ENCSR000FCE	etv6_k562	r1	ENCFF636GYT	green	alignments	ENCAB000ABD	-
+ENCSR000FCE	etv6_k562	r2	ENCFF970YTT	green	alignments	ENCAB000ABD	-
+ENCSR000FCE	etv6_k562	r1	ENCFF355XHR	green	unfiltered_alignments	ENCAB000ABD	-	
+ENCSR000FCE	etv6_k562	r2	ENCFF307VES	green	unfiltered_alignments	ENCAB000ABD	-
+ENCSR830KKO	etv6_k562	c1	ENCFF468ZDX	green	alignments	-	ENCSR000FCE
+ENCSR830KKO	etv6_k562	c1	ENCFF783OZL	green	unfiltered_alignments	-	ENCSR000FCE
+ENCSR000FCA	etv6_k562	c2	ENCFF061QOJ	green	alignments	-	ENCSR000FCE
+ENCSR000FCA	etv6_k562	c2	ENCFF763ZEC	green	unfiltered_alignments	-	ENCSR000FCE
+# control exp: if have multiple replicates, choose the bigger one. 
+# So generally speaking, get one replicate from one control exp.
+# TF_cellLine: also include tagged ones
+# include both filtered and unfiltered version
+ENCSR124BJR	etv6_k562	r1	ENCFF890OID	green	alignments	ENCAB997CJG
+ENCSR124BJR	etv6_k562	r2	ENCFF460VLB	green	alignments	ENCAB997CJG
+ENCSR124BJR	etv6_k562	r1	ENCFF380QNJ	green	unfiltered_alignments	ENCAB997CJG	
+ENCSR124BJR	etv6_k562	r2	ENCFF157XWR	green	unfiltered_alignments	ENCAB997CJG	
+ENCSR080EOT	etv6_k562	c1	ENCFF335IPE	green	alignments	-	ENCSR124BJR
+ENCSR080EOT	etv6_k562	c1	ENCFF841BOW	green	unfiltered_alignments	-	ENCSR124BJR	
+
+ENCSR597VGC	etv6_GM12878	r1	ENCFF102NUJ	green	alignments	ENCAB997CJG	
+ENCSR597VGC	etv6_GM12878	r2	ENCFF481EUA	green	alignments	ENCAB997CJG	
+ENCSR597VGC	etv6_GM12878	r1	ENCFF218VQM	green	unfiltered_alignments	ENCAB997CJG	
+ENCSR597VGC	etv6_GM12878	r2	ENCFF425VPI	green	unfiltered_alignments	ENCAB997CJG
+ENCSR398JTO	etv6_GM12878	c1	ENCFF941TZZ	green	alignments	-	ENCSR597VGC
+ENCSR398JTO	etv6_GM12878	c1	ENCFF223PIT	green	unfiltered_alignments	-	ENCSR597VGC
+
+ENCSR626VUC	etv6_GM12878	r1	ENCFF209SJM	green	alignments	ENCAB000ABD	
+ENCSR626VUC	etv6_GM12878	r2	ENCFF901ETI	green	alignments	ENCAB000ABD
+ENCSR626VUC	etv6_GM12878	r1	ENCFF887NEW	green	unfiltered_alignments	ENCAB000ABD	
+ENCSR626VUC	etv6_GM12878	r2	ENCFF150UOG	green	unfiltered_alignments	ENCAB000ABD
+ENCSR596QDC	etv6_GM12878	c1	ENCFF787RYL	green	alignments	-	ENCSR626VUC
+ENCSR360XQV	etv6_GM12878	c2	ENCFF943IIV	green	alignments	-	ENCSR626VUC
+ENCSR596QDC	etv6_GM12878	c1	ENCFF654PQX	green	unfiltered_alignments	-	ENCSR626VUC
+ENCSR360XQV	etv6_GM12878	c2	ENCFF531VJO	green	unfiltered_alignments	-	ENCSR626VUC
+
+# start here
+# To RESOLVE - ENCSR000DLP only has gc38 mapping
+ENCSR000DLN	myc_hela	r1	ENCFF848YQQ	red	alignments	ENCAB000AET
+ENCSR000DLN	myc_hela	r2	ENCFF826QDC	red	alignments	ENCAB000AET
+ENCSR000DLN	myc_hela	r1	ENCFF598LKD	red	unfiltered_alignments	ENCAB000AET
+ENCSR000DLN	myc_hela	r2	ENCFF927VIX	red	unfiltered_alignments	ENCAB000AET
+ENCSR000DLP	myc_hela	c1	ENCFF949IKS	orange	alignments	-	ENCSR000DLN
+ENCSR000DLP	myc_hela	c1	ENCFF721BCM	orange	unfiltered_alignments	-	ENCSR000DLN
+
+ENCSR000EZD	myc_hela	r1	ENCFF406ZWO	red	alignments	ENCAB000AET
+ENCSR000EZD	myc_hela	r2	ENCFF628WKV	red	alignments	ENCAB000AET
+ENCSR000EZD	myc_hela	r1	ENCFF914AJX	red	unfiltered_alignments	ENCAB000AET
+ENCSR000EZD	myc_hela	r2	ENCFF848XOE	red	unfiltered_alignments	ENCAB000AET
+ENCSR000EZM	myc_hela	c1	ENCFF814FCQ	orange	alignments	-	ENCSR000EZD
+ENCSR000EZM	myc_hela	c1	ENCFF943OAY	orange	unfiltered_alignments	-	ENCSR000EZD	
+
+# replicates for control exp have distinct file size (1 GB vs 600 MB), included only the 1-GB replicate
+ENCSR000FAG	myc_k562	r1	ENCFF000YKV	orange	alignments	ENCAB000AET
+ENCSR000FAG	myc_k562	r2	ENCFF000YKW	orange	alignments	ENCAB000AET
+ENCSR000FAK	myc_k562	c1	ENCFF408YZH	orange	alignments	-	ENCSR000FAG
+ENCSR000FAK	myc_k562	c1	ENCFF898GNN	orange	unfiltered_alignments	-	ENCSR000FAG	
+
+ENCSR000EGJ	myc_k562	r1	ENCFF058VAU	green	alignments	ENCAB000AET
+ENCSR000EGJ	myc_k562	r2	ENCFF384WMI	green	alignments	ENCAB000AET
+ENCSR000EGJ	myc_k562	r1	ENCFF895BNY	green	unfiltered_alignments	ENCAB000AET
+ENCSR000EGJ	myc_k562	r2	ENCFF713RWU	green	unfiltered_alignments	ENCAB000AET
+ENCSR000EHI	myc_k562	c1	ENCFF710NTS	green	alignments	-	ENCSR000EGJ
+ENCSR000EHI	myc_k562	c1	ENCFF530AIY	green	unfiltered_alignments	-	ENCSR000EGJ
+
+# TO RESOLVE - ENCSR000DMB has only gc38 mapping
+ENCSR000DLZ	myc_k562	r1	ENCFF124AKW	orange	alignments	ENCAB000AET
+ENCSR000DLZ	myc_k562	r2	ENCFF042SCZ	orange	alignments	ENCAB000AET
+ENCSR000DLZ	myc_k562	r3	ENCFF310SVZ	orange	alignments	ENCAB000AET
+ENCSR000DLZ	myc_k562	r1	ENCFF449JIA	orange	unfiltered_alignments	ENCAB000AET
+ENCSR000DLZ	myc_k562	r2	ENCFF403SIA	orange	unfiltered_alignments	ENCAB000AET
+ENCSR000DLZ	myc_k562	r3	ENCFF307MJD	orange	unfiltered_alignments	ENCAB000AET
+ENCSR000DMB	myc_k562	c1	ENCFF020CFW	orange	alignments	-	ENCSR000DLZ
+ENCSR000DMB	myc_k562	c1	ENCFF681OVW	orange	unfiltered_alignments	-	ENCSR000DLZ
+
+
+ENCSR000EZF	max_hela	r1	ENCFF000XHK	orange	alignments	ENCAB000AIL	
+ENCSR000EZF	max_hela	r2	ENCFF000XHL	orange	alignments	ENCAB000AIL	
+ENCSR000EZM	max_hela	c1	ENCFF814FCQ	orange	alignments	-	ENCSR000EZF
+ENCSR000EZM	max_hela	c1	ENCFF943OAY	orange	unfiltered_alignments	-	ENCSR000EZF
+
+ENCSR000ECN	max_hela	r1	ENCFF000XHA	green	alignments	ENCAB000AIL	
+ENCSR000ECN	max_hela	r2	ENCFF000XHB	green	alignments	ENCAB000AIL	
+ENCSR000EDI	max_hela	c1	ENCFF469INX	red	alignments	-	ENCSR000ECN
+ENCSR000EDI	max_hela	c1	ENCFF565WKC	red	unfiltered_alignments	-	ENCSR000ECN
+
+# cntrl exp: c1 is twice as big as c2, used c1
+ENCSR000FAE	max_k562	r1	ENCFF000YTL	orange	alignments	ENCAB000AIL	
+ENCSR000FAE	max_k562	r2	ENCFF000YTM	orange	alignments	ENCAB000AIL	
+ENCSR000FAK	max_k562	c1	ENCFF408YZH	orange	alignments	-	ENCSR000FAE
+ENCSR000FAK	max_k562	c1	ENCFF898GNN	orange	unfiltered_alignments	-	ENCSR000FAE
+
+ENCSR000EFV	max_k562	r1	ENCFF938QJA	orange	alignments	ENCAB000AIL	
+ENCSR000EFV	max_k562	r2	ENCFF543CKI	orange	alignments	ENCAB000AIL
+ENCSR000EFV	max_k562	r1	ENCFF610XAJ	orange	unfiltered_alignments	ENCAB000AIL	
+ENCSR000EFV	max_k562	r2	ENCFF172YQZ	orange	unfiltered_alignments	ENCAB000AIL	
+ENCSR000EHI	max_k562	c1	ENCFF710NTS	green	alignments	-	ENCSR000EFV
+ENCSR000EHI	max_k562	c1	ENCFF530AIY	green	unfiltered_alignments	-	ENCSR000EFV
+
+# cntrl exp: 3 reps, the largest one is three times the smallest one; used the largest one
+ENCSR000BLP max_k562	r1	ENCFF825FLR	green	alignments	ENCAB000AIL	
+ENCSR000BLP max_k562	r2	ENCFF112YUX	green	alignments	ENCAB000AIL
+ENCSR000BLP max_k562	r1	ENCFF106ZVG	green	unfiltered_alignments	ENCAB000AIL	
+ENCSR000BLP max_k562	r2	ENCFF715OQW	green	unfiltered_alignments	ENCAB000AIL	
+ENCSR000BGG max_k562	c1	ENCFF701KUD	orange	alignments	-	ENCSR000BLP
+ENCSR000BGG max_k562	c1	ENCFF103OUB	orange	unfiltered_alignments	-	ENCSR000BLP
+
+ENCSR000ECU mxi1_hela	r1	ENCFF000XIA	green	alignments	ENCAB000AIT	
+ENCSR000ECU mxi1_hela	r2	ENCFF000XIB	green	alignments	ENCAB000AIT	
+ENCSR000EDI mxi1_hela	c1	ENCFF469INX	orange	alignments	-	ENCSR000ECU
+ENCSR000EDI mxi1_hela	c1	ENCFF565WKC	orange	unfiltered_alignments	-	ENCSR000ECU
+
+ENCSR000EGZ	mxi1_k562	r1	ENCFF976PFK	green	alignments	ENCAB000AIT	
+ENCSR000EGZ	mxi1_k562	r2	ENCFF094XLP	green	alignments	ENCAB000AIT
+ENCSR000EGZ	mxi1_k562	r1	ENCFF009RJG	green	unfiltered_alignments	ENCAB000AIT	
+ENCSR000EGZ	mxi1_k562	r2	ENCFF946QFA	green	unfiltered_alignments	ENCAB000AIT	
+ENCSR000EHI	mxi1_k562	c1	ENCFF710NTS	green	alignments	-	ENCSR000EGZ
+ENCSR000EHI	mxi1_k562	c1	ENCFF530AIY	green	unfiltered_alignments	-	ENCSR000EGZ
+
+ENCSR000EBR	mxi1_h1	r1	ENCFF439GZN	green	alignments	ENCAB000AIT	
+ENCSR000EBR	mxi1_h1	r2	ENCFF644ZMG	green	alignments	ENCAB000AIT
+ENCSR000EBR	mxi1_h1	r1	ENCFF558EMM	green	unfiltered_alignments	ENCAB000AIT	
+ENCSR000EBR	mxi1_h1	r2	ENCFF612OOJ	green	unfiltered_alignments	ENCAB000AIT	
+ENCSR000ECG	mxi1_h1	c1	ENCFF599MVB	green	alignments	-	ENCSR000EBR
+ENCSR000ECG	mxi1_h1	c1	ENCFF521TCY	green	unfiltered_alignments	-	ENCSR000EBR
+
+# this exp only has alignments (no unfiltered version)
+# both cntrl exps - gc 38
+ENCSR000EDU	mxi1_hepg2	r1	ENCFF000XUV	green	alignments	ENCAB000AIT	
+ENCSR000EDU	mxi1_hepg2	r2	ENCFF000XUY	green	alignments	ENCAB000AIT	
+ENCSR000EDU	mxi1_hepg2	r3	ENCFF000XVF	green	alignments	ENCAB000AIT	
+ENCSR000EVT	mxi1_hepg2	c1	ENCFF823ARV	orange	alignments	-	ENCSR000EDU
+ENCSR000EDR	mxi1_hepg2	c2	ENCFF702VTX	green	alignments	-	ENCSR000EDU
+ENCSR000EVT	mxi1_hepg2	c1	ENCFF023RXC	orange	unfiltered_alignments	-	ENCSR000EDU
+ENCSR000EDR	mxi1_hepg2	c2	ENCFF604FHH	green	unfiltered_alignments	-	ENCSR000EDU
+
+# TO RESOLVE: mxi1_imr-9green to mxi1_imr-90 (the downloaded files still have the old name)
+ENCSR000EFE	mxi1_imr-90	r1	ENCFF670DTS	green	alignments	ENCAB000AIT	
+ENCSR000EFE	mxi1_imr-90	r2	ENCFF434AMT	green	alignments	ENCAB000AIT
+ENCSR000EFE	mxi1_imr-9green	r1	ENCFF298MNR	green	unfiltered_alignments	ENCAB000AIT	
+ENCSR000EFE	mxi1_imr-9green	r2	ENCFF717UYD	green	unfiltered_alignments	ENCAB000AIT	
+ENCSR000EFL	mxi1_imr-9green	c1	ENCFF191DFR	green	alignments	-	ENCSR000EFE
+ENCSR000EFL	mxi1_imr-9green	c1	ENCFF641ZIY	green	unfiltered_alignments	-	ENCSR000EFE
+
+ENCSR000EIA	mxi1_sk-n-sh	r1	ENCFF392JWS	green	alignments	ENCAB000AIT	
+ENCSR000EIA	mxi1_sk-n-sh	r2	ENCFF749FQP	green	alignments	ENCAB000AIT
+ENCSR000EIA	mxi1_sk-n-sh	r1	ENCFF883WOD	green	unfiltered_alignments	ENCAB000AIT	
+ENCSR000EIA	mxi1_sk-n-sh	r2	ENCFF465CCW	green	unfiltered_alignments	ENCAB000AIT	
+ENCSR000EHU	mxi1_sk-n-sh	c1	ENCFF666ZPP	green	alignments	-	ENCSR000EIA
+ENCSR000EHU	mxi1_sk-n-sh	c1	ENCFF971BQF	green	unfiltered_alignments	-	ENCSR000EIA
+
+# neural originated from H1, so the cell line is H1
+ENCSR934NHU	mxi1_neural	r1	ENCFF456TDF	orange	alignments	ENCAB000AIT	
+ENCSR934NHU	mxi1_neural	r2	ENCFF598OEP	orange	alignments	ENCAB000AIT
+ENCSR934NHU	mxi1_neural	r1	ENCFF307MXC	orange	unfiltered_alignments	ENCAB000AIT	
+ENCSR934NHU	mxi1_neural	r2	ENCFF862XFE	orange	unfiltered_alignments	ENCAB000AIT	
+ENCSR634PYN	mxi1_neural	c1	ENCFF980CFV	green	alignments	-	ENCSR934NHU
+ENCSR634PYN	mxi1_neural	c1	ENCFF525ZHS	green	unfiltered_alignments	-	ENCSR934NHU
+
+ENCSR000DZI	mxi1_gm12878	r1	ENCFF387QOE	green	alignments	ENCAB000AIT	
+ENCSR000DZI	mxi1_gm12878	r2	ENCFF287GWT	green	alignments	ENCAB000AIT
+ENCSR000DZI	mxi1_gm12878	r1	ENCFF305VDY	green	unfiltered_alignments	ENCAB000AIT	
+ENCSR000DZI	mxi1_gm12878	r2	ENCFF128IWG	green	unfiltered_alignments	ENCAB000AIT	
+ENCSR000EAF	mxi1_gm12878	c1	ENCFF110OHA	red	alignments	-	ENCSR000DZI
+ENCSR000EAF	mxi1_gm12878	c1	ENCFF268MJK	red	unfiltered_alignments	-	ENCSR000DZI
+
+ENCSR000BKA	ets1_gm12878	r1	ENCFF477EHC	green	alignments	ENCAB000AGG	
+ENCSR000BKA	ets1_gm12878	r2	ENCFF371ZBY	green	alignments	ENCAB000AGG
+ENCSR000BKA	ets1_gm12878	r1	ENCFF952WXS	green	unfiltered_alignments	ENCAB000AGG	
+ENCSR000BKA	ets1_gm12878	r2	ENCFF293YYY	green	unfiltered_alignments	ENCAB000AGG	
+ENCSR000BMS	ets1_gm12878	c1	ENCFF963CVB	orange	alignments	-	ENCSR000BKA
+ENCSR000BMS	ets1_gm12878	c1	ENCFF651WEV	orange	unfiltered_alignments	-	ENCSR000BKA
+
+ENCSR000BKQ	ets1_k562	r1	ENCFF006UXO	orange	alignments	ENCAB000AGG	
+ENCSR000BKQ	ets1_k562	r2	ENCFF468AKT	orange	alignments	ENCAB000AGG
+ENCSR000BKQ	ets1_k562	r1	ENCFF093QSS	orange	unfiltered_alignments	ENCAB000AGG	
+ENCSR000BKQ	ets1_k562	r2	ENCFF364BDB	orange	unfiltered_alignments	ENCAB000AGG	
+ENCSR000BLJ	ets1_k562	c1	ENCFF235CSW	orange	alignments	-	ENCSR000BKQ
+ENCSR000BLJ	ets1_k562	c1	ENCFF483UTO	orange	unfiltered_alignments	-	ENCSR000BKQ
+
+ENCSR681WHQ	ets1_hepg2	r1	ENCFF172WFR	orange	alignments	ENCAB032TLC
+ENCSR681WHQ	ets1_hepg2	r2	ENCFF434WMV	orange	alignments	ENCAB032TLC
+ENCSR681WHQ	ets1_hepg2	r1	ENCFF932QJT	orange	unfiltered_alignments	ENCAB032TLC
+ENCSR681WHQ	ets1_hepg2	r2	ENCFF208UBO	orange	unfiltered_alignments	ENCAB032TLC
+ENCSR613TDP	ets1_hepg2	c1	ENCFF817NEK	green	alignments	-	ENCSR681WHQ
+ENCSR613TDP	ets1_hepg2	c1	ENCFF250CMS	green	unfiltered_alignments	-	ENCSR681WHQ
+
+# GM23338 originated from GM23248
+ENCSR534VHI	ets1_gm23338 r1	ENCFF774JUR	green	alignments	ENCAB000AGG	
+ENCSR534VHI	ets1_gm23338 r2	ENCFF307YVY	green	alignments	ENCAB000AGG
+ENCSR534VHI	ets1_gm23338 r1	ENCFF101TGH	green	unfiltered_alignments	ENCAB000AGG	
+ENCSR534VHI	ets1_gm23338 r2	ENCFF900ILU	green	unfiltered_alignments	ENCAB000AGG	
+ENCSR447FVP	ets1_gm23338 c1	ENCFF017YFK	green	alignments	-	ENCSR534VHI
+ENCSR655HDE	ets1_gm23338 c2	ENCFF956QBZ	green	alignments	-	ENCSR534VHI
+ENCSR447FVP	ets1_gm23338 c1	ENCFF773BHH	green	unfiltered_alignments	-	ENCSR534VHI
+ENCSR655HDE	ets1_gm23338 c2	ENCFF595RJR	green	unfiltered_alignments	-	ENCSR534VHI
+
+ENCSR000ECI	elk1_hela	r1	ENCFF000XDL	green	 alignments	ENCAB000AGB
+ENCSR000ECI	elk1_hela	r2	ENCFF000XDM	green	 alignments	ENCAB000AGB
+ENCSR000EDI	elk1_hela	c1	ENCFF469INX	orange	alignments	-	ENCSR000ECI
+ENCSR000EDI	elk1_hela	c1	ENCFF565WKC	orange	unfiltered_alignments	-	ENCSR000ECI
+
+ENCSR382WLL	elk1_mcf-7	r1	ENCFF157ZBY	green	alignments	ENCAB000AGB
+ENCSR382WLL	elk1_mcf-7	r2	ENCFF054VLG	green	alignments	ENCAB000AGB
+ENCSR382WLL	elk1_mcf-7	r1	ENCFF060OQV	green	unfiltered_alignments	ENCAB000AGB
+ENCSR382WLL	elk1_mcf-7	r2	ENCFF053MAR	green	unfiltered_alignments	ENCAB000AGB
+ENCSR594UCI	elk1_mcf-7	c1	ENCFF644XWI	green	alignments	-	ENCSR382WLL
+ENCSR217LRF	elk1_mcf-7	c2	ENCFF049MPQ	green	alignments	-	ENCSR382WLL
+ENCSR594UCI	elk1_mcf-7	c1	ENCFF983BPL	green	unfiltered_alignments	-	ENCSR382WLL
+ENCSR217LRF	elk1_mcf-7	c2	ENCFF793JGE	green	unfiltered_alignments	-	ENCSR382WLL
+
+# r1 and r3 on encode
+ENCSR623KNM elk1_a549	r1	ENCFF035OKO	green	alignments	ENCAB000AGB
+ENCSR623KNM elk1_a549	r2	ENCFF378MVM	green	alignments	ENCAB000AGB
+ENCSR623KNM elk1_a549	r1	ENCFF939BBC	green	unfiltered_alignments	ENCAB000AGB
+ENCSR623KNM elk1_a549	r2	ENCFF331FVP	green	unfiltered_alignments	ENCAB000AGB
+ENCSR949BZP elk1_a549	c1	ENCFF863STQ	green	alignments	-	ENCSR623KNM
+ENCSR949BZP elk1_a549	c1	ENCFF071MKT	green	unfiltered_alignments	-	ENCSR623KNM
+
+ENCSR000EFU	elk1_k562	r1	ENCFF526XKG	green	alignments	ENCAB000AGB
+ENCSR000EFU	elk1_k562	r2	ENCFF265GRP	green	alignments	ENCAB000AGB
+ENCSR000EFU	elk1_k562	r1	ENCFF446YAJ	green	unfiltered_alignments	ENCAB000AGB
+ENCSR000EFU	elk1_k562	r2	ENCFF054EPN	green	unfiltered_alignments	ENCAB000AGB
+ENCSR000EHI	elk1_k562	c1	ENCFF710NTS	green	alignments	-	ENCSR000EFU
+ENCSR000EHI	elk1_k562	c1	ENCFF530AIY	green	unfiltered_alignments	-	ENCSR000EFU
+
+#  cntrl: mapped read length 36 (c1) vs 28 (c2) 
+ENCSR000DZB	elk1_gm12878	r1	ENCFF164TSL	green	alignments	ENCAB000AGB
+ENCSR000DZB	elk1_gm12878	r2	ENCFF551AQK	green	alignments	ENCAB000AGB
+ENCSR000DZB	elk1_gm12878	r1	ENCFF199VLV	green	unfiltered_alignments	ENCAB000AGB
+ENCSR000DZB	elk1_gm12878	r2	ENCFF556BST	green	unfiltered_alignments	ENCAB000AGB
+ENCSR000EAB	elk1_gm12878	c1	ENCFF267FMB	orange	alignments	-	ENCSR000DZB
+ENCSR000EAF	elk1_gm12878	c2	ENCFF110OHA	red	alignments	-	ENCSR000DZB
+ENCSR000EAB	elk1_gm12878	c1	ENCFF920EPK	orange	unfiltered_alignments	-	ENCSR000DZB
+ENCSR000EAF	elk1_gm12878	c2	ENCFF268MJK	red	unfiltered_alignments	-	ENCSR000DZB
+
+ENCSR664OKA	elk1_imr-90	r1	ENCFF422DHE	green	alignments	ENCAB000AGB
+ENCSR664OKA	elk1_imr-90	r2	ENCFF505MRY	green	alignments	ENCAB000AGB
+ENCSR664OKA	elk1_imr-90	r1	ENCFF216ADV	green	unfiltered_alignments	ENCAB000AGB
+ENCSR664OKA	elk1_imr-90	r2	ENCFF073KSR	green	unfiltered_alignments	ENCAB000AGB
+ENCSR970FKL	elk1_imr-90	c1	ENCFF485QJI	green	alignments	-	ENCSR664OKA	
+ENCSR970FKL	elk1_imr-90	c1	ENCFF061KEN	green	unfiltered_alignments	-	ENCSR664OKA
+	
+ENCSR000BUK	gabpa_mcf-7	r1	ENCFF000QMV	green	alignments	ENCAB000AGR
+ENCSR000BUK	gabpa_mcf-7	r2	ENCFF000QMY	green	alignments	ENCAB000AGR
+ENCSR000AHE	gabpa_mcf-7	c1	ENCFF441ZHT	green	alignments	-	ENCSR000BUK
+ENCSR000AHE	gabpa_mcf-7	c1	ENCFF473IID	green	unfiltered_alignments	-	ENCSR000BUK
+
+ENCSR000BJK	gabpa_hepg2	r1	ENCFF802GPW	green	alignments	ENCAB000AGR
+ENCSR000BJK	gabpa_hepg2	r2	ENCFF500QLL	green	alignments	ENCAB000AGR
+ENCSR000BJK	gabpa_hepg2	r1	ENCFF446CBW	green	unfiltered_alignments	ENCAB000AGR
+ENCSR000BJK	gabpa_hepg2	r2	ENCFF487QUK	green	unfiltered_alignments	ENCAB000AGR
+ENCSR000BLH	gabpa_hepg2	c1	ENCFF782VTV	green	alignments	-	ENCSR000BJK
+ENCSR000BLH	gabpa_hepg2	c1	ENCFF625XTK	green	unfiltered_alignments	-	ENCSR000BJK
+
+ENCSR000BTG	gabpa_sk-n-sh	r1	ENCFF000QYC	green	alignments	ENCAB000AGR
+ENCSR000BTG	gabpa_sk-n-sh	r2	ENCFF000QYG	green	alignments	ENCAB000AGR
+ENCSR000BVW	gabpa_sk-n-sh	c1	ENCFF436ZGI	green	alignments	-	ENCSR000BTG
+ENCSR000BVW	gabpa_sk-n-sh	c1	ENCFF470KYJ	green	unfiltered_alignments	-	ENCSR000BTG
+
+ENCSR000BLO	gabpa_k562	r1	ENCFF538JCZ	orange	alignments	ENCAB000AGR
+ENCSR000BLO	gabpa_k562	r2	ENCFF175EOK	orange	alignments	ENCAB000AGR
+ENCSR000BLO	gabpa_k562	r1	ENCFF100PUI	orange	unfiltered_alignments	ENCAB000AGR
+ENCSR000BLO	gabpa_k562	r2	ENCFF633ZKV	orange	unfiltered_alignments	ENCAB000AGR
+ENCSR000BLJ	gabpa_k562	c1	ENCFF235CSW	orange	alignments	-	ENCSR000BLO
+ENCSR000BLJ	gabpa_k562	c1	ENCFF483UTO	orange	unfiltered_alignments	-	ENCSR000BLO
+
+ENCSR000BHS	gabpa_hela	r1	ENCFF820GCU	green	alignments	ENCAB000AGR
+ENCSR000BHS	gabpa_hela	r2	ENCFF813EGR	green	alignments	ENCAB000AGR
+ENCSR000BHS	gabpa_hela	r1	ENCFF157XCQ	green	unfiltered_alignments	ENCAB000AGR
+ENCSR000BHS	gabpa_hela	r2	ENCFF762XXI	green	unfiltered_alignments	ENCAB000AGR
+ENCSR000BMM	gabpa_hela	c1	ENCFF044MEQ	green	alignments	-	ENCSR000BHS
+ENCSR000BMM	gabpa_hela	c1	ENCFF477FOR	green	unfiltered_alignments	-	ENCSR000BHS
+
+# cntrl: r1 [alignments] r1 > r2, but [unfiltered] r2 > r1
+# TO RESOLVE: mxi1_hl-6green to hl-60 (the downloaded files still have the old name)
+ENCSR000BTK	gabpa_hl-60	r1	ENCFF839FNS	green	alignments	ENCAB000AGR
+ENCSR000BTK	gabpa_hl-60	r2	ENCFF704SGZ	green	alignments	ENCAB000AGR
+ENCSR000BTK	gabpa_hl-60	r1	ENCFF497ISN	green	unfiltered_alignments	ENCAB000AGR
+ENCSR000BTK	gabpa_hl-60	r2	ENCFF260BJG	green	unfiltered_alignments	ENCAB000AGR
+ENCSR000BVU	gabpa_hl-60	c1	ENCFF880DIZ	green	alignments	-	ENCSR000BTK
+ENCSR000BVU	gabpa_hl-60	c1	ENCFF291NWO	green	unfiltered_alignments	-	ENCSR000BTK
+
+ENCSR000BIW	gabpa_h1	r1	ENCFF133HNA	orange	alignments	ENCAB000AGR
+ENCSR000BIW	gabpa_h1	r2	ENCFF141XQF	orange	alignments	ENCAB000AGR
+ENCSR000BIW	gabpa_h1	r1	ENCFF468VIP	orange	unfiltered_alignments	ENCAB000AGR
+ENCSR000BIW	gabpa_h1	r2	ENCFF090DDS	orange	unfiltered_alignments	ENCAB000AGR
+ENCSR000BHL	gabpa_h1	c1	ENCFF356DXM	green	alignments	-	ENCSR000BIW
+ENCSR000BHL	gabpa_h1	c1	ENCFF850LYD	green	unfiltered_alignments	-	ENCSR000BIW
+
+ENCSR331HPA	gabpa_gm12878	r1	ENCFF249FIH	green	alignments	ENCAB000AGR
+ENCSR331HPA	gabpa_gm12878	r2	ENCFF019XCK	green	alignments	ENCAB000AGR
+ENCSR331HPA	gabpa_gm12878	r1	ENCFF084LVF	green	unfiltered_alignments	ENCAB000AGR
+ENCSR331HPA	gabpa_gm12878	r2	ENCFF742KAV	green	unfiltered_alignments	ENCAB000AGR
+ENCSR000BVP	gabpa_gm12878	c1	ENCFF508HCX	green	alignments	-	ENCSR331HPA
+ENCSR000BVP	gabpa_gm12878	c1	ENCFF761FPR	green	unfiltered_alignments	-	ENCSR331HPA
+
+# here
+ENCSR563LLO	e2f1_k562	r1	ENCFF483UIU	green	alignments	ENCAB851KCY
+ENCSR563LLO	e2f1_k562	r2	ENCFF768VEY	green	alignments	ENCAB851KCY
+ENCSR563LLO	e2f1_k562	r1	ENCFF150NGG	green	unfiltered_alignments	ENCAB851KCY
+ENCSR563LLO	e2f1_k562	r2	ENCFF552TIG	green	unfiltered_alignments	ENCAB851KCY
+ENCSR173USI	e2f1_k562	c1	ENCFF581ZJL	green	alignments	-	ENCSR563LLO
+ENCSR554FDZ	e2f1_k562	c2	ENCFF344XRV	green	alignments	-	ENCSR563LLO
+ENCSR173USI	e2f1_k562	c1	ENCFF190WRH	green	unfiltered_alignments	-	ENCSR563LLO
+ENCSR554FDZ	e2f1_k562	c2	ENCFF690YST	green	unfiltered_alignments	-	ENCSR563LLO
+
+ENCSR720HUL	e2f1_k562	r1	ENCFF911AAQ	orange	alignments	ENCAB357OHU
+ENCSR720HUL	e2f1_k562	r2	ENCFF841KTI	orange	alignments	ENCAB357OHU
+ENCSR720HUL	e2f1_k562	r1	ENCFF140VPY	orange	unfiltered_alignments	ENCAB357OHU
+ENCSR720HUL	e2f1_k562	r2	ENCFF160MAF	orange	unfiltered_alignments	ENCAB357OHU
+ENCSR632PAG	e2f1_k562	c1	ENCFF160VXC	green	alignments	-	ENCSR720HUL
+ENCSR173USI	e2f1_k562	c2	ENCFF581ZJL	green	alignments	-	ENCSR720HUL
+ENCSR632PAG	e2f1_k562	c1	ENCFF226LWL	green	unfiltered_alignments	-	ENCSR720HUL
+ENCSR173USI	e2f1_k562	c2	ENCFF190WRH	green	unfiltered_alignments	-	ENCSR720HUL
+
+ENCSR000EVJ	e2f1_hela	r1	ENCFF000XDA	orange	alignments	ENCAB000AFU
+ENCSR000EVJ	e2f1_hela	r2	ENCFF000XCZ	orange	alignments	ENCAB000AFU
+ENCSR000EZM	e2f1_hela	c1	ENCFF814FCQ	orange	alignments	-	ENCSR000EVJ
+ENCSR000EZM	e2f1_hela	c1	ENCFF943OAY	orange	unfiltered_alignments	-	ENCSR000EVJ
+
+ENCSR000EVL	e2f4_hela	r1	ENCFF000XDB	orange	alignments	ENCAB000AFV
+ENCSR000EVL	e2f4_hela	r2	ENCFF000XDC	orange	alignments	ENCAB000AFV
+ENCSR000EZM	e2f4_hela	c1	ENCFF814FCQ	orange	alignments	-	ENCSR000EVL
+ENCSR000EZM	e2f4_hela	c1	ENCFF943OAY	orange	unfiltered_alignments	-	ENCSR000EVL
+
+ENCSR000EWL	e2f4_k562	r1	ENCFF246JDQ	red	alignments	ENCAB000AFV
+ENCSR000EWL	e2f4_k562	r2	ENCFF125MPD	red	alignments	ENCAB000AFV
+ENCSR000EWL	e2f4_k562	r1	ENCFF251JRO	red	unfiltered_alignments	ENCAB000AFV
+ENCSR000EWL	e2f4_k562	r2	ENCFF674YIM	red	unfiltered_alignments	ENCAB000AFV
+ENCSR000EWK	e2f4_k562	c1	ENCFF051ZZR	orange	alignments	-	ENCSR000EWL
+ENCSR000EWK	e2f4_k562	c1	ENCFF627RBN	orange	unfiltered_alignments	-	ENCSR000EWL
+
+# mapped read length - 28 vs 36 (used 36)
+ENCSR000DYY	e2f4_gm12878	r1	ENCFF597JXK	green	alignments	ENCAB000AFV
+ENCSR000DYY	e2f4_gm12878	r2	ENCFF169ZIP	green	alignments	ENCAB000AFV
+ENCSR000DYY	e2f4_gm12878	r1	ENCFF285WSG	green	unfiltered_alignments	ENCAB000AFV
+ENCSR000DYY	e2f4_gm12878	r2	ENCFF960CBP	green	unfiltered_alignments	ENCAB000AFV
+ENCSR000EAB	e2f4_gm12878	c1	ENCFF267FMB	orange	alignments	-	ENCSR000DYY
+ENCSR000EAF	e2f4_gm12878	c2	ENCFF110OHA	red	alignments	-	ENCSR000DYY
+ENCSR000EAB	e2f4_gm12878	c1	ENCFF920EPK	orange	unfiltered_alignments	-	ENCSR000DYY	
+ENCSR000EAF	e2f4_gm12878	c2	ENCFF268MJK	red	unfiltered_alignments	-	ENCSR000DYY
+
+# ENCSR000BVQ files are all archived
+ENCSR000BTC	e2f6_a549	r1	ENCFF000MYI	green	alignments	ENCAB000AFW
+ENCSR000BTC	e2f6_a549	r2	ENCFF000MYM	green	alignments	ENCAB000AFW
+#ENCSR000BVQ	e2f6_a549	c1	ENCSR000BVQ	green	alignments	-
+#ENCSR000BVQ	e2f6_a549	c1	ENCSR000BVQ	green	unfiltered_alignments	-
+
+ENCSR000EVK	e2f6_hela	r1	ENCFF000XDH	orange	alignments	ENCAB000AFW
+ENCSR000EVK	e2f6_hela	r2	ENCFF000XDI	orange	alignments	ENCAB000AFW
+ENCSR000EZM	e2f6_hela	c1	ENCFF814FCQ	orange	alignments	-	ENCSR000EVK
+ENCSR000EZM	e2f6_hela	c1	ENCFF943OAY	orange	unfiltered_alignments	-	ENCSR000EVK
+
+ENCSR000BSI	e2f6_h1	r1	ENCFF000ONV	green	alignments	ENCAB000AFW
+ENCSR000BSI	e2f6_h1	r2	ENCFF000ONW	green	alignments	ENCAB000AFW
+ENCSR000BPG	e2f6_h1	c1	ENCFF992TZM	green	alignments	-	ENCSR000BSI
+ENCSR000BPG	e2f6_h1	c1	ENCFF576QJQ	green	unfiltered_alignments	-	ENCSR000BSI
+
+ENCSR000EWJ	e2f6_k562	r1	ENCFF473XML	red	alignments	ENCAB000AFW
+ENCSR000EWJ	e2f6_k562	r2	ENCFF313VTI	red	alignments	ENCAB000AFW
+ENCSR000EWJ	e2f6_k562	r1	ENCFF718DBH	red	unfiltered_alignments	ENCAB000AFW
+ENCSR000EWJ	e2f6_k562	r2	ENCFF395EZM	red	unfiltered_alignments	ENCAB000AFW
+ENCSR000EWK	e2f6_k562	c1	ENCFF051ZZR	orange	alignments	-	ENCSR000EWJ	
+ENCSR000EWK	e2f6_k562	c1	ENCFF627RBN	orange	unfiltered_alignments	-	ENCSR000EWJ
+
+ENCSR000BLI	e2f6_k562	r1	ENCFF032EXY	orange	alignments	ENCAB000AFW
+ENCSR000BLI	e2f6_k562	r2	ENCFF620AHU	orange	alignments	ENCAB000AFW
+ENCSR000BLI	e2f6_k562	r1	ENCFF386ZEB	orange	unfiltered_alignments	ENCAB000AFW
+ENCSR000BLI	e2f6_k562	r2	ENCFF393OPU	orange	unfiltered_alignments	ENCAB000AFW
+ENCSR000BGG	e2f6_k562	c1	ENCFF701KUD	orange	alignments	-	ENCSR000BLI
+ENCSR000BGG	e2f6_k562	c1	ENCFF103OUB	orange	unfiltered_alignments	-	ENCSR000BLI
+
+
+

@@ -1,5 +1,5 @@
 import urllib
-import os, sys, subprocess, pathlib
+import os, sys, subprocess
 import configparser
 import datetime
 from collections import OrderedDict
@@ -69,7 +69,7 @@ def download_url(url, output_path):
             return -1
 
 
-def get_file_info(filename):
+def get_chipfile_info(filename):
     file_info = defaultdict(dict)
     with open(filename, "r") as f:
         next(f)
@@ -87,9 +87,45 @@ def get_file_info(filename):
                 file_info[chip_name][full_tag] = file_id
     return file_info
 
+def get_dnasefile_info(filename):
+    file_info = dict()
+    with open(filename, "r") as f:
+        next(f)
+        for line in f.readlines():
+            if line.rstrip() != "" and not line.startswith("#"):
+                items = line.strip().split() # split on space and tab
+                cell_line, file_id = items[0], items[2]
+                file_info[cell_line] = file_id
+    return file_info
 
-def download_chip(file_info, input_dir, macs_args):
+def download_dnase(file_info):
+    output_config = ConfigParser.ConfigParser()
+    saveto = "../result/dnase"
+    timestamp = ""
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+    for cell_line, file_id in file_info.items():
+        fname = file_id + ".bam"
+        if not os.path.exists(saveto): 
+            chipurl = "https://www.encodeproject.org/files/{0}/@@download/{0}.bam".format(file_id)  
+            print("Downloading dnase file for cell line %s ..." % (cell_line))
+            status = download_url(chipurl, saveto)  # takes filename?!
+            if status == -1:
+                not_download_msg = "%s was NOT downloaded due to an error." % fname
+                timestamp += "\t"+not_download_msg +"\n"
+                print(not_download_msg)
+                continue
+            else:
+                now = datetime.datetime.now()
+                timestamp += "\tDownloaded %s on %s at %s \n" % (fname, now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"))
+                print("Finished downloading %s" % fname)
+        else: # if file already existed
+            skip_msg = "%s already existed. Skipped downloading the file." % fname
+            timestamp += "\t"+ skip_msg +"\n"
+            print(skip_msg)
 
+
+def download_chip(file_info):
     filtered_file = configparser.ConfigParser()
     unfiltered_file = configparser.ConfigParser()
     outdir = "../result/chipseq"
@@ -108,7 +144,7 @@ def download_chip(file_info, input_dir, macs_args):
             saveto =  "%s/%s" % (chip_path, fname)
             if not os.path.exists(saveto): 
                 chipurl = "https://www.encodeproject.org/files/{0}/@@download/{0}.bam".format(file_id)  
-                #print("Downloading %s ..." % (fname))
+                print("Downloading %s ..." % (fname))
                 status = download_url(chipurl, saveto)  # takes filename?!
                 if status == -1:
                     not_download_msg = "%s was NOT downloaded due to an error." % fname
@@ -123,17 +159,15 @@ def download_chip(file_info, input_dir, macs_args):
                 skip_msg = "%s already existed. Skipped downloading the file." % fname
                 timestamp += "\t"+ skip_msg +"\n"
                 print(skip_msg)
-
             # add to config dictionary
             if "unfiltered" in tag:
-                unfiltered[tag.split("_")[0]] = fname
+                unfiltered[tag.split("_")[0]] = fname # "%s/%s/%s"%(outdir,chipname, fname)
             else:
-                filtered[tag.split("_")[0]] = fname
-
-            if len(filtered)!=0:
-                filtered_file[chipname] = filtered
-            if len(unfiltered)!=0:
-                unfiltered_file[chipname] = unfiltered
+                filtered[tag.split("_")[0]] = fname # "%s/%s/%s"%(outdir,chipname, fname)
+        if len(filtered)!=0:
+            filtered_file[chipname] = filtered
+        if len(unfiltered)!=0:
+            unfiltered_file[chipname] = unfiltered
 
     with open("%s/download_timestamp.txt"% outdir, 'w') as f:
         f.write(timestamp)
@@ -143,10 +177,17 @@ def download_chip(file_info, input_dir, macs_args):
     with open("%s/chips_filtered.config"%outdir, 'w') as configfile:
         filtered_file.write(configfile)
     
-# trying to test fork
 
-def call_peaks(macs_args, config_parser, macs_result_path):
+def call_peaks(macs_args, chip_result_path, config_parser, macs_result_path):
+    # make it so that if a chipname dir is present, it is complete: 
+    # make sure to manually remove dir that does not have 18 files (macs output 18 files)
+    # will skip calling peaks for the chipname if chipanme dir is present 
     for chipname in config_parser.sections():
+        final_macs_result_path = macs_result_path +"/"+ chipname
+        if os.path.exists(final_macs_result_path):
+            print("skip calling peaks for %s"%chipname)
+            continue 
+        os.makedirs(final_macs_result_path)   
         reps, cntrl = [0]*2, []
         for (tag, filename) in config_parser.items(chipname):
             if tag == "r1": reps[0] = filename
@@ -157,13 +198,36 @@ def call_peaks(macs_args, config_parser, macs_result_path):
         if 0 in reps: continue
         tagsize, macs_p = macs_args[0], macs_args[1]
         for indx, rep in enumerate(all_rep):
-            output_file = ("%s/%s_both"%(macs_result_path, chipname)) if len(rep)==2 else ("%s/%s_r%d"%(macs_result_path, chipname, indx+1))
-            rep_str, cntrl_str = ' '.join(rep), ' '.join(cntrl)
+            output_file = ("%s/%s_both"%(final_macs_result_path, chipname)) if len(rep)==2 else ("%s/%s_r%d"%(final_macs_result_path, chipname, indx+1))
+            chip_path = "../result/chipseq/%s/"%chipname
+            rep_str, cntrl_str = ' '.join([chip_path+r for r in rep]), ' '.join([chip_path+c for c in cntrl])
             #command = f"macs2 callpeak -t {rep_str} -c {cntrl_str} -n {output_file} -s {tagsize} -p {macs_p} -f BAM -g hs -B"
-            command = "macs2 callpeak -t %s -c %s -n %s -s %d -p %f -f BAM -g hs -B" % (rep_str, cntrl_str, output_file, tagsize, macs_p)
-            subprocess.call(command, shell=False)
-            # print(command)
-        
+            command = "macs2 callpeak -t %s -c %s -n %s -s %s -p %s -f BAM -g hs -B" % (rep_str, cntrl_str, output_file, tagsize, macs_p)
+            cmd_lst = command.split()
+            #print(command)
+            subprocess.call(cmd_lst, shell=False)
+
+
+
+            
+def run_idr(macs_result_path, idr_result_path, idr_threshold):
+
+    if not os.path.exists(idr_result_path):
+        os.makedirs(idr_result_path)
+    for chipname in os.listdir(macs_result_path):
+        target_dir = macs_result_path+"/"+chipname+"/"+chipname
+        r1, r2, both = target_dir+"_r1_peaks.narrowPeak", target_dir+"_r2_peaks.narrowPeak", target_dir+"_both_peaks.narrowPeak"
+        out_name, log_name = idr_result_path+"/"+chipname+"_idr.txt", idr_result_path+"/"+chipname+"_idr_log.txt"
+        command = "idr --samples %s %s --peak-list %s --idr-threshold %d --output-file %s --plot --log-output-file %s" % (r1, r2, both, idr_threshold, out_name, log_name)
+        cmd_lst = command.split()
+        subprocess.call(cmd_lst, shell=False)
+
+    #### update this function using run_idr_temp.py
+
+
+    #subprocess.call(["srun","idr.sh","%s/%s" % (macs_result_path,chipname),idr_result_path],shell=False)
+    #subprocess.call(["./idr.sh","%s/%s" % (macs_result_path,chipname),idr_result_path],shell=False)
+
 
     # analysis_result_path = "%s/analysis_result" % (outdir)
     # if not os.path.exists(analysis_result_path):
@@ -191,17 +255,22 @@ If skipped downloadchip:
 
 '''
 
+def download_dnase_peak():
+    # users need to choose the largest files themselves
+
+
+    
+
 def main():
     input_dir = "../input/"
     config_pipeline = configparser.ConfigParser()
     config_pipeline.read(input_dir + "pipeline.config") 
     # NOTE: set defaults in pipline, in case users don't follow the template
-    
     if(config_pipeline['pipeline'].getboolean('downloadchip')):
         filename = config_pipeline['downloadchip_param']['chip_to_download']
         file = os.path.join(input_dir, filename)
-        file_info  = get_file_info(file)
-        download_chip(file_info, input_dir)
+        file_info  = get_chipfile_info(file)
+        download_chip(file_info)
         print("Finished downloading all files :)")
     else:
         print("Skipping downloadchip!")
@@ -213,26 +282,28 @@ def main():
         # filtered & unfiltered - might not be necessary for others
         filtered_file = configparser.ConfigParser()
         unfiltered_file = configparser.ConfigParser()
-        filtered_file.read("%s/chips_filtered_test.config"%chip_result_path)
-        unfiltered_file.read("%s/chips_unfiltered_test.config"%chip_result_path)
-        call_peaks(macs_args, filtered_file, macs_result_path = "../result/called_peaks/filtered")
-        #call_peaks(chip_result_path, macs_args, unfiltered_file, macs_result_path = "../result/called_peaks/unfiltered")       
-        
+        filtered_file.read("%s/chips_filtered.config"%chip_result_path)
+        unfiltered_file.read("%s/chips_unfiltered.config"%chip_result_path)
+        call_peaks(macs_args, chip_result_path, filtered_file, macs_result_path = "../result/called_peaks/filtered")
+        #call_peaks(macs_args, chip_result_path, unfiltered_file, macs_result_path = "../result/called_peaks/unfiltered")  
+        # haven't run 'unfiltered' because not sure what to do with the ones that don't have complete (r1, r2, c1)  
         print("Finished calling peaks.")
     else: 
         print("Skipping callpeaks!")
 
-      
+    if(config_pipeline['pipeline'].getboolean('runidr')):     
+        idr_result_path = "../result/idr_output"
+        idr_threshold = config_pipeline['runidr_param']['idr_threshold']
+        run_idr(macs_result_path = "../result/called_peaks/filtered", idr_result_path = "../result/idr_output/filtered", idr_threshold = idr_threshold)
+        #run_idr(macs_result_path = "../result/called_peaks/unfiltered", idr_result_path = "../result/idr_output/unfiltered")
 
+      
 if __name__=="__main__":
     main()
     
-
     
 
 '''
-
-    
     subprocess.call(["srun","macs2.sh",chipdata["r1"],chipdata["r2"],chipdata["c1"],chipdata["c2"],"%s/%s" % (macs_result_path,chipname), str(tagsize)],shell=False)
     #subprocess.call(["./macs2.sh",chipdata["r1"],chipdata["r2"],chipdata["c1"],chipdata["c2"],"%s/%s" % (macs_result_path,chipname), str(tagsize)],shell=False)
     print("Finished running macs, results are saved in %s" % macs_result_path)
@@ -243,7 +314,6 @@ if __name__=="__main__":
     print("Running idrs...")
     #subprocess.call(["srun","idr.sh","%s/%s" % (macs_result_path,chipname),idr_result_path],shell=False)
     #subprocess.call(["./idr.sh","%s/%s" % (macs_result_path,chipname),idr_result_path],shell=False)
-
 
     analysis_result_path = "%s/analysis_result" % (outdir)
     if not os.path.exists(analysis_result_path):
