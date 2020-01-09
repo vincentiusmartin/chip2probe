@@ -11,13 +11,19 @@
 r1_bam=$1
 r2_bam=$2
 c1_bam=$3
-c2_bam=$4
+# second control is optional
+if [ $4 = "-" ]; then
+    c2_bam=""
+else
+    c2_bam=$4
+fi
 name2c=$5
 tagsize=$6
 
 
 # -s $tagsize
 #echo "macs" $r1_bam $r2_bam $c1_bam $c2_bam $name2c $tagsize
-macs2 callpeak -t $r1_bam $r2_bam  -c $c1_bam $c2_bam -f BAM -g hs -n ${name2c}_bothrs -B -s $tagsize -p 0.01
+#echo "macs" $c1_bam $c2_bam
+macs2 callpeak -t $r1_bam $r2_bam  -c $c1_bam $c2_bam -f BAM -g hs -n ${name2c}_bothreplicates -B -s $tagsize -p 0.01
 macs2 callpeak -t $r1_bam  -c $c1_bam $c2_bam -f BAM -g hs -n ${name2c}_r1 -B -s $tagsize -p 0.01
 macs2 callpeak -t $r2_bam  -c $c1_bam $c2_bam -f BAM -g hs -n ${name2c}_r2 -B -s $tagsize -p 0.01
