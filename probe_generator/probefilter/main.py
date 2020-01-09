@@ -8,9 +8,8 @@ Created on Sep 30, 2019
 import sys
 # TODO: this is a really bad hardcode, need to figure a way to fix this
 pwd = sys.argv[1]
-sys.path.append(pwd + '/probefilter/libsvm-3.23/python')
 sys.path.append(pwd)
-sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe") # PATH TO UTIL
+sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/") # PATH TO UTIL
 
 import pandas as pd
 import itertools
@@ -22,7 +21,7 @@ from sitespredict.sequence import Sequence
 from sitespredict.imads import iMADS
 
 from cooperative import coopfilter
-import bio
+import util.bio as bio
 
 if __name__ == '__main__':
     analysis_path = sys.argv[2]
