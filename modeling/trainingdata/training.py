@@ -149,7 +149,9 @@ class Training(object):
     # right now, this is only for custom distance
     def plot_distance_numeric(self, filepath="dist.pdf"):
         dcopy = self.df.copy()
-        dcopy["Group"] = dcopy.apply(lambda row: "_".join(row["name"].split("_")[:-2]), axis=1)
+        # change this to -1 or -2 depend # HARDCODE NOW
+        #dcopy["Group"] = dcopy.apply(lambda row: "_".join(row["name"].split("_")[:-2]), axis=1)
+        dcopy["Group"] = dcopy.apply(lambda row: "_".join(row["name"].split("_")[:-1]), axis=1)
         dcopy["label"] = dcopy['label'].map({'cooperative': 1, 'additive': 0, 'anticoop':-1})
         #df_o1 = dcopy[dcopy["id"].str.endswith("o1")]
         groups = dcopy.groupby("Group")
@@ -168,9 +170,13 @@ class Training(object):
                 if progress % modprog == 0:
                     print("Progress: %.1f%%" % (100 * float(progress)/len(groups)))
                 progress += 1
-                g_o1 = group[group["id"].str.endswith("o1")]
-                g_o2 = group[group["id"].str.endswith("o2")]
-                curgroup = g_o1 if len(g_o1) > len(g_o2) else g_o2
+                """
+                if group["id"].str.endswith(r"o1|o2"):
+                    g_o1 = group[group["id"].str.endswith("o1")]
+                    g_o2 = group[group["id"].str.endswith("o2")]
+                    curgroup = g_o1 if len(g_o1) > len(g_o2) else g_o2
+                """
+                curgroup = group
                 if len(curgroup) > 2:
                     if n == 0:
                         fig = plt.figure(figsize=(25,14))
@@ -227,7 +233,7 @@ class Training(object):
             rfeature.append(ratio)
         return rfeature
 
-    def get_feature_orientation(self, positive_cores, relative=True):
+    def get_feature_orientation(self, positive_cores, relative=True, one_hot=False):
         negative_cores = [seqextractor.revcompstr(p) for p in positive_cores]
         rfeature = []
         for idx,row in self.df.iterrows():
@@ -267,4 +273,7 @@ class Training(object):
                 rfeature.append({"ori":ori})
             else:
                 rfeature.append({"ori1":s1, "ori2":s2})
-        return rfeature
+        if one_hot:
+            return pd.get_dummies(pd.DataFrame(rfeature)).to_dict('records')
+        else:
+            return rfeature

@@ -77,22 +77,23 @@ if __name__ == '__main__':
     dforig = dforig[(dforig["label"] == "cooperative") | (dforig["label"] == "additive")]
 
     # only get cooperative and additive
-    dftrain = dforig[~dforig['name'].str.contains(r'dist|weak')]
+    dftrain = dforig[dforig['name'].str.contains(r'dist')]# r'dist|weak
     #
     #dftrain = get_custom_df(dforig,"dist|weak")
-
     t = Training(dftrain, corelen=4)
-    #t.plot_summary()
+    t.plot_distance_numeric()
 
     # ========== GETTING FEATURES FROM THE DATA ==========
     x_dist = t.get_feature_distance(type="numerical")
     x_link1 = t.get_feature_linker_composition(1)
     x_link2 = t.get_feature_linker_composition(2)
     x_link3 = t.get_feature_linker_composition(3)
-    x_ori = t.get_feature_orientation(["GGAA","GGAT"])
-    print(x_ori)
+    x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = True)
     x_pref = t.get_feature_site_pref()
 
+    ori_df = pd.DataFrame(x_ori)
+
+    """
     x_train = []
     for x in [x_dist,x_link1,x_link2,x_link3,x_ori,x_pref]: # , x_link1, x_link2, x_link3, x_orix`
         x_train = merge_listdict(x_train, x)
@@ -126,6 +127,7 @@ if __name__ == '__main__':
             rounded = True, proportion = False,
             precision = 2, filled = True)
     subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])
+
     # ========== Using this result to train on different dataset  ==========
     testpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_with_coop_anti.tsv"
     dftest = pd.read_csv(testpath, sep="\t")
@@ -138,6 +140,7 @@ if __name__ == '__main__':
     xtest_link3 = test.get_feature_linker_composition(3)
     xtest_ori = test.get_feature_orientation(["GGAA","GGAT"])
     xtest_pref = test.get_feature_site_pref()
+
 
     x_test = []
     for x in [xtest_dist,xtest_link1,xtest_link2,xtest_link3,xtest_ori,xtest_pref]:
@@ -152,7 +155,6 @@ if __name__ == '__main__':
     dfpred["pred"] = lpred
     dfpred.to_csv("aa.csv")
     #print("Accuracy on test: %.f" % accuracy_score(y_true, y_pred))
-
 
     # ========== MAKING AUC USING THE TOP FEATURES  ==========
 
@@ -192,3 +194,4 @@ if __name__ == '__main__':
     # left append 0 in base fpr just so we start at 0 (we did the same for the tpr)
     base_fpr = np.insert(base_fpr,0,0)
     display_output(base_fpr, mean_tpr, mean_auc, path="here.png")
+    """
