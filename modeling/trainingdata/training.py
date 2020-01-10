@@ -28,7 +28,7 @@ class Training(object):
         Constructor
         '''
         if isinstance(trainingdata, pd.DataFrame):
-            self.df = trainingdata.copy()
+            self.df = trainingdata.copy().reset_index()
         elif isinstance(trainingdata, str):
             self.df = pd.read_csv(trainingpath,sep=sep)
         else:
