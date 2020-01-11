@@ -35,23 +35,23 @@ class Training(object):
             raise Exception("input must be string or data frame")
         self.motiflen = corelen
 
-
-    def plot_summary(self, by=["label"], cols="default", plotname="training_summary.png"):
-        if cols == "default":
-            col_to_box = list(set(self.df.columns) - {"id", "name", "sequence", "label"})
+    # SHOULDN'T BE HERE, TODO: MOVE SOMEWHERE ELSE
+    def boxplot_categories(self, df, by=["label"], input_cols="default", plotname="training_summary.png"):
+        if input_cols == "default":
+            cols = list(set(df.columns) - set(by))
         else:
-            col_to_box = cols
+            cols = list(input_cols)
         sns.set_style("whitegrid")
         numcol = 3
-        numrow = math.ceil(len(col_to_box) / numcol)
+        numrow = math.ceil(len(cols) / numcol)
         # to make axis with different y-scale
         fig, ax = plt.subplots(numrow, numcol, figsize=(14, 5))
         plt.subplots_adjust(hspace = 0.4, wspace=0.6)
-        grouped = self.df.groupby(by=by)
+        grouped = df.groupby(by=by)
         # need to sort to keep the order consistent
-        col_to_box.sort()
-        for i in range(len(col_to_box)):
-            colname = col_to_box[i]
+        cols.sort()
+        for i in range(len(cols)):
+            colname = cols[i]
             cur_group = {elm[0]:list(elm[1]) for elm in grouped[colname]}
             labels, data = [*zip(*cur_group.items())]
             #labels = list(cur_group.keys())#["cooperative","additive","anticoop"]
@@ -75,17 +75,24 @@ class Training(object):
                 hfactor = (x2 - x1)**2.1
                 pline_h = mval * 0.1
                 pline_pos = mval * 0.05
-                y, h, col = self.df[colname].max() + hfactor * pline_pos, pline_h, 'k'
+                y, h, col = df[colname].max() + hfactor * pline_pos, pline_h, 'k'
                 cur_ax.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1, c=col)
                 cur_ax.text((x1+x2)*.5, y + h, "p-gr=%.3f"%(p_gr), ha='center', va='bottom', color="red")
 
                 adj_ylim = (y+h) * 1.1
                 if adj_ylim > ylim: ylim = adj_ylim
             cur_ax.set_ylim(top=ylim)
-        for d in range(len(col_to_box),numrow*numcol):
+        for d in range(len(cols),numrow*numcol):
             fig.delaxes(ax.flatten()[d])
         plt.savefig(plotname)
         plt.clf()
+
+    def training_summary(self, by=["label"], cols="default", plotname="training_summary.png"):
+        if cols == "default":
+            col_to_box = list(set(self.df.columns) - {"id", "name", "sequence", "label", "index"})
+        else:
+            col_to_box = cols
+        self.boxplot_categories(self.df, by=["label"], input_cols=col_to_box, plotname="training_summary.png")
 
     def weak_type_to_int(self,name):
         if name.endswith("_weak_s1"):
@@ -112,9 +119,13 @@ class Training(object):
             fig.subplots_adjust(hspace=0.4,wspace=0.4)
             n = 0
             for name, group in groups:
-                g_o1 = group[group["id"].str.endswith("o1")]
-                g_o2 = group[group["id"].str.endswith("o2")]
-                curgroup = g_o1 if len(g_o1) > len(g_o2) else g_o2
+                """
+                if group["id"].str.endswith(r"o1|o2"):
+                    g_o1 = group[group["id"].str.endswith("o1")]
+                    g_o2 = group[group["id"].str.endswith("o2")]
+                    curgroup = g_o1 if len(g_o1) > len(g_o2) else g_o2
+                """
+                curgroup = group
                 if len(curgroup) > 2:
                     if n == 0:
                         fig = plt.figure(figsize=(25,14))

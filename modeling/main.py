@@ -74,15 +74,22 @@ if __name__ == '__main__':
     trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_overlap.tsv"
     pd.set_option('display.max_columns', None)
     dforig = pd.read_csv(trainingpath, sep="\t")
-    dforig = dforig[(dforig["label"] == "cooperative") | (dforig["label"] == "additive")]
+    #dforig = dforig[(dforig["label"] == "cooperative") | (dforig["label"] == "additive")]
     ori_one_hot = True
     feature_dist_type = "numerical"
 
     # only get cooperative and additive
-    dftrain = dforig[~dforig['name'].str.contains(r'dist|weak')]# r'dist|weak
-    #dftrain = get_custom_df(dforig,"dist|weak")
+    #dftrain = dforig[dforig['name'].str.contains(r'weak')]# r'dist|weak
+    dftrain = get_custom_df(dforig,"dist")
     t = Training(dftrain, corelen=4)
+    t.training_summary()
     #t.plot_distance_numeric()
+    #t.plot_weak_sites()
+
+    x_link1 = t.get_feature_linker_composition(1)
+    link1_df = pd.DataFrame(x_link1)
+    link1_df['label'] = t.df['label']
+    link1_df.to_csv("1merdf.csv",float_format='%.3f')
 
     # ========== GETTING FEATURES FROM THE DATA ==========
     x_dist = t.get_feature_distance(type=feature_dist_type)
@@ -92,6 +99,7 @@ if __name__ == '__main__':
     x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
     x_pref = t.get_feature_site_pref()
 
+    """
     x_train = []
     for x in [x_dist,x_link1,x_link2,x_link3,x_ori,x_pref]: # , x_link1, x_link2, x_link3, x_orix`
         x_train = merge_listdict(x_train, x)
@@ -191,3 +199,4 @@ if __name__ == '__main__':
     # left append 0 in base fpr just so we start at 0 (we did the same for the tpr)
     base_fpr = np.insert(base_fpr,0,0)
     display_output(base_fpr, mean_tpr, mean_auc, path="here.png")
+    """
