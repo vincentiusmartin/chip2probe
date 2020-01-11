@@ -3,6 +3,7 @@
 .project
 
 *.pdf
+*.png
 *.tsv
 *.csv
 *.pickle
