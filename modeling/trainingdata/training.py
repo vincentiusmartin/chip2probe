@@ -35,6 +35,16 @@ class Training(object):
             raise Exception("input must be string or data frame")
         self.motiflen = corelen
 
+    def stacked_bar_categoires(self, x, y=["label"],plotname="stackedbar.png"):
+        cat_df = self.df[[x]]
+        cat_df["label"] = self.df['label']
+        group = [x] + y
+        df2 = cat_df.groupby(group)['label'].count().unstack(x).fillna(0)
+        print(df2)
+        df2.T.plot(kind='bar', stacked=True)
+        plt.savefig(plotname)
+        plt.clf()
+
     # SHOULDN'T BE HERE, TODO: MOVE SOMEWHERE ELSE
     def boxplot_categories(self, df, by=["label"], input_cols="default", plotname="boxplot.png"):
         if input_cols == "default":

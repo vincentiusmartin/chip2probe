@@ -85,7 +85,7 @@ if __name__ == '__main__':
     pd.set_option('display.max_columns', None)
     dforig = pd.read_csv(trainingpath, sep="\t")
     dforig = dforig[(dforig["label"] == "cooperative") | (dforig["label"] == "additive")]
-    ori_one_hot = True
+    ori_one_hot = False
     feature_dist_type = "numerical"
 
     # only get cooperative and additive
@@ -96,37 +96,43 @@ if __name__ == '__main__':
     #t.plot_distance_numeric()
     #t.plot_weak_sites()
 
+    t.stacked_bar_categoires("distance")
+
+    """
     x_link1 = t.get_feature_linker_composition(1)
     link1_df = pd.DataFrame(x_link1)
     link1_df['label'] = t.df['label']
     t.boxplot_categories(link1_df)
+
 
     #link1_df.to_csv("1merdf.csv",float_format='%.3f')
 
     # ========== GETTING FEATURES FROM THE DATA ==========
     x_dist = t.get_feature_distance(type=feature_dist_type)
     x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
-    """x_link1 = t.get_feature_linker_composition(1)
-    x_link2 = t.get_feature_linker_composition(2)
-    x_link3 = t.get_feature_linker_composition(3)
+    x_link1 = t.get_feature_linker_composition(1)
+    #x_link2 = t.get_feature_linker_composition(2)
+    #x_link3 = t.get_feature_linker_composition(3)
     x_gc = t.get_linker_GC_content()
-    x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
     x_pref = t.get_feature_site_pref()
 
-    x_link1 = t.get_feature_linker_composition(1)
-    link1_df = pd.DataFrame(x_link1)
-    link1_df['label'] = t.df['label']
-    t.boxplot_categories(link1_df)
 
+    x_gc = t.get_linker_GC_content()
+    link1_df = pd.DataFrame(x_gc)
+    link1_df['label'] = t.df['label']
+    print(link1_df)
+    t.boxplot_categories(link1_df)
 
     d = make_linker_table(t, [x_link1, x_gc])
     d.to_csv("linker.tsv",sep="\t")
-    """
 
     x_train = []
-    for x in [x_dist,x_ori]: #,x_pref,x_link1, x_link2, x_link3]: #, x_orix` x_link1,x_link2,x_link3,
+    for x in [x_dist,x_ori,x_link1, x_gc, x_pref]: #, x_orix` x_link1,x_link2,x_link3,
         x_train = merge_listdict(x_train, x)
     x_df = pd.DataFrame(x_train)
+    x_print = pd.DataFrame(x_train)
+    x_print["label"] = t.df["label"]
+    x_print.to_csv("all_features.tsv",index=False,float_format='%.3f',sep="\t")
 
     # ========== CREATING THE RF OBJECT  ==========
     x_train = pd.DataFrame(x_train).values.tolist()
@@ -157,7 +163,7 @@ if __name__ == '__main__':
             rounded = True, proportion = False,
             precision = 2, filled = True)
     subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])
-    """
+
     # ========== Using this result to train on different dataset  ==========
 
     testpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_with_coop_anti.tsv"
@@ -186,7 +192,7 @@ if __name__ == '__main__':
     dfpred["pred"] = lpred
     dfpred.to_csv("aa.csv")
     #print("Accuracy on test: %.f" % accuracy_score(y_true, y_pred))
-    """
+
     # ========== MAKING AUC USING THE TOP FEATURES  ==========
 
     #fpr_dict = {key:[] for key in x_train}
@@ -225,3 +231,4 @@ if __name__ == '__main__':
     # left append 0 in base fpr just so we start at 0 (we did the same for the tpr)
     base_fpr = np.insert(base_fpr,0,0)
     display_output(base_fpr, mean_tpr, mean_auc, path="here.png")
+    """
