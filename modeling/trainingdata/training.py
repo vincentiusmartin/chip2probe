@@ -36,7 +36,7 @@ class Training(object):
         self.motiflen = corelen
 
     # SHOULDN'T BE HERE, TODO: MOVE SOMEWHERE ELSE
-    def boxplot_categories(self, df, by=["label"], input_cols="default", plotname="training_summary.png"):
+    def boxplot_categories(self, df, by=["label"], input_cols="default", plotname="boxplot.png"):
         if input_cols == "default":
             cols = list(set(df.columns) - set(by))
         else:
@@ -229,6 +229,41 @@ class Training(object):
         else:
             raise Exception("distance must be numeric or categorical")
 
+    def get_linker_list(self):
+        linkers = []
+        falses = []
+        for idx,row in self.df.iterrows():
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+            else:
+                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+            # since position is the middle point of each site
+            start = site1 + self.motiflen // 2
+            end = site2 - self.motiflen // 2
+            if site1 + site2 != 36 and site1 + site2 != 37:
+                falses.append(row["sequence"])
+            linker = row["sequence"][start:end]
+            linkers.append({"linker":linker, "site1":site1, "site2":site2})
+        #print(len(falses))
+        return linkers
+
+    def get_linker_GC_content(self):
+        rfeature = []
+        for idx,row in self.df.iterrows():
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+            else:
+                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+            # since position is the middle point of each site
+            start = site1 + self.motiflen // 2
+            end = site2 - self.motiflen // 2
+            linker = row["sequence"][start:end]
+            if len(linker) == 0:
+                rfeature.append({"GC_content":0})
+            else:
+                rfeature.append({"GC_content":float(linker.count('G') + linker.count('C'))/len(linker)})
+        return rfeature
+
     def get_feature_linker_composition(self, k):
         rfeature = []
         for idx,row in self.df.iterrows():
@@ -237,7 +272,7 @@ class Training(object):
             else:
                 site1, site2 = row["site_wk_pos"], row["site_str_pos"]
             # since position is the middle point of each site
-            start = site1 + self.motiflen // 2 + 1
+            start = site1 + self.motiflen // 2
             end = site2 - self.motiflen // 2
             linker = row["sequence"][start:end]
             ratio = seqextractor.extract_kmer_ratio(linker,k)
@@ -272,7 +307,7 @@ class Training(object):
                 print("couldn't find the second site %s in %s in the core list" % (p2,seq))
             if relative:
                 if s1 == 1 and s2 == 1:
-                    ori = '0'
+                    ori = '1'
                 elif s1 == -1 and s2 == -1:
                     ori = '1'
                 elif s1 == 1 and s2 == -1:

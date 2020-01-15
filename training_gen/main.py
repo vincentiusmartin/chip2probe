@@ -83,12 +83,18 @@ def make_training(analysis_respath, seqwithin_pattern, probedata, classification
         #print(probedata.table["wt"])
 
         seqs = probedata.get_seq("wt",classification[key], othercols=["Name"])
-        for idx in seqs:
+        for idx in seqs: # GAAAACTGGGAGAGGAAGCAGGATTCTGCATCCTGG
             if seqs[idx]["sequence"] in fdict:
                 #if not key.endswith("o2"):
                 curseq = seqs[idx]["sequence"]
                 features = fdict[curseq]
                 seqlen = len(curseq)
+
+                if fdict[curseq]['site1_pos'] + fdict[curseq]['site2_pos'] != 36 and fdict[curseq]['site1_pos'] + fdict[curseq]['site2_pos'] != 37:
+                    #print(curseq,features['site_str_score'],features['site_wk_score'])
+                    #res = [m.start() for m in re.finditer("GGAA|GGAT|TTCC|ATCC", curseq)]
+                    continue
+
                 # site 1 is the stronger site
                 if fdict[curseq]['site1_pref'] > fdict[curseq]['site2_pref']:
                     features = {
@@ -156,18 +162,13 @@ if __name__ == '__main__':
 
     print("Making multisites file for %s..." % fname_woext)
 
+    """
     #pd.set_option('display.max_columns', 500)
     r,n = make_coopfile(infile)
     r.to_csv("coop_%s.tsv" % fname_woext,index=False,sep="\t")
     n.to_csv("negctrl_%s.tsv" % fname_woext,index=False,sep="\t")
 
     print("Making training file...")
-    """
-    # Making the classification file
-    r = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/coop_array_files/coop_20191004_258614510001_ETS1_550_5_1-4_alldata.tsv",sep="\t") ###
-    #pd.set_option('display.max_columns', None)
-    n = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/coop_array_files/negctrl_20191004_258614510001_ETS1_550_5_1-4_alldata.tsv",sep="\t") ###
-    """
     probedata = ProbeData(r,n,percentile=negcutoff)
 
     classification = classifier.classify_per_orientation(probedata, pvalthres)
@@ -182,11 +183,10 @@ if __name__ == '__main__':
     print("Make scatter plot for each inconsistent classification")
     class_main = ["additive_o1","additive_o2","cooperative_o1","cooperative_o2","anticoop_o1","anticoop_o2"]
     subset = {k:classification[k] for k in classification if k not in class_main}
-    """
+
     for sub in subset:
         print("    %s" % sub)
         probedata.multi_scatter_boxplot(subset[sub],log=True,filepath="boxplot-%s.pdf" % sub)
-    """
 
     print("Plot median binding sum for all orientations...")
 
@@ -203,13 +203,28 @@ if __name__ == '__main__':
     classification_main1 = {k:classification[k] for k in classification if k in class_main1}
     class_main2 = ["cooperative_o1_anticoop_o2","cooperative_o2_anticoop_o1"]
     classification_main2 = {k:classification[k] for k in classification if k in class_main2}
+    """
 
+    # Making the classification file
+    r = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/3.coop_array_files/coop_20191004_258614510001_ETS1_550_5_1-4_alldata.tsv",sep="\t") ###
+    #pd.set_option('display.max_columns', None)
+    n = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/3.coop_array_files/negctrl_20191004_258614510001_ETS1_550_5_1-4_alldata.tsv",sep="\t") ###
+    probedata = ProbeData(r,n,percentile=negcutoff)
+
+    classification = utils.read_dictlist_file("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/3.coop_array_files/cooplabeled_20191004_258614510001_ETS1_550_5_1-4_alldata.txt", as_int=True)
+    class_main1 = ["cooperative_overlap","additive_overlap","anticoop_overlap"]
+    classification_main1 = {k:classification[k] for k in classification if k in class_main1}
+    df_overlap1 = make_training(probe_analysis_path, "mutated_probes.*\.(tsv|csv)$", probedata, classification_main1)
+    df_overlap1.to_csv("training_overlap_%s.tsv" % fname_woext, sep="\t", index=False)
+
+    """
     df_all = make_training(probe_analysis_path, "mutated_probes.*\.(tsv|csv)$", probedata, classification_main)
     df_all.to_csv("training_all_%s.tsv" % fname_woext, sep="\t", index=False)
     df_overlap1 = make_training(probe_analysis_path, "mutated_probes.*\.(tsv|csv)$", probedata, classification_main1)
     df_overlap1.to_csv("training_overlap_%s.tsv" % fname_woext, sep="\t", index=False)
     df_overlap2 = make_training(probe_analysis_path, "mutated_probes.*\.(tsv|csv)$", probedata, classification_main2)
     df_overlap2.to_csv("training_with_coop_anti_%s.tsv" % fname_woext, sep="\t", index=False)
+    """
     #pd.set_option('display.max_columns', 500)
     #df.loc[(df['label'] == 'cooperative') | (df['label'] == 'anticoop')].to_csv("training_cooperative_anticoop.tsv", sep="\t", index=False)
     #df.loc[(df['label'] == 'cooperative') | (df['label'] == 'additive')].to_csv("training_cooperative_additive.tsv", sep="\t", index=False)

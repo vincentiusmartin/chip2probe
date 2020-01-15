@@ -14,6 +14,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
 
+import trainingdata.seqextractor as seqextractor
+
 import subprocess
 
 def get_numeric_label(training):
@@ -69,39 +71,60 @@ def get_custom_df(df,keystr):
     df_cust_all = pd.concat([df_cust, df_wt], axis=0)
     return df_cust_all
 
+def make_linker_table(t, xlist):
+    df = t.df[["sequence","label"]]
+    to_appends = [df, pd.DataFrame(t.get_linker_list())]
+    for xl in xlist:
+        to_appends.append(pd.DataFrame(xl))
+    df = pd.concat(to_appends, axis = 1)
+    return df
+
 if __name__ == '__main__':
     #trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191004_coop-PBM_Ets1_v1_1st/training_data/training_overlap.tsv"
     trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_overlap.tsv"
     pd.set_option('display.max_columns', None)
     dforig = pd.read_csv(trainingpath, sep="\t")
-    #dforig = dforig[(dforig["label"] == "cooperative") | (dforig["label"] == "additive")]
+    dforig = dforig[(dforig["label"] == "cooperative") | (dforig["label"] == "additive")]
     ori_one_hot = True
     feature_dist_type = "numerical"
 
     # only get cooperative and additive
-    #dftrain = dforig[dforig['name'].str.contains(r'weak')]# r'dist|weak
-    dftrain = get_custom_df(dforig,"dist")
+    dftrain = dforig[~dforig['name'].str.contains(r'weak|dist')]# r'dist|weak
+    #dftrain = get_custom_df(dforig,"dist")
     t = Training(dftrain, corelen=4)
-    t.training_summary()
+    #t.training_summary()
     #t.plot_distance_numeric()
     #t.plot_weak_sites()
 
     x_link1 = t.get_feature_linker_composition(1)
     link1_df = pd.DataFrame(x_link1)
     link1_df['label'] = t.df['label']
-    link1_df.to_csv("1merdf.csv",float_format='%.3f')
+    t.boxplot_categories(link1_df)
+
+    #link1_df.to_csv("1merdf.csv",float_format='%.3f')
 
     # ========== GETTING FEATURES FROM THE DATA ==========
     x_dist = t.get_feature_distance(type=feature_dist_type)
-    x_link1 = t.get_feature_linker_composition(1)
+    x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
+    """x_link1 = t.get_feature_linker_composition(1)
     x_link2 = t.get_feature_linker_composition(2)
     x_link3 = t.get_feature_linker_composition(3)
+    x_gc = t.get_linker_GC_content()
     x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
     x_pref = t.get_feature_site_pref()
 
+    x_link1 = t.get_feature_linker_composition(1)
+    link1_df = pd.DataFrame(x_link1)
+    link1_df['label'] = t.df['label']
+    t.boxplot_categories(link1_df)
+
+
+    d = make_linker_table(t, [x_link1, x_gc])
+    d.to_csv("linker.tsv",sep="\t")
     """
+
     x_train = []
-    for x in [x_dist,x_link1,x_link2,x_link3,x_ori,x_pref]: # , x_link1, x_link2, x_link3, x_orix`
+    for x in [x_dist,x_ori]: #,x_pref,x_link1, x_link2, x_link3]: #, x_orix` x_link1,x_link2,x_link3,
         x_train = merge_listdict(x_train, x)
     x_df = pd.DataFrame(x_train)
 
@@ -117,24 +140,26 @@ if __name__ == '__main__':
     feature_importances = pd.DataFrame(rf.feature_importances_,
                                    index = x_df.columns,
                                    columns=['importance']).sort_values('importance', ascending=False)
-    imp = list(feature_importances.index[:5])
+    imp = list(feature_importances.index[:len(feature_importances)])
     print("Top 10 feature importance list " + str(imp))
     x_df_imp = x_df[imp] # we only use the most important features
     x_train_dict = {"top5": x_df_imp.values.tolist()} #, "dist-numeric":x_df[["dist-numeric"]].values.tolist()}
 
     # ========== TREE DRAWING FROM A MODEL  ==========
+
     model = rf.fit(x_train_dict["top5"], y_train) # make new model from the top features
 
     # take a tree, let's say tree #5
     estimator = rf.estimators_[5]
     tree.export_graphviz(estimator, out_file='tree.dot',
             feature_names = x_df_imp.columns,
-            class_names = ['cooperative', 'additive'],
+            class_names = ['additive','cooperative'],
             rounded = True, proportion = False,
             precision = 2, filled = True)
     subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])
-
+    """
     # ========== Using this result to train on different dataset  ==========
+
     testpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_with_coop_anti.tsv"
     dftest = pd.read_csv(testpath, sep="\t")
     dftest = dftest[(dftest["label"] == "cooperative") | (dftest["label"] == "additive")]
@@ -144,12 +169,13 @@ if __name__ == '__main__':
     xtest_link1 = test.get_feature_linker_composition(1)
     xtest_link2 = test.get_feature_linker_composition(2)
     xtest_link3 = test.get_feature_linker_composition(3)
+    #xtest_gc = test.get_linker_GC_content()
     xtest_ori = test.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
     xtest_pref = test.get_feature_site_pref()
 
 
     x_test = []
-    for x in [xtest_dist,xtest_link1,xtest_link2,xtest_link3,xtest_ori,xtest_pref]:
+    for x in [xtest_dist,xtest_link1,xtest_link2,xtest_link3,xtest_ori,xtest_pref,xtest_gc]:
         x_test = merge_listdict(x_test, x)
     x_test = pd.DataFrame(x_test)[imp].values.tolist()
     y_true = get_numeric_label(t.df).values
@@ -160,7 +186,7 @@ if __name__ == '__main__':
     dfpred["pred"] = lpred
     dfpred.to_csv("aa.csv")
     #print("Accuracy on test: %.f" % accuracy_score(y_true, y_pred))
-
+    """
     # ========== MAKING AUC USING THE TOP FEATURES  ==========
 
     #fpr_dict = {key:[] for key in x_train}
@@ -199,4 +225,3 @@ if __name__ == '__main__':
     # left append 0 in base fpr just so we start at 0 (we did the same for the tpr)
     base_fpr = np.insert(base_fpr,0,0)
     display_output(base_fpr, mean_tpr, mean_auc, path="here.png")
-    """
