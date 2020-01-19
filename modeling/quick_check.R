@@ -1,7 +1,7 @@
 library(dplyr)
 library("Hmisc")
 
-df <- read.table("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/modeling/all_features.tsv",
+df <- read.table("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/modeling/all_features_ori_one_hot.tsv",
                  header = TRUE,sep="\t")
 
 df_x <- df %>% select(-label)#(-label,-sequence,-linker,-site1,-site2)

@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
 
 import trainingdata.seqextractor as seqextractor
+from trainingdata.dnashape import DNAShape
 
 import subprocess
 
@@ -79,6 +80,24 @@ def make_linker_table(t, xlist):
     df = pd.concat(to_appends, axis = 1)
     return df
 
+# TODO FIX BASED ON THE CLASS
+"""
+def plot_average_all(train,shape,distances):
+    for dist in distances:
+        print("Plotting for dist %d" % dist)
+        dist_path = "%s/d%s" % (shapepath,dist)
+        # make a new data frame with only the distance on each iteration
+        t2 = train.training.loc[train.training['distance'] == dist]
+        train2 = trainingparser.TrainingParser(t2,motiflen=6)
+        li = train2.get_labels_indexes()
+        bsites = train2.get_bsites()
+        shape = DNAShape(dist_path)
+
+        for p in [0.05,0.1]: # 0.05,
+            plot_path = "%s/shape-p=%.2f.pdf"%(dist_path,p)
+            shape.plot_average(li,bsites,pthres=p,path=plot_path,plotlabel="Average DNA shape for d=%d,p=%.2f" % (dist,p))
+"""
+
 if __name__ == '__main__':
     #trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191004_coop-PBM_Ets1_v1_1st/training_data/training_overlap.tsv"
     trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_overlap.tsv"
@@ -96,18 +115,21 @@ if __name__ == '__main__':
     #t.plot_distance_numeric()
     #t.plot_weak_sites()
 
-    t.stacked_bar_categoires("distance")
 
-    """
-    x_link1 = t.get_feature_linker_composition(1)
-    link1_df = pd.DataFrame(x_link1)
-    link1_df['label'] = t.df['label']
-    t.boxplot_categories(link1_df)
+    ds = DNAShape("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape")
 
+    #print(t.df["distance"].to_dict())
+    #t = Training(dftrain.loc[dftrain['distance'] == 7], corelen=4)
+    #t_shape = Training(dftrain, corelen=4)
+    #ds.plot_average(t.get_labels_indexes(), t.get_ordered_site_list())
+    #print(t.get_ordered_site_list())
+
+    #t.stacked_bar_categories("distance")
 
     #link1_df.to_csv("1merdf.csv",float_format='%.3f')
 
     # ========== GETTING FEATURES FROM THE DATA ==========
+
     x_dist = t.get_feature_distance(type=feature_dist_type)
     x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
     x_link1 = t.get_feature_linker_composition(1)
@@ -117,22 +139,30 @@ if __name__ == '__main__':
     x_pref = t.get_feature_site_pref()
 
 
+
+    l_df = pd.DataFrame(x_ori)
+    l_df['label'] = t.df['label']
+    l_df['A'] = pd.DataFrame(x_link1)['A']
+    print(l_df)
+    t.plot_grouped_label(l_df, ["ori","label"], 'A')
+
+    """
     x_gc = t.get_linker_GC_content()
     link1_df = pd.DataFrame(x_gc)
     link1_df['label'] = t.df['label']
-    print(link1_df)
     t.boxplot_categories(link1_df)
+
 
     d = make_linker_table(t, [x_link1, x_gc])
     d.to_csv("linker.tsv",sep="\t")
 
     x_train = []
-    for x in [x_dist,x_ori,x_link1, x_gc, x_pref]: #, x_orix` x_link1,x_link2,x_link3,
+    for x in [x_ori,x_link1]: #,[x_dist,x_ori,x_link1, x_gc, x_pref]
         x_train = merge_listdict(x_train, x)
     x_df = pd.DataFrame(x_train)
-    x_print = pd.DataFrame(x_train)
-    x_print["label"] = t.df["label"]
-    x_print.to_csv("all_features.tsv",index=False,float_format='%.3f',sep="\t")
+    #x_print = pd.DataFrame(x_train)
+    #x_print["label"] = t.df["label"]
+    #x_print.to_csv("all_features.tsv",index=False,float_format='%.3f',sep="\t")
 
     # ========== CREATING THE RF OBJECT  ==========
     x_train = pd.DataFrame(x_train).values.tolist()

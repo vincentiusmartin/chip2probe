@@ -20,19 +20,6 @@ def merge_listdict(ld1, ld2):
 
 # =========
 
-def revcompstr(seq):
-    rev = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
-    return "".join([rev[base] for base in reversed(seq)])
-
-"""
-def one_index_df(df):
-
-    #Moved here from utils. This function makes index df index start from 1
-
-    df.index = np.arange(1, len(df) + 1)
-    return df
-"""
-
 def dictlist2file(inputdict,filepath,listval=False):
     with open(filepath,'w') as f:
         for key in inputdict:

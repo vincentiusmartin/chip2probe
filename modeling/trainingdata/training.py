@@ -9,6 +9,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import itertools
 from matplotlib.backends.backend_pdf import PdfPages
+from decimal import Decimal
 
 import trainingdata.seqextractor as seqextractor
 
@@ -35,12 +36,14 @@ class Training(object):
             raise Exception("input must be string or data frame")
         self.motiflen = corelen
 
-    def stacked_bar_categoires(self, x, y=["label"],plotname="stackedbar.png"):
+    def get_labels_indexes(self):
+          return self.df.groupby("label").groups
+
+    def stacked_bar_categories(self, x, y=["label"],plotname="stackedbar.png"):
         cat_df = self.df[[x]]
         cat_df["label"] = self.df['label']
         group = [x] + y
         df2 = cat_df.groupby(group)['label'].count().unstack(x).fillna(0)
-        print(df2)
         df2.T.plot(kind='bar', stacked=True)
         plt.savefig(plotname)
         plt.clf()
@@ -97,6 +100,18 @@ class Training(object):
         plt.savefig(plotname)
         plt.clf()
 
+    def get_ordered_site_list(self):
+        site1 = {}
+        site2 = {}
+        for idx,row in self.df.iterrows():
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1[idx] = row["site_str_pos"]
+                site2[idx] = row["site_wk_pos"]
+            else:
+                site1[idx] = row["site_wk_pos"]
+                site2[idx] = row["site_str_pos"]
+        return [site1,site2]
+
     def training_summary(self, by=["label"], cols="default", plotname="training_summary.png"):
         if cols == "default":
             col_to_box = list(set(self.df.columns) - {"id", "name", "sequence", "label", "index"})
@@ -112,6 +127,28 @@ class Training(object):
         elif name.endswith("_weak_s1_2"):
             return 3
         return 0
+
+    def recur_dictify(self, frame):
+        # https://stackoverflow.com/questions/19798112/convert-pandas-dataframe-to-a-nested-dict
+        if len(frame.columns) == 1:
+            if frame.values.size == 1: return frame.values[0][0]
+            return frame.values.squeeze()
+        grouped = frame.groupby(frame.columns[0])
+        d = {k: self.recur_dictify(g.ix[:,1:]) for k,g in grouped}
+        return d
+
+    def plot_grouped_label(self, df, by, column, figname="boxplot.png"):
+        g = self.recur_dictify(df[by + [column]])
+        for lbl in g:
+            l1 = g[lbl]["additive"].tolist()
+            l2 = g[lbl]["cooperative"].tolist()
+            p = st.t_test(l1,l2,alternative="greater")
+            pstr = "%.2E" % Decimal(p) if p < 0.001 else "%.4f" % p
+            print("ori %s additive > cooperative, p: %s" % (lbl,pstr))
+        df.boxplot(by=by, column=column)
+        plt.savefig(figname)
+        plt.close()
+
 
     def plot_weak_sites(self, filepath="weak.pdf"):
         dcopy = self.df.copy()

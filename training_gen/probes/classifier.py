@@ -235,6 +235,9 @@ def plot_median_binding_sum(probes,classification,orientation,
                             subset_additive=[],
                             subset_coop=[],
                             subset_steric=[]): # dictionary with subset of additive/coop/steric
+    """
+    orientation: 0 is overlap, else the value (1 or 2 is used)
+    """
     med = probes.medians
     m1,m2,m3,wt = med["m1o%d"%orientation],med["m2o%d"%orientation],med["m3o%d"%orientation],med["wto%d"%orientation]
     ori = "overlap" if orientation == 0 else "o%d"%orientation
