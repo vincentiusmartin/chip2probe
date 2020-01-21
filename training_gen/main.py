@@ -75,6 +75,7 @@ def make_training(analysis_respath, seqwithin_pattern, probedata, classification
     # now we get sequence and all the features, we now label them using classification result
     training_data = []
     notfound_count = 0
+    count_dict = {}
     for key in classification:
         #if key.endswith("overlap"):#key.endswith("o1") or key.endswith("o2"):
         # we label cooperative_o1_anticoop_o2 as cooperative, so we can do this:
@@ -83,6 +84,7 @@ def make_training(analysis_respath, seqwithin_pattern, probedata, classification
         #print(probedata.table["wt"])
 
         seqs = probedata.get_seq("wt",classification[key], othercols=["Name"])
+        count_dict[key] = []
         for idx in seqs: # GAAAACTGGGAGAGGAAGCAGGATTCTGCATCCTGG
             if seqs[idx]["sequence"] in fdict:
                 #if not key.endswith("o2"):
@@ -90,10 +92,12 @@ def make_training(analysis_respath, seqwithin_pattern, probedata, classification
                 features = fdict[curseq]
                 seqlen = len(curseq)
 
+                # THIS CHECKS THAT THE SITES ARE IN THE CENTER
                 if fdict[curseq]['site1_pos'] + fdict[curseq]['site2_pos'] != 36 and fdict[curseq]['site1_pos'] + fdict[curseq]['site2_pos'] != 37:
                     #print(curseq,features['site_str_score'],features['site_wk_score'])
                     #res = [m.start() for m in re.finditer("GGAA|GGAT|TTCC|ATCC", curseq)]
                     continue
+                count_dict[key].append(idx) # unless sites are not erroneous, we don't save it --> just for counting purpose, sanity check
 
                 # site 1 is the stronger site
                 if fdict[curseq]['site1_pref'] > fdict[curseq]['site2_pref']:
@@ -135,6 +139,7 @@ def make_training(analysis_respath, seqwithin_pattern, probedata, classification
                 if print_not_found:
                     print("couldn't find %s in feature dict" % seqs[idx])
 
+    #print(count_dict)
     training_df = pd.DataFrame(training_data, columns=["id","name","sequence", "site_str_pos", "site_wk_pos", "site_str_score", "site_wk_score", "distance", "label"])
     print("Total training rows: %d, not found count: %d" % (len(training_data),notfound_count))
     training_df.drop_duplicates(subset=['sequence'],keep='first', inplace=True)
@@ -144,11 +149,11 @@ def make_training(analysis_respath, seqwithin_pattern, probedata, classification
     training_df["site_wk_pos"] = training_df["site_wk_pos"].astype(int)
     training_df["distance"] = training_df["distance"].astype(int)
     #training_df.to_csv("training.tsv", sep="\t", index=False)
-    return training_df
+    return count_dict#training_df
 
 if __name__ == '__main__':
-    dir = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191004_coop-PBM_Ets1_v1_1st/2.processed_gpr"
-    filepaths = ["%s/%s" % (dir,"20191004_258614510001_ETS1_550_5_1-4_alldata.txt"), "%s/%s" % (dir,"20191004_258614510001_ETS1_550_5_2-4_alldata.txt"), "%s/%s" % (dir,"20191004_258614510001_ETS1_550_5_3-4_alldata.txt"), "%s/%s" % (dir,"20191004_258614510001_ETS1_660_60_4-4_alldata.txt")]
+    #dir = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191004_coop-PBM_Ets1_v1_1st/2.processed_gpr"
+    #filepaths = ["%s/%s" % (dir,"20191004_258614510001_ETS1_550_5_1-4_alldata.txt"), "%s/%s" % (dir,"20191004_258614510001_ETS1_550_5_2-4_alldata.txt"), "%s/%s" % (dir,"20191004_258614510001_ETS1_550_5_3-4_alldata.txt"), "%s/%s" % (dir,"20191004_258614510001_ETS1_660_60_4-4_alldata.txt")]
     probe_analysis_path = "/Users/vincentiusmartin/Research/chip2gcPBM/result"
     negcutoff = 95
     pvalthres = .01
@@ -160,6 +165,32 @@ if __name__ == '__main__':
     fname = os.path.basename(infile)
     fname_woext = os.path.splitext(fname)[0]
 
+    # Making the classification file
+    r = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/3.coop_array_files/coop_20191004_258614510001_ETS1_550_5_1-4_alldata.tsv",sep="\t") ###
+    #pd.set_option('display.max_columns', None)
+    n = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/3.coop_array_files/negctrl_20191004_258614510001_ETS1_550_5_1-4_alldata.tsv",sep="\t") ###
+    probedata = ProbeData(r,n,percentile=negcutoff)
+
+    #classification = classifier.classify_per_orientation(probedata, pvalthres)
+    #utils.dictlist2file(classification,"cooplabeled_%s.txt" % fname_woext,listval=True)
+    classification = utils.read_dictlist_file("class.txt", as_int=True)
+
+    class_main1 = ["cooperative_overlap","additive_overlap","anticoop_overlap"]
+    classification_main1 = {k:classification[k] for k in classification if k in class_main1}
+
+    #r_orig = r[~r['Name'].str.contains(r'dist|weak')]
+    #probedata_orig = ProbeData(r,n,percentile=negcutoff)
+
+    #classification_orig = classifier.classify_per_orientation(probedata_orig, pvalthres, classify_inconsistency=False)
+    classifier.plot_median_binding_sum(probedata,classification,0,log=True,tfname=tfname,plotname="orig_plot_o1_2_log_%d" % negcutoff)
+
+    cd = make_training(probe_analysis_path, "mutated_probes.*\.(tsv|csv)$", probedata, classification_main1)
+
+    classifier.plot_median_binding_sum(probedata,cd,0,log=True,tfname=tfname,plotname="orig_plot_o1_2_log_%d" % negcutoff,plotnonsignif=False)
+
+
+
+    """
     print("Making multisites file for %s..." % fname_woext)
 
     #pd.set_option('display.max_columns', 500)
@@ -182,10 +213,11 @@ if __name__ == '__main__':
     print("Make scatter plot for each inconsistent classification")
     class_main = ["additive_o1","additive_o2","cooperative_o1","cooperative_o2","anticoop_o1","anticoop_o2"]
     subset = {k:classification[k] for k in classification if k not in class_main}
-
+    """
     for sub in subset:
         print("    %s" % sub)
         probedata.multi_scatter_boxplot(subset[sub],log=True,filepath="boxplot-%s.pdf" % sub)
+    """
 
     print("Plot median binding sum for all orientations...")
 
@@ -203,27 +235,13 @@ if __name__ == '__main__':
     class_main2 = ["cooperative_o1_anticoop_o2","cooperative_o2_anticoop_o1"]
     classification_main2 = {k:classification[k] for k in classification if k in class_main2}
 
-    # Making the classification file
-    """
-    r = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/3.coop_array_files/coop_20191004_258614510001_ETS1_550_5_1-4_alldata.tsv",sep="\t") ###
-    #pd.set_option('display.max_columns', None)
-    n = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/3.coop_array_files/negctrl_20191004_258614510001_ETS1_550_5_1-4_alldata.tsv",sep="\t") ###
-    probedata = ProbeData(r,n,percentile=negcutoff)
-    """
-
-    classification = utils.read_dictlist_file("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/3.coop_array_files/cooplabeled_20191004_258614510001_ETS1_550_5_1-4_alldata.txt", as_int=True)
-    class_main1 = ["cooperative_overlap","additive_overlap","anticoop_overlap"]
-    classification_main1 = {k:classification[k] for k in classification if k in class_main1}
-    df_overlap1 = make_training(probe_analysis_path, "mutated_probes.*\.(tsv|csv)$", probedata, classification_main1)
-    df_overlap1.to_csv("training_overlap_%s.tsv" % fname_woext, sep="\t", index=False)
-
-    print("Make training from genomic + custom sequences: ")
+    print("Make training from all orientations ")
     df_all = make_training(probe_analysis_path, "mutated_probes.*\.(tsv|csv)$", probedata, classification_main)
     df_all.to_csv("training_all_%s.tsv" % fname_woext, sep="\t", index=False)
-    print("Make training from genomic sequences: ")
+    print("Make training from sequences with overlapping classifications ")
     df_overlap1 = make_training(probe_analysis_path, "mutated_probes.*\.(tsv|csv)$", probedata, classification_main1)
     df_overlap1.to_csv("training_overlap_%s.tsv" % fname_woext, sep="\t", index=False)
-    print("Make training from custom sequences: ")
+    print("Make training from sequences with overlapping classifications and coop additive ")
     df_overlap2 = make_training(probe_analysis_path, "mutated_probes.*\.(tsv|csv)$", probedata, classification_main2)
     df_overlap2.to_csv("training_with_coop_anti_%s.tsv" % fname_woext, sep="\t", index=False)
 
@@ -250,3 +268,4 @@ if __name__ == '__main__':
     classifier.plot_median_binding_sum(probedata_cust,classification_cust,2,log=True,tfname=tfname,plotname="cust_plot_o2_log_%d" % negcutoff)
     classifier.plot_median_binding_sum(probedata_cust,classification_cust,0,log=True,tfname=tfname,plotname="cust_plot_o1_2_log_%d" % negcutoff)
     print("Done!")
+    """

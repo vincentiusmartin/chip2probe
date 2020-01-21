@@ -80,6 +80,9 @@ def make_linker_table(t, xlist):
     df = pd.concat(to_appends, axis = 1)
     return df
 
+def flip_orientation(df):
+    print(df)
+
 # TODO FIX BASED ON THE CLASS
 """
 def plot_average_all(train,shape,distances):
@@ -107,10 +110,13 @@ if __name__ == '__main__':
     ori_one_hot = False
     feature_dist_type = "numerical"
 
+    flip_orientation(dforig)
+
     # only get cooperative and additive
     dftrain = dforig[~dforig['name'].str.contains(r'weak|dist')]# r'dist|weak
     #dftrain = get_custom_df(dforig,"dist")
     t = Training(dftrain, corelen=4)
+    t.flip_one_face_orientation(["GGAA","GGAT"])
     #t.training_summary()
     #t.plot_distance_numeric()
     #t.plot_weak_sites()
@@ -137,14 +143,6 @@ if __name__ == '__main__':
     #x_link3 = t.get_feature_linker_composition(3)
     x_gc = t.get_linker_GC_content()
     x_pref = t.get_feature_site_pref()
-
-
-
-    l_df = pd.DataFrame(x_ori)
-    l_df['label'] = t.df['label']
-    l_df['A'] = pd.DataFrame(x_link1)['A']
-    print(l_df)
-    t.plot_grouped_label(l_df, ["ori","label"], 'A')
 
     """
     x_gc = t.get_linker_GC_content()

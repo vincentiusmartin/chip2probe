@@ -17,6 +17,7 @@ import math
 
 from statistics import median
 import util.stats as st
+import util.bio as bio
 
 class Training(object):
     '''
@@ -118,6 +119,13 @@ class Training(object):
         else:
             col_to_box = cols
         self.boxplot_categories(self.df, by=["label"], input_cols=col_to_box, plotname="training_summary.png")
+
+    def flip_one_face_orientation(self,positive_cores):
+        ori = self.get_feature_orientation(positive_cores)
+        print(bio.revcompstr("GGAA"))
+        print(len(ori))
+        print(self.df.shape)
+        #print(self.df)
 
     def weak_type_to_int(self,name):
         if name.endswith("_weak_s1"):
