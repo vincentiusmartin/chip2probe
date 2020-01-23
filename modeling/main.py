@@ -98,6 +98,21 @@ def plot_average_all(train,shape,distances):
             shape.plot_average(li,bsites,pthres=p,path=plot_path,plotlabel="Average DNA shape for d=%d,p=%.2f" % (dist,p))
 """
 
+def plot_average_all(train,shapepath,distances,corelen):
+    for dist in distances:
+        print("Plotting for dist %d" % dist)
+        dist_path = "%s/d%s" % (shapepath,dist)
+        # make a new data frame with only the distance on each iteration
+        t2 = train.df.loc[train.df['distance'] == dist]
+        train2 = Training(t2,corelen=corelen)
+        li = train2.get_labels_indexes()
+        shape = DNAShape(dist_path)
+        # ds.plot_average(t_shape.get_labels_indexes(), s1list, s2list, t_shape.df["sequence"].to_dict())
+        s1list,s2list = train2.get_ordered_site_list()
+        for p in [0.05]: # 0.05,
+            plot_path = "%s/shape-d%d-p=%.2f.pdf"%(shapepath,dist,p)
+            shape.plot_average(li,s1list,s2list,train2.df["sequence"].to_dict(),pthres=p,path=plot_path,plotlabel="Average DNA shape for d=%d,p=%.2f" % (dist,p))
+
 if __name__ == '__main__':
     #trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191004_coop-PBM_Ets1_v1_1st/training_data/training_overlap.tsv"
     trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_overlap.tsv"
@@ -117,17 +132,18 @@ if __name__ == '__main__':
     #t.plot_distance_numeric()
     #t.plot_weak_sites()
 
+    #plot_average_all(t,"/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape",list(range(4,25)),corelen=4)
 
-    ds = DNAShape("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/d6")
+    #ds = DNAShape("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/d6")
 
     #print(t.df["distance"].to_dict())
-    t_shape  = Training(dftrain.loc[dftrain['distance'] == 6], corelen=4)
-    s1list,s2list = t_shape.get_ordered_site_list()
+    #t_shape  = Training(dftrain.loc[dftrain['distance'] == 6], corelen=4)
+    #s1list,s2list = t_shape.get_ordered_site_list()
 
-    ds.plot_average(t_shape.get_labels_indexes(), s1list, s2list, t_shape.df["sequence"].to_dict())
+    #ds.plot_average(t_shape.get_labels_indexes(), s1list, s2list, t_shape.df["sequence"].to_dict())
     #print(t.get_ordered_site_list())
 
-    #t.stacked_bar_categories("distance") # UPDATE
+    t.stacked_bar_categories("distance", avg=True) # UPDATE
 
     #link1_df.to_csv("1merdf.csv",float_format='%.3f')
 

@@ -40,12 +40,14 @@ class Training(object):
     def get_labels_indexes(self):
           return self.df.groupby("label").groups
 
-    def stacked_bar_categories(self, x, y=["label"],plotname="stackedbar.png"):
+    def stacked_bar_categories(self, x, y=["label"],plotname="stackedbar.png",avg=False):
         cat_df = self.df[[x]]
         cat_df["label"] = self.df['label']
         group = [x] + y
-        df2 = cat_df.groupby(group)['label'].count().unstack(x).fillna(0)
-        df2.T.plot(kind='bar', stacked=True)
+        df2 = cat_df.groupby(group)['label'].count() # .unstack(x).fillna(0)
+        if avg:
+            df2 = df2.groupby(level=0).apply(lambda x: x / float(x.sum()))
+        df2.unstack(x).fillna(0).T.plot(kind='bar', stacked=True)
         plt.savefig(plotname)
         plt.clf()
 
