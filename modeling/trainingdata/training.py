@@ -30,7 +30,7 @@ class Training(object):
         Constructor
         '''
         if isinstance(trainingdata, pd.DataFrame):
-            self.df = trainingdata.copy().reset_index()
+            self.df = trainingdata.copy().reset_index(drop=True)
         elif isinstance(trainingdata, str):
             self.df = pd.read_csv(trainingpath,sep=sep)
         else:
@@ -111,7 +111,7 @@ class Training(object):
             else:
                 site1[idx] = row["site_wk_pos"]
                 site2[idx] = row["site_str_pos"]
-        return [site1,site2]
+        return site1,site2
 
     def training_summary(self, by=["label"], cols="default", plotname="training_summary.png"):
         if cols == "default":
@@ -121,11 +121,28 @@ class Training(object):
         self.boxplot_categories(self.df, by=["label"], input_cols=col_to_box, plotname="training_summary.png")
 
     def flip_one_face_orientation(self,positive_cores):
+        # flip if orientation one
         ori = self.get_feature_orientation(positive_cores)
-        print(bio.revcompstr("GGAA"))
-        print(len(ori))
-        print(self.df.shape)
-        #print(self.df)
+        records = self.df.to_dict(orient='records')
+        for i in range(0,len(records)):
+            if ori[i]["ori"] == "1":
+                site_str = records[i]["sequence"][records[i]["site_str_pos"] - self.motiflen//2:records[i]["site_str_pos"] + self.motiflen//2]
+                site_wk = records[i]["sequence"][records[i]["site_wk_pos"] - self.motiflen//2:records[i]["site_wk_pos"] + self.motiflen//2]
+                if site_str not in positive_cores and site_wk not in positive_cores:
+                    records[i]["sequence"] = bio.revcompstr(records[i]["sequence"])
+                    # flip the position as well
+                    str_pos = records[i]["site_str_pos"]
+                    wk_pos = records[i]["site_wk_pos"]
+                    records[i]["site_str_pos"] = len(records[i]["sequence"]) - wk_pos
+                    records[i]["site_wk_pos"] = len(records[i]["sequence"]) - str_pos
+                    #site_str_new = records[i]["sequence"][records[i]["site_str_pos"] - self.motiflen//2:records[i]["site_str_pos"] + self.motiflen//2]
+                    #site_wk_new = records[i]["sequence"][records[i]["site_wk_pos"] - self.motiflen//2:records[i]["site_wk_pos"] + self.motiflen//2]
+                    #if site_str_new not in positive_cores or site_wk_new not in positive_cores:
+                    #    print(records[i]["sequence"],records[i]["site_str_pos"],records[i]["site_wk_pos"])
+                    #    print(site_str, site_wk, site_str_new, site_wk_new)
+                    #    break
+        return Training(pd.DataFrame(records), corelen=self.motiflen)
+
 
     def weak_type_to_int(self,name):
         if name.endswith("_weak_s1"):

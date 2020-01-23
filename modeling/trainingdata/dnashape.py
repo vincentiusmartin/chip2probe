@@ -4,9 +4,12 @@ import pandas as pd
 import os
 
 from matplotlib.backends.backend_pdf import PdfPages
+import seaborn as sns
 
 import util.util as util
 import util.stats as st
+
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 class DNAShape:
 
@@ -28,51 +31,60 @@ class DNAShape:
     def get_shape_names():
         return ["ProT","MGW","Roll","HelT"]
 
-    def plot_average(self, labels, bsites, pthres=0.05, path="shape.pdf", plotlabel="Average DNA shape"):
+    def get_sequence_count(self, seqlist, avg=True):
+        it = iter(seqlist)
+        seqlen = len(next(it))
+        if not all(len(l) == seqlen for l in it):
+            raise ValueError('not all lists have same length!')
+        counter = []
+        for i in range(0,seqlen):
+            nuc_ct = {"A":0, "C":0, "G": 0, "T":0}
+            for j in range(0, len(seqlist)):
+                nuc_ct[seqlist[j][i]] += 1
+            if avg:
+                nuc_ct = {k: float(v)/len(seqlist) for k, v in nuc_ct.items()}
+            counter.append(nuc_ct)
+        return counter
+
+    # hard coded for coop
+    # assume: seq same length, same site position
+    def plot_average(self, labels, site1list, site2list, sequences, pthres=0.05, path="shape.pdf", plotlabel="Average DNA shape"):
         plt.clf()
         colors = ['orangered','dodgerblue','lime']
+        s1 = int(sum(site1list.values()) / len(site1list.values()))
+        s2 = int(sum(site2list.values()) / len(site2list.values()))
 
         shapes = {"Propeller twist ":self.prot,"Helix twist":self.helt,"Roll":self.roll,"Minor Groove Width":self.mgw}
-        #shapes = {"Propeller twist ":self.prot}
-        keystolabel = {"additive":"*","cooperative":"*"} # ã ç
+        keystolabel = {"additive":"ã","cooperative":"ç"} # ã ç
 
-        min_dist = min(bsites[0].values())
-        max_dist = max(bsites[0].values())
+        #cooperative_list = [sequences[idx] for idx in labels["cooperative"]]
+        #additive_list = [sequences[idx] for idx in labels["additive"]]
+        nuc_ct = self.get_sequence_count(list(sequences.values()), avg=True)
+        nuc_dict = {}
+        for nuc in ['A','C','G','T']:
+            nuc_dict[nuc] = [elm[nuc] for elm in nuc_ct]
+
         # get the maximum seq length
-
         fig = plt.figure(figsize=(12,12))
-        #with PdfPages("shape.pdf") as pdf:
-        n = 0
+        n = 0 # for the subplot
         for sh in shapes: # shapes
-            c = 0
+            c = 0 # for color of fill between
             n += 1
             ax = fig.add_subplot(2,2,n)
-            trimlen = len(next(iter(shapes[sh].values()))) - (max_dist - min_dist)
             yall = {}
             lshift_dict = {}
-            curbsites = []
+            flen = int(np.mean([len(x) for x in shapes[sh].values()]))
 
             # ==== Plotting part using 25, 50, and 75 percentiles ====
             # labels = cooperative or additive
-            keys = []
-            pr = True
+            miny = float("inf")
             for label in labels:
                 indexes = labels[label]
                 curlist = []
                 for key in indexes:
-                    # we need to align the binding sites
-                    # left shift is from the diff between first bsite and min bsite
-                    lshift = bsites[0][key] - min_dist
-                    lshift_dict[key] = lshift
-                    aligned = shapes[sh][str(key+1)][lshift:]
-                    aligned = aligned[:trimlen]
-                    curlist.append(aligned)
-                    if pr: # just to save the bpos location
-                        curbsites = [min_dist, bsites[1][key] - lshift]
-                        pr = False
-                keys.append(label) # for marking significance
+                    shape = shapes[sh][str(key+1)]
+                    curlist.append(shape)
                 yall[label] = curlist
-
                 seqlen = len(curlist[0])
                 if not all(len(l) == seqlen for l in curlist):
                     raise ValueError('not all lists have same length!')
@@ -87,7 +99,7 @@ class DNAShape:
 
             # ==== Hypothesis testing to mark significant binding sites ====
             signiflabel = []
-            for i in range(0,trimlen):
+            for i in range(0,flen):
                 # for now assume yall is of size 2
                 arr_coop = [seq[i] for seq in yall['cooperative']]
                 arr_add = [seq[i] for seq in yall['additive']]
@@ -104,7 +116,7 @@ class DNAShape:
                     signiflabel.append('')
 
             # ==== Mark binding sites as given from the input ====
-            for m in curbsites:
+            for m in [s1,s2]:
                 ax.axvline(x=m,linewidth=1, color='g',linestyle='--')
 
             ax.set_xlim(1,seqlen)
@@ -116,6 +128,36 @@ class DNAShape:
             ax.xaxis.set_label_text('Sequence position')
             ax.legend(loc="upper right")
             ax.set_title(plotlabel)
+            low_y = ax.get_ylim()[0]
+            hfactor = ax.get_ylim()[1] -  ax.get_ylim()[0]
+            ax.set_ylim(bottom = low_y - np.abs(0.2 * hfactor))
+            for i in range(0,3): # low_y here?
+                ax.yaxis.get_major_ticks()[i].label1.set_visible(False)
+
+            #for ymaj in ax.yaxis.get_major_ticks():
+            #    print(ymaj.label2)
+            #    ymaj.label1.set_visible(False)
+
+            base_color = {'A': "red", 'C': "green" , 'G': "orange", 'T': "blue"}
+            bot_anchor = 0
+            for base in base_color:
+                inset_ax = inset_axes(ax,
+                              height="5%",
+                              width="100%",
+                              bbox_to_anchor= (0, bot_anchor, 1, 1),
+                              bbox_transform=ax.transAxes,
+                              loc=8)
+                inl = [elm[base] for elm in nuc_ct]
+                # also add 0.5 here to center
+                xbar = [i+0.5 for i in range(0,len(inl))] # should use the same axis with ax but this works...
+                sns.barplot(x = xbar, y = inl, color = base_color[base], ax=inset_ax)
+                inset_ax.get_xaxis().set_visible(False)
+                inset_ax.set_yticklabels([])
+                inset_ax.patch.set_visible(False)
+                inset_ax.set_ylabel(base,rotation=0)
+                inset_ax.yaxis.label.set_color(base_color[base])
+                bot_anchor += 0.05
+            # (A, green), thymine (T, red), cytosine (C, orange), and guanine (G, blue).
 
         with PdfPages(path) as pdf:
             pdf.savefig(fig)

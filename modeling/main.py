@@ -80,9 +80,6 @@ def make_linker_table(t, xlist):
     df = pd.concat(to_appends, axis = 1)
     return df
 
-def flip_orientation(df):
-    print(df)
-
 # TODO FIX BASED ON THE CLASS
 """
 def plot_average_all(train,shape,distances):
@@ -107,55 +104,48 @@ if __name__ == '__main__':
     pd.set_option('display.max_columns', None)
     dforig = pd.read_csv(trainingpath, sep="\t")
     dforig = dforig[(dforig["label"] == "cooperative") | (dforig["label"] == "additive")]
-    ori_one_hot = False
+    ori_one_hot = True
     feature_dist_type = "numerical"
-
-    flip_orientation(dforig)
 
     # only get cooperative and additive
     dftrain = dforig[~dforig['name'].str.contains(r'weak|dist')]# r'dist|weak
+
     #dftrain = get_custom_df(dforig,"dist")
     t = Training(dftrain, corelen=4)
-    t.flip_one_face_orientation(["GGAA","GGAT"])
-    #t.training_summary()
+    #t = t.flip_one_face_orientation(["GGAA","GGAT"])
+    t.training_summary()
     #t.plot_distance_numeric()
     #t.plot_weak_sites()
 
 
-    ds = DNAShape("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape")
+    ds = DNAShape("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/d6")
 
     #print(t.df["distance"].to_dict())
-    #t = Training(dftrain.loc[dftrain['distance'] == 7], corelen=4)
-    #t_shape = Training(dftrain, corelen=4)
-    #ds.plot_average(t.get_labels_indexes(), t.get_ordered_site_list())
+    t_shape  = Training(dftrain.loc[dftrain['distance'] == 6], corelen=4)
+    s1list,s2list = t_shape.get_ordered_site_list()
+
+    ds.plot_average(t_shape.get_labels_indexes(), s1list, s2list, t_shape.df["sequence"].to_dict())
     #print(t.get_ordered_site_list())
 
-    #t.stacked_bar_categories("distance")
+    #t.stacked_bar_categories("distance") # UPDATE
 
     #link1_df.to_csv("1merdf.csv",float_format='%.3f')
 
+    """
     # ========== GETTING FEATURES FROM THE DATA ==========
 
     x_dist = t.get_feature_distance(type=feature_dist_type)
     x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
     x_link1 = t.get_feature_linker_composition(1)
-    #x_link2 = t.get_feature_linker_composition(2)
-    #x_link3 = t.get_feature_linker_composition(3)
+    x_link2 = t.get_feature_linker_composition(2)
+    x_link3 = t.get_feature_linker_composition(3)
     x_gc = t.get_linker_GC_content()
     x_pref = t.get_feature_site_pref()
 
-    """
-    x_gc = t.get_linker_GC_content()
-    link1_df = pd.DataFrame(x_gc)
-    link1_df['label'] = t.df['label']
-    t.boxplot_categories(link1_df)
 
-
-    d = make_linker_table(t, [x_link1, x_gc])
-    d.to_csv("linker.tsv",sep="\t")
-
+    only_T = [{"T":d["T"]} for d in x_link1]
     x_train = []
-    for x in [x_ori,x_link1]: #,[x_dist,x_ori,x_link1, x_gc, x_pref]
+    for x in [x_ori,only_T]:#[x_dist,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]:
         x_train = merge_listdict(x_train, x)
     x_df = pd.DataFrame(x_train)
     #x_print = pd.DataFrame(x_train)
@@ -166,7 +156,7 @@ if __name__ == '__main__':
     x_train = pd.DataFrame(x_train).values.tolist()
     y_train = get_numeric_label(t.df).values
 
-    rf = ensemble.RandomForestClassifier(n_estimators=100, max_depth=10,random_state=0)
+    rf = ensemble.RandomForestClassifier(n_estimators=100, max_depth=3,random_state=0)
     #y_pred = model.predict(x_train)
 
     # ========== GET TOP N FEATURES  ==========
@@ -194,6 +184,8 @@ if __name__ == '__main__':
 
     # ========== Using this result to train on different dataset  ==========
 
+    """
+    """
     testpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_with_coop_anti.tsv"
     dftest = pd.read_csv(testpath, sep="\t")
     dftest = dftest[(dftest["label"] == "cooperative") | (dftest["label"] == "additive")]
@@ -220,7 +212,8 @@ if __name__ == '__main__':
     dfpred["pred"] = lpred
     dfpred.to_csv("aa.csv")
     #print("Accuracy on test: %.f" % accuracy_score(y_true, y_pred))
-
+    """
+    """
     # ========== MAKING AUC USING THE TOP FEATURES  ==========
 
     #fpr_dict = {key:[] for key in x_train}

@@ -28,7 +28,7 @@ class DNAShape:
     def get_shape_names():
         return ["ProT","MGW","Roll","HelT"]
 
-    def plot_average(self, labels, bsites, pthres=0.05, path=".", plotlabel="Average DNA shape"):
+    def plot_average(self, labels, sites1, sites2, pthres=0.05, path=".", plotlabel="Average DNA shape"):
         plt.clf()
         colors = ['orangered','dodgerblue','lime']
 
@@ -36,8 +36,8 @@ class DNAShape:
         #shapes = {"Propeller twist ":self.prot}
         keystolabel = {"additive":"*","cooperative":"*"} # ã ç
 
-        min_dist = min(bsites[0].values())
-        max_dist = max(bsites[0].values())
+        min_dist = min(sites1.values())
+        max_dist = max(sites1.values())
         # get the maximum seq length
 
         fig = plt.figure(figsize=(12,12))
@@ -62,13 +62,13 @@ class DNAShape:
                 for key in indexes:
                     # we need to align the binding sites
                     # left shift is from the diff between first bsite and min bsite
-                    lshift = bsites[0][key] - min_dist
+                    lshift = sites1[key] - min_dist
                     lshift_dict[key] = lshift
                     aligned = shapes[sh][str(key)][lshift:]
                     aligned = aligned[:trimlen]
                     curlist.append(aligned)
                     if pr: # just to save the bpos location
-                        curbsites = [min_dist, bsites[1][key] - lshift]
+                        curbsites = [min_dist, sites2[key] - lshift]
                         pr = False
                 keys.append(label) # for marking significance
                 yall[label] = curlist
