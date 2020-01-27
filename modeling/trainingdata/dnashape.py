@@ -50,25 +50,26 @@ class DNAShape:
     # assume: seq same length, same site position
     def plot_average(self, labels, site1list, site2list, sequences, pthres=0.05, path="shape.pdf", plotlabel="Average DNA shape"):
         plt.clf()
-        colors = ['orangered','dodgerblue','lime']
+        #colors = ['orangered','dodgerblue','lime']
         s1 = int(sum(site1list.values()) / len(site1list.values()))
         s2 = int(sum(site2list.values()) / len(site2list.values()))
 
         shapes = {"Propeller twist ":self.prot,"Helix twist":self.helt,"Roll":self.roll,"Minor Groove Width":self.mgw}
         keystolabel = {"additive":"ã","cooperative":"ç"} # ã ç
 
-        #cooperative_list = [sequences[idx] for idx in labels["cooperative"]]
-        #additive_list = [sequences[idx] for idx in labels["additive"]]
-        nuc_ct = self.get_sequence_count(list(sequences.values()), avg=True)
-        nuc_dict = {}
-        for nuc in ['A','C','G','T']:
-            nuc_dict[nuc] = [elm[nuc] for elm in nuc_ct]
+        if "cooperative" in labels:
+            cooperative_list = [sequences[idx] for idx in labels["cooperative"]]
+            nuc_ct_coop = self.get_sequence_count(cooperative_list, avg=False) #self.get_sequence_count(list(sequences.values()), avg=True)
+        if "additive" in labels:
+            additive_list = [sequences[idx] for idx in labels["additive"]]
+            nuc_ct_add = self.get_sequence_count(additive_list, avg=False)
+
 
         # get the maximum seq length
         fig = plt.figure(figsize=(12,12))
         n = 0 # for the subplot
+        colors = {"additive":'orangered',"cooperative":'dodgerblue'}
         for sh in shapes: # shapes
-            c = 0 # for color of fill between
             n += 1
             ax = fig.add_subplot(2,2,n)
             yall = {}
@@ -93,27 +94,27 @@ class DNAShape:
                 xlist = [i+1 for i in range(0,seqlen)]
                 y25p = np.percentile(curlist, 25, axis=0)
                 y75p = np.percentile(curlist, 75, axis=0)
-                ax.plot(xlist, ylist, alpha=0.8, label=label, c=colors[c], marker='o')
-                ax.fill_between(xlist, y75p, y25p, alpha=0.15, facecolor=colors[c])
-                c += 1
+                ax.plot(xlist, ylist, alpha=0.8, label=label, c=colors[label], marker='o')
+                ax.fill_between(xlist, y75p, y25p, alpha=0.15, facecolor=colors[label])
 
             # ==== Hypothesis testing to mark significant binding sites ====
             signiflabel = []
-            for i in range(0,flen):
-                # for now assume yall is of size 2
-                arr_coop = [seq[i] for seq in yall['cooperative']]
-                arr_add = [seq[i] for seq in yall['additive']]
-                if not any(np.isnan(x) for x in arr_coop) and not any(np.isnan(x) for x in arr_add):
-                    p1 = st.wilcox(arr_coop,arr_add,"greater")
-                    p2 = st.wilcox(arr_coop,arr_add,"less")
-                    if p1 <= pthres:
-                        signiflabel.append(keystolabel["cooperative"])
-                    elif p2 <= pthres:
-                        signiflabel.append(keystolabel["additive"])
+            if "cooperative" in labels and "additive" in labels:
+                for i in range(0,flen):
+                    # for now assume yall is of size 2
+                    arr_coop = [seq[i] for seq in yall['cooperative']]
+                    arr_add = [seq[i] for seq in yall['additive']]
+                    if not any(np.isnan(x) for x in arr_coop) and not any(np.isnan(x) for x in arr_add):
+                        p1 = st.wilcox(arr_coop,arr_add,"greater")
+                        p2 = st.wilcox(arr_coop,arr_add,"less")
+                        if p1 <= pthres:
+                            signiflabel.append(keystolabel["cooperative"])
+                        elif p2 <= pthres:
+                            signiflabel.append(keystolabel["additive"])
+                        else:
+                            signiflabel.append('')
                     else:
                         signiflabel.append('')
-                else:
-                    signiflabel.append('')
 
             # ==== Mark binding sites as given from the input ====
             for m in [s1,s2]:
@@ -130,8 +131,8 @@ class DNAShape:
             ax.set_title(plotlabel)
             low_y = ax.get_ylim()[0]
             hfactor = ax.get_ylim()[1] -  ax.get_ylim()[0]
-            ax.set_ylim(bottom = low_y - np.abs(0.2 * hfactor))
-            for i in range(0,3): # low_y here?
+            ax.set_ylim(bottom = low_y - np.abs(0.35 * hfactor))
+            for i in range(0,4): # low_y here?
                 ax.yaxis.get_major_ticks()[i].label1.set_visible(False)
 
             #for ymaj in ax.yaxis.get_major_ticks():
@@ -140,23 +141,39 @@ class DNAShape:
 
             base_color = {'A': "red", 'C': "green" , 'G': "orange", 'T': "blue"}
             bot_anchor = 0
+
+            nuc_dict = {}
+            if "cooperative" in labels:
+                nuc_dict["co"] = nuc_ct_coop
+            if "additive" in labels:
+                nuc_dict["ad"] = nuc_ct_add
+
+            #lv = []
+            #for key in nuc_dict:
+            #    for i in range(0,len(nuc_dict[key])):
+            #        lv.extend(list(nuc_dict["co"][0].values()))
+            maxct = len(site1list)
+
             for base in base_color:
-                inset_ax = inset_axes(ax,
-                              height="5%",
-                              width="100%",
-                              bbox_to_anchor= (0, bot_anchor, 1, 1),
-                              bbox_transform=ax.transAxes,
-                              loc=8)
-                inl = [elm[base] for elm in nuc_ct]
-                # also add 0.5 here to center
-                xbar = [i+0.5 for i in range(0,len(inl))] # should use the same axis with ax but this works...
-                sns.barplot(x = xbar, y = inl, color = base_color[base], ax=inset_ax)
-                inset_ax.get_xaxis().set_visible(False)
-                inset_ax.set_yticklabels([])
-                inset_ax.patch.set_visible(False)
-                inset_ax.set_ylabel(base,rotation=0)
-                inset_ax.yaxis.label.set_color(base_color[base])
-                bot_anchor += 0.05
+                for key in nuc_dict:
+                    nuc_ct = nuc_dict[key]
+                    inset_ax = inset_axes(ax,
+                                  height="5%",
+                                  width="100%",
+                                  bbox_to_anchor= (0, bot_anchor, 1, 1),
+                                  bbox_transform=ax.transAxes,
+                                  loc=8)
+                    inl = [elm[base] for elm in nuc_ct]
+                    # also add 0.5 here to center
+                    xbar = [i+0.5 for i in range(0,len(inl))] # should use the same axis with ax but this works...
+                    sns.barplot(x = xbar, y = inl, color = base_color[base], ax=inset_ax)
+                    inset_ax.get_xaxis().set_visible(False)
+                    inset_ax.set_ylim(top=maxct)
+                    inset_ax.set_yticklabels([])
+                    inset_ax.patch.set_visible(False)
+                    inset_ax.set_ylabel("%s_%s"%(base,key),rotation=0)
+                    inset_ax.yaxis.label.set_color(base_color[base])
+                    bot_anchor += 0.05
             # (A, green), thymine (T, red), cytosine (C, orange), and guanine (G, blue).
 
         with PdfPages(path) as pdf:

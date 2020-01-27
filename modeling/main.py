@@ -40,7 +40,8 @@ def display_output(fpr_list, tpr_dict, auc_dict, path):
         # Show the ROC curves for all classifiers on the same plot
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
-    plt.title('Average ROC Curves for All Classifiers')
+    plt.grid()
+    plt.title('Average ROC curves for different combination of features')
     plt.legend(loc="lower right")
     plt.savefig(path)
 
@@ -98,20 +99,50 @@ def plot_average_all(train,shape,distances):
             shape.plot_average(li,bsites,pthres=p,path=plot_path,plotlabel="Average DNA shape for d=%d,p=%.2f" % (dist,p))
 """
 
-def plot_average_all(train,shapepath,distances,corelen):
+def plot_average_all(df,shapepath,distances,corelen):
+    shape = DNAShape(shapepath)
     for dist in distances:
         print("Plotting for dist %d" % dist)
         dist_path = "%s/d%s" % (shapepath,dist)
         # make a new data frame with only the distance on each iteration
-        t2 = train.df.loc[train.df['distance'] == dist]
-        train2 = Training(t2,corelen=corelen)
-        li = train2.get_labels_indexes()
-        shape = DNAShape(dist_path)
-        # ds.plot_average(t_shape.get_labels_indexes(), s1list, s2list, t_shape.df["sequence"].to_dict())
-        s1list,s2list = train2.get_ordered_site_list()
+        df_dist = df.loc[dftrain['distance'] == dist]
+        if df_dist.empty:
+            continue
+        labeled_idxs = df_dist.groupby("label").groups
+        s1list,s2list = get_ordered_site_list(df_dist)
+        seqdict = df_dist["sequence"].to_dict()
         for p in [0.05]: # 0.05,
             plot_path = "%s/shape-d%d-p=%.2f.pdf"%(shapepath,dist,p)
-            shape.plot_average(li,s1list,s2list,train2.df["sequence"].to_dict(),pthres=p,path=plot_path,plotlabel="Average DNA shape for d=%d,p=%.2f" % (dist,p))
+            shape.plot_average(labeled_idxs, s1list, s2list, seqdict, pthres=p,path=plot_path,plotlabel="Average DNA shape for d=%d,p=%.2f" % (dist,p))
+
+def get_ordered_site_list(df):
+    site1 = {}
+    site2 = {}
+    for idx,row in df.iterrows():
+        if row["site_wk_pos"] > row["site_str_pos"]:
+            site1[idx] = row["site_str_pos"]
+            site2[idx] = row["site_wk_pos"]
+        else:
+            site1[idx] = row["site_wk_pos"]
+            site2[idx] = row["site_str_pos"]
+    return site1,site2
+
+def stacked_bar_categories(df, x, y=["label"],plotname="stackedbar.png",avg=False,legend=True, ylabel=""):
+    cat_df = df[[x]]
+    #cat_df["orientation"] = cat_df["orientation"].map({'1': 'HT/TH', '2': 'HH', '3':'TT'})
+    #cat_df["label"] = df['label']
+
+    #order = ['HT/TH', 'HH', 'TT']
+    #.set_index('orientation').loc[order]
+
+    group = [x] + y
+    df2 = cat_df.groupby(group)['label'].count() # .unstack(x).fillna(0)
+    if avg:
+        df2 = df2.groupby(level=0).apply(lambda x: x / float(x.sum()))
+    ax = df2.unstack(x).fillna(0).T.plot(kind='bar', stacked=True,legend=legend,rot=0)
+    ax.set_ylabel(ylabel)
+    plt.savefig(plotname)
+    plt.clf()
 
 if __name__ == '__main__':
     #trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191004_coop-PBM_Ets1_v1_1st/training_data/training_overlap.tsv"
@@ -123,34 +154,51 @@ if __name__ == '__main__':
     feature_dist_type = "numerical"
 
     # only get cooperative and additive
-    dftrain = dforig[~dforig['name'].str.contains(r'weak|dist')]# r'dist|weak
-
+    dftrain = dforig[~dforig['name'].str.contains(r'weak|dist')].reset_index(drop=True)# r'dist|weak
     #dftrain = get_custom_df(dforig,"dist")
     t = Training(dftrain, corelen=4)
-    #t = t.flip_one_face_orientation(["GGAA","GGAT"])
-    t.training_summary()
+    t = t.flip_one_face_orientation(["GGAA","GGAT"])
+
+    #t.boxplot_categories(t.df, by=["label"], input_cols=["site_str_score","site_wk_score"], plotname="boxplot.png")
+
+    #df_in = t.flip_one_face_orientation(["GGAA","GGAT"]).df
+    #x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = False)
+    #df_in["orientation"] = pd.DataFrame(x_ori)["ori"]
+    #stacked_bar_categories(df_in, "orientation", avg=True, legend=False, ylabel="count ratio")
+
+    #x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
+    #link1_df = pd.DataFrame(x_ori)
+    #link1_df['label'] = t.df['label']
+    #t.boxplot_categories(link1_df)
+
+
+    #pd.DataFrame(df_in.groupby(["orientation","distance","label"])["id"].count()).to_csv("count.tsv", sep="\t")
+
+    #plot_average_all(df_in[df_in["orientation"] == "3"],"/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/all_ori1_reversed",list(range(4,25)),corelen=4)
+    #df_in.assign(**x_ori)
+    #print(df_in)
+
+    #t.training_summary()
     #t.plot_distance_numeric()
     #t.plot_weak_sites()
 
-    #plot_average_all(t,"/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape",list(range(4,25)),corelen=4)
 
-    #ds = DNAShape("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/d6")
+    #ds = DNAShape("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/all")
 
     #print(t.df["distance"].to_dict())
     #t_shape  = Training(dftrain.loc[dftrain['distance'] == 6], corelen=4)
-    #s1list,s2list = t_shape.get_ordered_site_list()
 
-    #ds.plot_average(t_shape.get_labels_indexes(), s1list, s2list, t_shape.df["sequence"].to_dict())
+    #ds.plot_average(labeled_idxs, s1list, s2list, seqdict)
     #print(t.get_ordered_site_list())
 
-    t.stacked_bar_categories("distance", avg=True) # UPDATE
+    #t.stacked_bar_categories("distance", avg=True) # UPDATE
 
     #link1_df.to_csv("1merdf.csv",float_format='%.3f')
 
-    """
     # ========== GETTING FEATURES FROM THE DATA ==========
 
-    x_dist = t.get_feature_distance(type=feature_dist_type)
+    x_dist_numeric = t.get_feature_distance(type="numerical")
+    x_dist_cat = t.get_feature_distance(type="categorical")
     x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
     x_link1 = t.get_feature_linker_composition(1)
     x_link2 = t.get_feature_linker_composition(2)
@@ -158,21 +206,21 @@ if __name__ == '__main__':
     x_gc = t.get_linker_GC_content()
     x_pref = t.get_feature_site_pref()
 
-
-    only_T = [{"T":d["T"]} for d in x_link1]
     x_train = []
-    for x in [x_ori,only_T]:#[x_dist,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]:
+    for x in [x_dist_numeric,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]:
         x_train = merge_listdict(x_train, x)
     x_df = pd.DataFrame(x_train)
+
     #x_print = pd.DataFrame(x_train)
     #x_print["label"] = t.df["label"]
     #x_print.to_csv("all_features.tsv",index=False,float_format='%.3f',sep="\t")
+
 
     # ========== CREATING THE RF OBJECT  ==========
     x_train = pd.DataFrame(x_train).values.tolist()
     y_train = get_numeric_label(t.df).values
 
-    rf = ensemble.RandomForestClassifier(n_estimators=100, max_depth=3,random_state=0)
+    rf = ensemble.RandomForestClassifier(n_estimators=100, max_depth=10,random_state=0)
     #y_pred = model.predict(x_train)
 
     # ========== GET TOP N FEATURES  ==========
@@ -180,28 +228,45 @@ if __name__ == '__main__':
     feature_importances = pd.DataFrame(rf.feature_importances_,
                                    index = x_df.columns,
                                    columns=['importance']).sort_values('importance', ascending=False)
-    imp = list(feature_importances.index[:len(feature_importances)])
+    imp = list(feature_importances.index[:5])
     print("Top 10 feature importance list " + str(imp))
-    x_df_imp = x_df[imp] # we only use the most important features
-    x_train_dict = {"top5": x_df_imp.values.tolist()} #, "dist-numeric":x_df[["dist-numeric"]].values.tolist()}
+    x_df_imp = x_df[imp].to_dict('records') # we only use the most important features
+    #x_train_dict = {"top5": x_df_imp.values.tolist()} #, "dist-numeric":x_df[["dist-numeric"]].values.tolist()}
+
+    x1 = merge_listdict(x_dist_numeric, x_ori)
+    x2 = merge_listdict(x_dist_numeric,[])
+    x14 = merge_listdict(x_dist_numeric,x_pref)
+    x_df_imp = merge_listdict(x_df_imp, [])
+    x1 = [[d[k] for k in d] for d in x1]
+    x2 =  [[d[k] for k in d] for d in x2]
+    x3 =  [[d[k] for k in d] for d in x_ori]
+    x4 =  [[d[k] for k in d] for d in x_pref]
+    x14 =  [[d[k] for k in d] for d in x14]
+    xall = [[d[k] for k in d] for d in x_df_imp]
+    x_train_dict = {"distance,orientation":x1,"distance":x2, "orientation":x3,
+                    "site_score":x4, "distance,site_score":x14, "top5":xall}
 
     # ========== TREE DRAWING FROM A MODEL  ==========
 
-    model = rf.fit(x_train_dict["top5"], y_train) # make new model from the top features
+    """
+    x_dict_tree = merge_listdict(x_dist_numeric, x_ori)
+    x_list_tree = [[d[k] for k in d] for d in x_dict_tree]
+    x_df_tree = pd.DataFrame(x_dict_tree)
+    model = rf.fit(x_list_tree, y_train) # make new model from the top features
 
     # take a tree, let's say tree #5
     estimator = rf.estimators_[5]
     tree.export_graphviz(estimator, out_file='tree.dot',
-            feature_names = x_df_imp.columns,
+            feature_names = x_df_tree.columns,
             class_names = ['additive','cooperative'],
             rounded = True, proportion = False,
             precision = 2, filled = True)
     subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])
 
+
+
     # ========== Using this result to train on different dataset  ==========
 
-    """
-    """
     testpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_with_coop_anti.tsv"
     dftest = pd.read_csv(testpath, sep="\t")
     dftest = dftest[(dftest["label"] == "cooperative") | (dftest["label"] == "additive")]
@@ -215,7 +280,6 @@ if __name__ == '__main__':
     xtest_ori = test.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
     xtest_pref = test.get_feature_site_pref()
 
-
     x_test = []
     for x in [xtest_dist,xtest_link1,xtest_link2,xtest_link3,xtest_ori,xtest_pref,xtest_gc]:
         x_test = merge_listdict(x_test, x)
@@ -228,7 +292,6 @@ if __name__ == '__main__':
     dfpred["pred"] = lpred
     dfpred.to_csv("aa.csv")
     #print("Accuracy on test: %.f" % accuracy_score(y_true, y_pred))
-    """
     """
     # ========== MAKING AUC USING THE TOP FEATURES  ==========
 
@@ -268,4 +331,3 @@ if __name__ == '__main__':
     # left append 0 in base fpr just so we start at 0 (we did the same for the tpr)
     base_fpr = np.insert(base_fpr,0,0)
     display_output(base_fpr, mean_tpr, mean_auc, path="here.png")
-    """

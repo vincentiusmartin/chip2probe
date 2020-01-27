@@ -40,14 +40,15 @@ class Training(object):
     def get_labels_indexes(self):
           return self.df.groupby("label").groups
 
-    def stacked_bar_categories(self, x, y=["label"],plotname="stackedbar.png",avg=False):
+    def stacked_bar_categories(self, x, y=["label"],plotname="stackedbar.png",avg=False,legend=True, ylabel=""):
         cat_df = self.df[[x]]
         cat_df["label"] = self.df['label']
         group = [x] + y
         df2 = cat_df.groupby(group)['label'].count() # .unstack(x).fillna(0)
         if avg:
             df2 = df2.groupby(level=0).apply(lambda x: x / float(x.sum()))
-        df2.unstack(x).fillna(0).T.plot(kind='bar', stacked=True)
+        ax = df2.unstack(x).fillna(0).T.plot(kind='bar', stacked=True,legend=legend,rot=0)
+        ax.set_ylabel(ylabel)
         plt.savefig(plotname)
         plt.clf()
 
@@ -93,7 +94,9 @@ class Training(object):
                 pline_pos = mval * 0.05
                 y, h, col = df[colname].max() + hfactor * pline_pos, pline_h, 'k'
                 cur_ax.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1, c=col)
-                cur_ax.text((x1+x2)*.5, y + h, "p-gr=%.3f"%(p_gr), ha='center', va='bottom', color="red")
+                print(comb,p_gr)
+                pstr = "%.2E" % Decimal(p_gr) if p_gr < 0.001 else "%.4f" % p_gr
+                cur_ax.text((x1+x2)*.5, y + h, "p = %s"%(pstr), ha='center', va='bottom', color="red")
 
                 adj_ylim = (y+h) * 1.1
                 if adj_ylim > ylim: ylim = adj_ylim
@@ -293,6 +296,11 @@ class Training(object):
             rfeature.append(f)
         return rfeature
 
+    def get_feature_flanks(self, where, in=0, out=0):
+        """
+        where: left/right/both
+        """
+
     def get_feature_distance(self, type="numerical"):
         if type == "numerical":
             return [{"dist-numeric":x} for x in self.df["distance"].values]
@@ -301,7 +309,7 @@ class Training(object):
             one_hot.columns = ["dist-cat-%d"%col for col in one_hot.columns]
             return one_hot.to_dict('records')
         else:
-            raise Exception("distance must be numeric or categorical")
+            raise Exception("distance must be numerical or categorical")
 
     def get_linker_list(self):
         linkers = []
@@ -381,13 +389,13 @@ class Training(object):
                 print("couldn't find the second site %s in %s in the core list" % (p2,seq))
             if relative:
                 if s1 == 1 and s2 == 1:
-                    ori = '1'
+                    ori = 'HT/TH'
                 elif s1 == -1 and s2 == -1:
-                    ori = '1'
+                    ori = 'HT/TH'
                 elif s1 == 1 and s2 == -1:
-                    ori = '2'
+                    ori = 'HH'
                 elif s1 == -1 and s2 == 1:
-                    ori = '3'
+                    ori = 'TT'
                 else:
                     ori = '-1'
                 rfeature.append({"ori":ori})
