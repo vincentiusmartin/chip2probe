@@ -54,7 +54,7 @@ class DNAShape:
         s1 = int(sum(site1list.values()) / len(site1list.values()))
         s2 = int(sum(site2list.values()) / len(site2list.values()))
 
-        shapes = {"Propeller twist ":self.prot,"Helix twist":self.helt,"Roll":self.roll,"Minor Groove Width":self.mgw}
+        shapes = {"Minor Groove Width":self.mgw}
         keystolabel = {"additive":"ã","cooperative":"ç"} # ã ç
 
         if "cooperative" in labels:

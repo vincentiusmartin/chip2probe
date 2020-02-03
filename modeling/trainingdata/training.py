@@ -15,7 +15,7 @@ import trainingdata.seqextractor as seqextractor
 
 import math
 
-from statistics import median
+import statistics
 import util.stats as st
 import util.bio as bio
 
@@ -59,7 +59,7 @@ class Training(object):
         else:
             cols = list(input_cols)
         sns.set_style("whitegrid")
-        numcol = 3
+        numcol = 4
         numrow = math.ceil(len(cols) / numcol)
         # to make axis with different y-scale
         fig, ax = plt.subplots(numrow, numcol, figsize=(14, 5))
@@ -70,6 +70,7 @@ class Training(object):
         for i in range(len(cols)):
             colname = cols[i]
             cur_group = {elm[0]:list(elm[1]) for elm in grouped[colname]}
+            #cur_group = {elm[0]:list(filter(lambda a: a != 0, list(elm[1]))) for elm in grouped[colname]}
             labels, data = [*zip(*cur_group.items())]
             #labels = list(cur_group.keys())#["cooperative","additive","anticoop"]
             #data = [cur_group[x] for x in labels]
@@ -88,19 +89,20 @@ class Training(object):
                 max1 = max(data[x1])
                 max2 = max(data[x2])
                 mval = max1 if max1 > max2 else max2
-                p_gr = st.wilcox(data[x1],data[x2],alternative="greater")
-                hfactor = (x2 - x1)**2.1
-                pline_h = mval * 0.1
-                pline_pos = mval * 0.05
+                p_gr = st.wilcox(data[x1],data[x2],alternative="two.sided")
+                hfrac = -1 if mval < 0 else 1
+                hfactor = (max2 - max1)**1.5
+                pline_h = mval * 0.05
+                pline_pos = mval * 0.2
                 y, h, col = df[colname].max() + hfactor * pline_pos, pline_h, 'k'
-                cur_ax.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1, c=col)
-                print(comb,p_gr)
+                #cur_ax.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1, c=col)
+                print(colname,"add>coop pvalue: ",p_gr)
                 pstr = "%.2E" % Decimal(p_gr) if p_gr < 0.001 else "%.4f" % p_gr
-                cur_ax.text((x1+x2)*.5, y + h, "p = %s"%(pstr), ha='center', va='bottom', color="red")
+                #cur_ax.text((x1+x2)*.5, y + h, "p = %s"%(pstr), ha='center', va='bottom', color="red")
 
                 adj_ylim = (y+h) * 1.1
                 if adj_ylim > ylim: ylim = adj_ylim
-            cur_ax.set_ylim(top=ylim)
+            #cur_ax.set_ylim(top=ylim)
         for d in range(len(cols),numrow*numcol):
             fig.delaxes(ax.flatten()[d])
         plt.savefig(plotname)
@@ -287,6 +289,34 @@ class Training(object):
             pdf.savefig(fig)
         plt.clf()
         plt.close()
+
+    def extract_positional(self,seq, maxk = 2, label="seq", minseqlen=-float("inf")):
+        '''
+        orientation: if right, then start from 0 to the right, else start from
+        len(seq)-1 to the left
+        minseqlen: will fill -1 if not enough bases
+        '''
+        iterseq = str(seq)
+        nucleotides = ['A','C','G','T']
+        features = {}
+        for k in range(1,maxk+1):
+            perm = ["".join(p) for p in itertools.product(nucleotides, repeat=k)]
+            i = 0
+            while i < len(iterseq)+1-k:
+                for kmer in perm:
+                    seqcmp = iterseq[i:i+k]
+                    if seqcmp == kmer:
+                        features["%s_pos%d_%s" % (label,i,kmer)] = 1
+                    else:
+                        features["%s_pos%d_%s" % (label,i,kmer)] = 0
+                i += 1
+            # append the rest with -1
+            if minseqlen > 0:
+                while i < minseqlen + 1 - k:
+                    for kmer in perm:
+                        features["%s_pos%d_%s" % (label,i,kmer)] = -1
+                    i += 1
+        return features
     # =========
 
     def get_feature_site_pref(self):
@@ -296,10 +326,159 @@ class Training(object):
             rfeature.append(f)
         return rfeature
 
-    def get_feature_flanks(self, where, in=0, out=0):
-        """
-        where: left/right/both
-        """
+    def get_nonrev_dfeature(self, k, label="seq", initcount=0):
+        nucleotides = ['A','C','G','T']
+        perm = []
+        dfeature = {}
+        for p in itertools.product(nucleotides, repeat=k):
+            p = "".join(p)
+            rev = bio.revcompstr(p)
+            if p not in perm and rev not in perm:
+                to_append = p if p < rev else rev
+                dfeature["%s_%s"%(label,to_append)] = initcount
+                perm.append(p)
+        return dfeature
+
+    def count_nonrev_kmer(self,seq,maxk,label="seq",avg=False):
+        dfeature = {}
+        for k in range(1, maxk+1):
+            dfeature = {**dfeature,**self.get_nonrev_dfeature(k,label,initcount=0)}
+            for i in range(len(seq) + 1 - k):
+                curseq = str(seq)[i:i+k]
+                revseq = bio.revcompstr(curseq)
+                curseq = curseq if curseq < revseq else revseq
+                key = "%s_%s"%(label,curseq)
+                dfeature[key] = dfeature[key] + 1
+        if avg:
+            for key in dfeature:
+                kmer = key[len("%s_"%label):]
+                if len(seq) + 1 - len(kmer) != 0:
+                    dfeature[key] = dfeature[key] / (len(seq) + 1 - len(kmer))
+        return dfeature
+
+    def get_middle_avgshape_feature(self, freqs, dnashape, maxk=2, action="avg"):
+        rfeature = []
+        for idx,row in self.df.iterrows():
+            dfeature = {}
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+            else:
+                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+            # since position is the middle point of each site
+            start = site1 + self.motiflen // 2
+            end = site2 - self.motiflen // 2
+            shapes = {"prot":dnashape.prot, "mgw":dnashape.mgw, "roll":dnashape.roll, "helt":dnashape.helt}
+            #shapes = {"mgw":dnashape.mgw}
+            linker_len = end - start
+            for s in shapes:
+                linker_shape = shapes[s][str(idx + 1)][start:end]
+                for freq in freqs:
+                    span = freq // 2
+                    label = "middle_%s_avg_%d_%d" % (s, freq, freq + 1)
+                    if linker_len < freq:
+                        for k in range(0,maxk):
+                            midseqval = [-999]
+                    else:
+                        mid = linker_len // 2
+                        if linker_len % 2 == 0: # even
+                            midseqval = linker_shape[mid-span-1:mid+span+1]
+                        else: # odd
+                            midseqval = linker_shape[mid-span:mid+span+1]
+                    if action == "mean":
+                        midseqval = statistics.mean(midseqval)
+                    elif action == "max":
+                        midseqval = max(midseqval)
+                    elif action == "min":
+                        midseqval = min(midseqval)
+                    dfeature[label] = midseqval
+            rfeature.append(dfeature)
+        return rfeature
+
+    def get_middle_feature(self, freqs, maxk=2):
+        # pos needs to be odd number
+        # the representation is average
+        rfeature = []
+        for idx,row in self.df.iterrows():
+            dfeature = {}
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+            else:
+                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+            # since position is the middle point of each site
+            start = site1 + self.motiflen // 2
+            end = site2 - self.motiflen // 2
+            linker = row["sequence"][start:end]
+            for freq in freqs:
+                span = freq // 2
+                label = "middle_%d_%d" % (freq, freq + 1)
+                if len(linker) < freq:
+                    for k in range(0,maxk):
+                        dfeature = {**dfeature,**self.get_nonrev_dfeature(k + 1, label=label, initcount=-1)}
+                else:
+                    mid = len(linker) // 2
+                    if len(linker) % 2 == 0: # even
+                        midseq = linker[mid-span-1:mid+span+1]
+                    else: # odd
+                        midseq = linker[mid-span:mid+span+1]
+                    dfeature = {**dfeature, **self.count_nonrev_kmer(midseq,maxk=maxk,label=label,avg=True)}
+            rfeature.append(dfeature)
+        return rfeature
+
+    def get_feature_flank_shapes(self, dnashape, seqin):
+        # seqin: how many base inside the linker
+        rfeature = []
+        for idx,row in self.df.iterrows():
+            dfeature = {}
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+                s1type, s2type = "str", "wk"
+            else:
+                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+                s1type, s2type = "wk", "str"
+            # since position is the middle point of each site
+            start = site1 + self.motiflen // 2
+            end = site2 - self.motiflen // 2
+            shapes = {"prot":dnashape.prot, "mgw":dnashape.mgw, "roll":dnashape.roll, "helt":dnashape.helt}
+            #shapes = {"mgw":dnashape.mgw}
+            linker_len = end - start
+            minlink = seqin if seqin < linker_len else linker_len
+            for s in shapes:
+                linker_shape = shapes[s][str(idx + 1)][start:end]
+                linker1 = linker_shape[:minlink]
+                linker2 = linker_shape[-minlink:][::-1]
+                i = 0
+                while i < minlink:
+                    dfeature["%s_%s_pos-%d" % (s,s1type,i)] = linker1[i]
+                    dfeature["%s_%s_pos-%d" % (s,s2type,i)] = linker2[i]
+                    i += 1
+                while i < seqin:
+                    dfeature["%s_%s_pos-%d" % (s,s1type,i)] = -999
+                    dfeature["%s_%s_pos-%d" % (s,s2type,i)] = -999 # currently 0 ???
+                    i += 1
+            rfeature.append(dfeature)
+        return rfeature
+
+    # only linker now
+    def get_feature_flank_seqs(self, k, seqin=0):
+        rfeature = []
+        for idx,row in self.df.iterrows():
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+                s1type, s2type = "str", "wk"
+            else:
+                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+                s1type, s2type = "wk", "str"
+            # since position is the middle point of each site
+            start = site1 + self.motiflen // 2
+            end = site2 - self.motiflen // 2
+            linker = row["sequence"][start:end]
+            minlink = seqin if seqin < len(linker) else len(linker)
+            flank1 = linker[:minlink]
+            flank2 = linker[-minlink:][::-1] # also reverse the string
+            d1 = self.extract_positional(flank1,maxk=k,minseqlen=seqin,label="flankseq_%s"%s1type)
+            d2 = self.extract_positional(flank2,maxk=k,minseqlen=seqin,label="flankseq_%s"%s2type)
+            rfeature.append({**d1, **d2})
+        return rfeature
 
     def get_feature_distance(self, type="numerical"):
         if type == "numerical":
