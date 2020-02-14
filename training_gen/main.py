@@ -149,7 +149,7 @@ def make_training(analysis_respath, seqwithin_pattern, probedata, classification
     training_df["site_wk_pos"] = training_df["site_wk_pos"].astype(int)
     training_df["distance"] = training_df["distance"].astype(int)
     #training_df.to_csv("training.tsv", sep="\t", index=False)
-    return count_dict#training_df
+    return training_df
 
 if __name__ == '__main__':
     #dir = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191004_coop-PBM_Ets1_v1_1st/2.processed_gpr"
@@ -157,6 +157,7 @@ if __name__ == '__main__':
     probe_analysis_path = "/Users/vincentiusmartin/Research/chip2gcPBM/result"
     negcutoff = 95
     pvalthres = .01
+    fdrcor = True
     tfname = "Ets1"
     #filepaths = ["/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/processed_gpr/20191030_258614510001_550_50_ch1.gpr_alldata.txt"]
     #plot_chamber_corr(filepaths, log=False)
@@ -171,8 +172,8 @@ if __name__ == '__main__':
     n = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/3.coop_array_files/negctrl_20191004_258614510001_ETS1_550_5_1-4_alldata.tsv",sep="\t") ###
     probedata = ProbeData(r,n,percentile=negcutoff)
 
-    #classification = classifier.classify_per_orientation(probedata, pvalthres)
-    #utils.dictlist2file(classification,"cooplabeled_%s.txt" % fname_woext,listval=True)
+    #classification = classifier.classify_per_orientation(probedata, pvalthres, fdrcor=fdrcor)
+    #utils.dictlist2file(classification,"class.txt",listval=True)
     classification = utils.read_dictlist_file("class.txt", as_int=True)
 
     class_main1 = ["cooperative_overlap","additive_overlap","anticoop_overlap"]
@@ -185,12 +186,11 @@ if __name__ == '__main__':
     classifier.plot_median_binding_sum(probedata,classification,0,log=True,tfname=tfname,plotname="orig_plot_o1_2_log_%d" % negcutoff)
 
     cd = make_training(probe_analysis_path, "mutated_probes.*\.(tsv|csv)$", probedata, classification_main1)
-
-    classifier.plot_median_binding_sum(probedata,cd,0,log=True,tfname=tfname,plotname="orig_plot_o1_2_log_%d" % negcutoff,plotnonsignif=False)
-
-
+    cd.to_csv("training_%s.tsv" % fname_woext, sep="\t", index=False)
 
     """
+    classifier.plot_median_binding_sum(probedata,cd,0,log=True,tfname=tfname,plotname="orig_plot_o1_2_log_%d" % negcutoff,plotnonsignif=False)
+
     print("Making multisites file for %s..." % fname_woext)
 
     #pd.set_option('display.max_columns', 500)
@@ -213,11 +213,10 @@ if __name__ == '__main__':
     print("Make scatter plot for each inconsistent classification")
     class_main = ["additive_o1","additive_o2","cooperative_o1","cooperative_o2","anticoop_o1","anticoop_o2"]
     subset = {k:classification[k] for k in classification if k not in class_main}
-    """
-    for sub in subset:
-        print("    %s" % sub)
-        probedata.multi_scatter_boxplot(subset[sub],log=True,filepath="boxplot-%s.pdf" % sub)
-    """
+
+    #for sub in subset:
+    #    print("    %s" % sub)
+    #    probedata.multi_scatter_boxplot(subset[sub],log=True,filepath="boxplot-%s.pdf" % sub)
 
     print("Plot median binding sum for all orientations...")
 

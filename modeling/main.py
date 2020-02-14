@@ -157,7 +157,7 @@ def stacked_bar_categories(df, x, y=["label"],plotname="stackedbar.png",avg=Fals
 
 if __name__ == '__main__':
     #trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191004_coop-PBM_Ets1_v1_1st/training_data/training_overlap.tsv"
-    trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_overlap.tsv"
+    trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_p01_adjusted.tsv"
     pd.set_option('display.max_columns', None)
     dforig = pd.read_csv(trainingpath, sep="\t")
     dforig = dforig[(dforig["label"] == "cooperative") | (dforig["label"] == "additive")]
@@ -168,16 +168,17 @@ if __name__ == '__main__':
     dftrain = dforig[~dforig['name'].str.contains(r'weak|dist')].reset_index(drop=True)# r'dist|weak
     #dftrain = get_custom_df(dforig,"dist")
     t = Training(dftrain, corelen=4)
+    t.stacked_bar_categories("distance", avg=True)
+    #t.stacked_bar_categories("distance", avg=False)
+
     t = t.flip_one_face_orientation(["GGAA","GGAT"])
 
-
-    #t.boxplot_categories(t.df, by=["label"], input_cols=["site_str_score","site_wk_score"], plotname="boxplot.png")
-
-    #df_in = t.flip_one_face_orientation(["GGAA","GGAT"]).df
-    #x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = False)
-    #df_in["orientation"] = pd.DataFrame(x_ori)["ori"]
+    df_in = t.flip_one_face_orientation(["GGAA","GGAT"]).df
+    x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = False)
+    df_in["orientation"] = pd.DataFrame(x_ori)["ori"]
     #stacked_bar_categories(df_in, "orientation", avg=True, legend=False, ylabel="count ratio")
-
+    #t.boxplot_categories(df_in, by=["label"], input_cols=["orientation"], plotname="boxplot.png")
+    #print("")
     #t.plot_grouped_label(self, df, by, column, figname="boxplot.png"):
 
 
@@ -193,15 +194,6 @@ if __name__ == '__main__':
 
 
     ds = DNAShape("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/all_ori1_reversed")
-
-    x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = False)#t.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
-    link1_df = pd.DataFrame(x_ori)#[[ "middle_roll_avg_5_6","middle_helt_avg_5_6","middle_mgw_avg_5_6","middle_prot_avg_5_6"]] #
-    #link1_df = link1_df.loc[link1_df["middle_prot_avg_5_6"] != -999]
-    link1_df['label'] = t.df['label']
-    print(link1_df)
-    stacked_bar_categories(link1_df,"ori")
-
-
     #print(t.df["distance"].to_dict())
     #t_shape  = Training(dftrain.loc[dftrain['distance'] == 6], corelen=4)
 
@@ -224,19 +216,17 @@ if __name__ == '__main__':
     x_pref = t.get_feature_site_pref()
 
     x_flank = t.get_feature_flank_seqs(2, seqin = 3)
-    x_ds = t.get_feature_flank_shapes(ds, seqin = 3)
+    #x_ds = t.get_feature_flank_shapes(ds, seqin = 3)
     x_mid = t.get_middle_feature([1,3,5], maxk=2)
-    x_mid_shape_mean = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="mean")
-    x_mid_shape_max = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="max")
-    x_mid_shape_min = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="min")
+    #x_mid_shape_mean = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="mean")
+    #x_mid_shape_max = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="max")
+    #x_mid_shape_min = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="min")
 
     x_train = []
-    for x in [x_dist_numeric, x_ori, x_pref, x_flank, x_mid, x_ds, x_mid_shape_mean, x_mid_shape_max, x_mid_shape_min]: #[x_dist_numeric,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]: #  x_pref,
+    for x in [x_dist_numeric, x_ori, x_pref, x_flank, x_mid]: #x_ds, x_mid_shape_mean, x_mid_shape_max, x_mid_shape_min]: #[x_dist_numeric,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]: #  x_pref,
         x_train = merge_listdict(x_train, x)
     xtr = [[d[k] for k in d] for d in x_train]
     x_df = pd.DataFrame(x_train)
-    #x_df["label"] = t.df["label"]
-    #x_df.to_csv("train_features.tsv", sep="\t", float_format='%.4f')
 
     #x_print = pd.DataFrame(x_train)
     #x_print["label"] = t.df["label"]
@@ -278,22 +268,9 @@ if __name__ == '__main__':
     x3 =  [[d[k] for k in d] for d in x3] #x_ori
     x4 =  [[d[k] for k in d] for d in x4] #xpref
     x5 =  [[d[k] for k in d] for d in x5] #xpref
-    #x6 = [[d[k] for k in d] for d in x6]
+    x6 = [[d[k] for k in d] for d in x6]
 
-    #x_train_dict  = {"distance,strength,orientation":[x6,"dt"], "distance,orientation":[x5,"dt"], "distance,strength":[x4,"dt"], "site strength":[x3,"dt"], "orientation":[x2,"dt"], "distance":[x1,"dt"]}
-    # x_train_dict  = {"top8-random forest":[xtr,"rf"], "top8-decision tree":[xtr,"dt"], "distance,strength,orientation-decision tree":[xtr,"dt"], "distance,strength,orientation-random forest":[xtr,"rf"]}
-    """x_train_dict = {"top8-rf":[xall,"rf"],
-                    "top8-dt":[xall,"dt"],
-                    "distance(dist)dt":[x1,"dt"],
-                    "orientation(ori)-dt":[x2,"dt"],
-                    "site_intensity(int)-dt":[x3,"dt"],
-                    "dist,int-dt":[x4,"dt"],
-                    "dist,int,ori-dt":[x5l,"dt"]
-                    }"""
-    #x_train_dict = {"distance_numeric-rf":[x1,"dt"],"distance_categorical-rf":[x2,"dt"]}
-    #x_train_dict = {"top20":xall}
-    #x_train_dict = {"distance,orientation":x1,"distance":x2, "orientation":x3,
-    #                "site_score":x4, "distance,site_score":x14, "top5":xall}
+    x_train_dict  = {"distance,strength,orientation":[x6,"dt"], "distance,orientation":[x5,"dt"], "distance,strength":[x4,"dt"], "site strength":[x3,"dt"], "orientation":[x2,"dt"], "distance":[x1,"dt"]}
 
     # ========== TREE DRAWING FROM A MODEL  ==========
 

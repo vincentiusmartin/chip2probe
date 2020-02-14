@@ -374,7 +374,7 @@ class Training(object):
                 linker_shape = shapes[s][str(idx + 1)][start:end]
                 for freq in freqs:
                     span = freq // 2
-                    label = "middle_%s_avg_%d_%d" % (s, freq, freq + 1)
+                    label = "middle_%s_%s_%d_%d" % (s, action, freq, freq + 1)
                     if linker_len < freq:
                         for k in range(0,maxk):
                             midseqval = [-999]

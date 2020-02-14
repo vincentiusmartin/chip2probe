@@ -172,12 +172,12 @@ class ProbeData:
     def get_seq(self,seqtype,indexes=[], othercols=False, tofile=False):
         """
         Get sequence of type 'seqtype' and a list containing the desired indexes.
-        By default indexes is an emtpy list as if it is empty, we return all
-        sequences.
+        By default indexes is an emtpy list.
+        Indexes can be set to -1 to return all sequences.
         othercols: information from other column is needed can be shown as well,
             if this is the case, the result will be a dictionary
         """
-        if not indexes:
+        if indexes == -1:
             indexes = self.table[seqtype].index.values
         seqlist = self.table[seqtype]['Sequence'][indexes].tolist()
         if not othercols:

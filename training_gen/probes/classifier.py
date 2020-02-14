@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from termcolor import colored
+import statsmodels.stats.multitest as sm
 
 #  custom library
 import util.stats as sta
@@ -42,7 +43,7 @@ def const_satisfied(m1,m2,m3,wt,cutoff):
 
 # ================ Tools ================
 
-def classify_per_orientation(probes,pvalthres,classify_inconsistency=True):
+def classify_per_orientation(probes,pvalthres,classify_inconsistency=True, fdrcor=False):
     medians = probes.medians
     cutoff = probes.cutoff
 
@@ -54,6 +55,7 @@ def classify_per_orientation(probes,pvalthres,classify_inconsistency=True):
     #names = probes.table["wt"]["Name"].tolist() --> debugging purpose
 
     classification = {}
+    pval = {}
     for orientation in [1,2]:
         ori = "o%d"%orientation
         m1_med = medians["m1o%d"%orientation].tolist()
@@ -61,7 +63,9 @@ def classify_per_orientation(probes,pvalthres,classify_inconsistency=True):
         m3_med = medians["m3o%d"%orientation].tolist()
         wt_med = medians["wto%d"%orientation].tolist()
         wilcox_p = wilcox_test(twosites[ori],indivsum[ori],'greater')
-
+        if fdrcor:
+            # index 1 is the corrected pval
+            wilcox_p = sm.fdrcorrection(wilcox_p)[1]
         # previously done: if wilcox_p[i] < pvalthres and m1_med[i] > cutoff[ori] and m2_med[i] > cutoff[ori] and wt_med[i] > cutoff[ori] and m3_med[i] <= cutoff[ori] --> remove m1 and m2 for ets
         classification["cooperative_o%d"%orientation] = [i for i in range(0,len(wilcox_p)) if wilcox_p[i] < pvalthres and wt_med[i] > cutoff[ori] and m3_med[i] <= cutoff[ori]]
         print("Wilcox greater test orientation %d, # cooperative rows with p-val less than %.3f: %d/%d" \
@@ -69,6 +73,8 @@ def classify_per_orientation(probes,pvalthres,classify_inconsistency=True):
         #print("COOPERATIVE\n",[names[i] for i in classification["cooperative_o%d"%orientation] if "dist" in names[i]])
 
         wilcox_p_less = wilcox_test(twosites[ori],indivsum[ori],'less')
+        if fdrcor:
+            wilcox_p_less =sm.fdrcorrection(wilcox_p_less)[1]
         classification["anticoop_o%d"%orientation] = [i for i in range(0,len(wilcox_p)) if wilcox_p_less[i] < pvalthres and wt_med[i] > cutoff[ori] and m3_med[i] <= cutoff[ori]]
         print("Wilcox less test orientation %d, # anticoop rows with p-val less than %.3f: %d/%d" \
                 % (orientation,pvalthres,len(classification["anticoop_o%d"%orientation]),len(wilcox_p_less)))
