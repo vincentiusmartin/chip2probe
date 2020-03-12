@@ -132,7 +132,7 @@ class Training(object):
         ori = self.get_feature_orientation(positive_cores)
         records = self.df.to_dict(orient='records')
         for i in range(0,len(records)):
-            if ori[i]["ori"] == "1":
+            if ori[i]["ori"] == "HT/TH":
                 site_str = records[i]["sequence"][records[i]["site_str_pos"] - self.motiflen//2:records[i]["site_str_pos"] + self.motiflen//2]
                 site_wk = records[i]["sequence"][records[i]["site_wk_pos"] - self.motiflen//2:records[i]["site_wk_pos"] + self.motiflen//2]
                 if site_str not in positive_cores and site_wk not in positive_cores:
@@ -142,12 +142,6 @@ class Training(object):
                     wk_pos = records[i]["site_wk_pos"]
                     records[i]["site_str_pos"] = len(records[i]["sequence"]) - wk_pos
                     records[i]["site_wk_pos"] = len(records[i]["sequence"]) - str_pos
-                    #site_str_new = records[i]["sequence"][records[i]["site_str_pos"] - self.motiflen//2:records[i]["site_str_pos"] + self.motiflen//2]
-                    #site_wk_new = records[i]["sequence"][records[i]["site_wk_pos"] - self.motiflen//2:records[i]["site_wk_pos"] + self.motiflen//2]
-                    #if site_str_new not in positive_cores or site_wk_new not in positive_cores:
-                    #    print(records[i]["sequence"],records[i]["site_str_pos"],records[i]["site_wk_pos"])
-                    #    print(site_str, site_wk, site_str_new, site_wk_new)
-                    #    break
         return Training(pd.DataFrame(records), corelen=self.motiflen)
 
 
@@ -424,8 +418,37 @@ class Training(object):
             rfeature.append(dfeature)
         return rfeature
 
+
     def get_feature_flank_shapes(self, dnashape, seqin):
+        shapes = {"prot":dnashape.prot, "mgw":dnashape.mgw, "roll":dnashape.roll, "helt":dnashape.helt}
+        rfeature = []
+        for idx,row in self.df.iterrows():
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+                s1type, s2type = "str", "wk"
+            else:
+                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+                s1type, s2type = "wk", "str"
+            dfeature = {}
+            for s in shapes:
+                if seqin > 0: # inner
+                    flank1 = shapes[s][str(idx + 1)][site1:site1+seqin]
+                    flank2 = shapes[s][str(idx + 1)][site2-seqin:site2][::-1]
+                    type = "inner"
+                else: # outer
+                    flank1 = shapes[s][str(idx + 1)][site1+seqin:site1][::-1]
+                    flank2 = shapes[s][str(idx + 1)][site2:site2-seqin]
+                    type = "outer"
+                for i in range(abs(seqin)):
+                    dfeature["%s_%s_%s_pos_%d" % (s,type,s1type,i)] = flank1[i]
+                    dfeature["%s_%s_%s_pos_%d" % (s,type,s2type,i)] = flank2[i]
+            rfeature.append(dfeature)
+        return rfeature
+
+
+    def get_feature_flank_shapes_inlink(self, dnashape, seqin):
         # seqin: how many base inside the linker
+        shapes = {"prot":dnashape.prot, "mgw":dnashape.mgw, "roll":dnashape.roll, "helt":dnashape.helt}
         rfeature = []
         for idx,row in self.df.iterrows():
             dfeature = {}
@@ -438,8 +461,6 @@ class Training(object):
             # since position is the middle point of each site
             start = site1 + self.motiflen // 2
             end = site2 - self.motiflen // 2
-            shapes = {"prot":dnashape.prot, "mgw":dnashape.mgw, "roll":dnashape.roll, "helt":dnashape.helt}
-            #shapes = {"mgw":dnashape.mgw}
             linker_len = end - start
             minlink = seqin if seqin < linker_len else linker_len
             for s in shapes:
@@ -458,8 +479,32 @@ class Training(object):
             rfeature.append(dfeature)
         return rfeature
 
+    def get_feature_flank_core(self, k, seqin=0):
+        # seqin can be negative to get outer flank
+        # i don't think we have to take complement here
+        rfeature = []
+        for idx,row in self.df.iterrows():
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+                s1type, s2type = "str", "wk"
+            else:
+                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+                s1type, s2type = "wk", "str"
+            if seqin >= 0: # inner
+                flank1 = row["sequence"][site1:site1+seqin]
+                flank2 = row["sequence"][site2-seqin:site2][::-1]
+                label = "flankseq_in"
+            else: # outer
+                flank1 = row["sequence"][site1+seqin:site1][::-1]
+                flank2 = row["sequence"][site2:site2-seqin]
+                label = "flankseq_out"
+            d1 = self.extract_positional(flank1,maxk=k,minseqlen=seqin,label="%s_%s"%(label,s1type))
+            d2 = self.extract_positional(flank2,maxk=k,minseqlen=seqin,label="%s_%s"%(label,s2type))
+            rfeature.append({**d1, **d2})
+        return rfeature
+
     # only linker now
-    def get_feature_flank_seqs(self, k, seqin=0):
+    def get_feature_flank_in_linker(self, k, seqin=0):
         rfeature = []
         for idx,row in self.df.iterrows():
             if row["site_wk_pos"] > row["site_str_pos"]:

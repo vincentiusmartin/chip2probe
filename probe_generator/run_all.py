@@ -120,6 +120,7 @@ if __name__=="__main__":
     findex = args.index
     outdir = "%s/%s" % (args.outdir,inlist[findex]["name"])
 
+    """
     if not os.path.exists(outdir):
         print("Make directory %s" % outdir)
         os.makedirs(outdir)
@@ -131,6 +132,7 @@ if __name__=="__main__":
         handle_cistrome(inlist[findex], outdir)
     else:
         raise Exception("Type is not supported")
+    """
 
     # We need sites_all.tsv from the previous part, in here, we should have the
     # file already.

@@ -155,171 +155,7 @@ def stacked_bar_categories(df, x, y=["label"],plotname="stackedbar.png",avg=Fals
     plt.savefig(plotname)
     plt.clf()
 
-if __name__ == '__main__':
-    #trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191004_coop-PBM_Ets1_v1_1st/training_data/training_overlap.tsv"
-    trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_p01_adjusted.tsv"
-    pd.set_option('display.max_columns', None)
-    dforig = pd.read_csv(trainingpath, sep="\t")
-    dforig = dforig[(dforig["label"] == "cooperative") | (dforig["label"] == "additive")]
-    ori_one_hot = True
-    feature_dist_type = "numerical"
-
-    # only get cooperative and additive
-    dftrain = dforig[~dforig['name'].str.contains(r'weak|dist')].reset_index(drop=True)# r'dist|weak
-    #dftrain = get_custom_df(dforig,"dist")
-    t = Training(dftrain, corelen=4)
-    t.stacked_bar_categories("distance", avg=True)
-    #t.stacked_bar_categories("distance", avg=False)
-
-    t = t.flip_one_face_orientation(["GGAA","GGAT"])
-
-    df_in = t.flip_one_face_orientation(["GGAA","GGAT"]).df
-    x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = False)
-    df_in["orientation"] = pd.DataFrame(x_ori)["ori"]
-    #stacked_bar_categories(df_in, "orientation", avg=True, legend=False, ylabel="count ratio")
-    #t.boxplot_categories(df_in, by=["label"], input_cols=["orientation"], plotname="boxplot.png")
-    #print("")
-    #t.plot_grouped_label(self, df, by, column, figname="boxplot.png"):
-
-
-    #pd.DataFrame(df_in.groupby(["orientation","distance","label"])["id"].count()).to_csv("count.tsv", sep="\t")
-
-    #plot_average_all(df_in[df_in["orientation"] == "3"],"/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/all_ori1_reversed",list(range(4,25)),corelen=4)
-    #df_in.assign(**x_ori)
-    #print(df_in)
-
-    #t.training_summary()
-    #t.plot_distance_numeric()
-    #t.plot_weak_sites()
-
-
-    ds = DNAShape("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/all_ori1_reversed")
-    #print(t.df["distance"].to_dict())
-    #t_shape  = Training(dftrain.loc[dftrain['distance'] == 6], corelen=4)
-
-    #ds.plot_average(labeled_idxs, s1list, s2list, seqdict)
-    #print(t.get_ordered_site_list())
-
-    #t.stacked_bar_categories("distance", avg=True) # UPDATE
-
-    #link1_df.to_csv("1merdf.csv",float_format='%.3f')
-
-    # ========== GETTING FEATURES FROM THE DATA ==========
-
-    x_dist_numeric = t.get_feature_distance(type="numerical")
-    x_dist_cat = t.get_feature_distance(type="categorical")
-    x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
-    x_link1 = t.get_feature_linker_composition(1)
-    x_link2 = t.get_feature_linker_composition(2)
-    x_link3 = t.get_feature_linker_composition(3)
-    x_gc = t.get_linker_GC_content()
-    x_pref = t.get_feature_site_pref()
-
-    x_flank = t.get_feature_flank_seqs(2, seqin = 3)
-    #x_ds = t.get_feature_flank_shapes(ds, seqin = 3)
-    x_mid = t.get_middle_feature([1,3,5], maxk=2)
-    #x_mid_shape_mean = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="mean")
-    #x_mid_shape_max = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="max")
-    #x_mid_shape_min = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="min")
-
-    x_train = []
-    for x in [x_dist_numeric, x_ori, x_pref, x_flank, x_mid]: #x_ds, x_mid_shape_mean, x_mid_shape_max, x_mid_shape_min]: #[x_dist_numeric,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]: #  x_pref,
-        x_train = merge_listdict(x_train, x)
-    xtr = [[d[k] for k in d] for d in x_train]
-    x_df = pd.DataFrame(x_train)
-
-    #x_print = pd.DataFrame(x_train)
-    #x_print["label"] = t.df["label"]
-    #x_print.to_csv("all_features.tsv",index=False,float_format='%.3f',sep="\t")
-
-    # ========== CREATING THE RF OBJECT  ==========
-    x_train = pd.DataFrame(x_train).values.tolist()
-    y_train = get_numeric_label(t.df).values
-
-    rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10,random_state=0)
-    dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
-    #y_pred = model.predict(x_train)
-
-    # ========== GET TOP N FEATURES  ==========
-    model = rf.fit(x_train, y_train)
-    feature_importances = pd.DataFrame(rf.feature_importances_,
-                                   index = x_df.columns,
-                                   columns=['importance']).sort_values('importance', ascending=False)
-    imp = list(feature_importances.index[:8])
-    print("Top 10 feature importance list " + str(imp))
-    x_df_imp = x_df[imp].to_dict('records') # we only use the most important features
-    #x_train_dict = {"top5": x_df_imp.values.tolist()} #, "dist-numeric":x_df[["dist-numeric"]].values.tolist()}
-
-    #x1 = merge_listdict(x_dist_numeric, x_ori)
-    #x2 = merge_listdict(x_dist_numeric,[])
-    #x14 = merge_listdict(x_dist_numeric,x_pref)
-    #x_df_imp = merge_listdict(x_df_imp, [])
-    x1 = merge_listdict([], x_dist_numeric)
-    x2 = merge_listdict([], x_pref)
-    x3 = merge_listdict([], x_ori)
-
-    x4 = merge_listdict(x_dist_numeric, x_pref)
-    x5 = merge_listdict(x_dist_numeric, x_ori)
-    x6 = merge_listdict(x5, x_pref)
-    #x5 = merge_listdict(x5, x_pref)
-
-    x1 = [[d[k] for k in d] for d in x1]
-    x2 =  [[d[k] for k in d] for d in x2]
-    x3 =  [[d[k] for k in d] for d in x3] #x_ori
-    x4 =  [[d[k] for k in d] for d in x4] #xpref
-    x5 =  [[d[k] for k in d] for d in x5] #xpref
-    x6 = [[d[k] for k in d] for d in x6]
-
-    x_train_dict  = {"distance,strength,orientation":[x6,"dt"], "distance,orientation":[x5,"dt"], "distance,strength":[x4,"dt"], "site strength":[x3,"dt"], "orientation":[x2,"dt"], "distance":[x1,"dt"]}
-
-    # ========== TREE DRAWING FROM A MODEL  ==========
-
-
-    x_dict_tree = x6
-    x_df_tree = pd.DataFrame(x_dict_tree)
-    print(x_df_tree)
-    x_list_tree = [[d[k] for k in x_df_tree.columns] for d in x_dict_tree]
-    model = dt.fit(x_list_tree, y_train) # make new model from the top features
-    # take a tree, let's say tree #5
-    estimator = model
-    tree.export_graphviz(estimator, out_file='tree.dot',
-            feature_names = x_df_tree.columns,
-            class_names = True,#['additive','cooperative'],
-            rounded = True, proportion = False,
-            precision = 2, filled = True)
-    subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])
-
-    # ========== Using this result to train on different dataset  ==========
-    """
-    testpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_with_coop_anti.tsv"
-    dftest = pd.read_csv(testpath, sep="\t")
-    dftest = dftest[(dftest["label"] == "cooperative") | (dftest["label"] == "additive")]
-
-    test = Training(dftest, corelen=4)
-    xtest_dist = test.get_feature_distance(type=feature_dist_type)
-    xtest_link1 = test.get_feature_linker_composition(1)
-    xtest_link2 = test.get_feature_linker_composition(2)
-    xtest_link3 = test.get_feature_linker_composition(3)
-    #xtest_gc = test.get_linker_GC_content()
-    xtest_ori = test.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
-    xtest_pref = test.get_feature_site_pref()
-
-    x_test = []
-    for x in [xtest_dist,xtest_link1,xtest_link2,xtest_link3,xtest_ori,xtest_pref,xtest_gc]:
-        x_test = merge_listdict(x_test, x)
-    x_test = pd.DataFrame(x_test)[imp].values.tolist()
-    y_true = get_numeric_label(t.df).values
-
-    y_pred = model.predict(x_test)
-    lpred = ["cooperative" if p == 1 else "additive" for p in y_pred]
-    dfpred = dftest[["name"]]
-    dfpred["pred"] = lpred
-    dfpred.to_csv("aa.csv")
-    """
-
-    #print("Accuracy on test: %.f" % accuracy_score(y_true, y_pred))
-    # ========== MAKING AUC USING THE TOP FEATURES  ==========
-
+def plot_auc(x_train_dict, df, plotname="auc.png"):
     #fpr_dict = {key:[] for key in x_train}
     tpr_dict = {key:[] for key in x_train_dict}
     auc_dict = {key:[] for key in x_train_dict}
@@ -329,7 +165,14 @@ if __name__ == '__main__':
     base_fpr = np.linspace(0, 1, 101)[:fpr_lim+1]
     cv = model_selection.KFold(n_splits=10,shuffle=True)
 
-    for train_idx,test_idx in cv.split(x_train,y_train):
+    random_x = next(iter(x_train_dict.values()))[0]
+    x_train = pd.DataFrame(random_x).values.tolist()
+    y_train = get_numeric_label(df).values
+
+    rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10,random_state=0)
+    dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
+
+    for train_idx,test_idx in cv.split(x_train):
         tprs = []
         aucs_val = []
         # compare with just distance
@@ -337,6 +180,7 @@ if __name__ == '__main__':
             # need to convert this with index, somehow cannot do
             # x_train[train_idx] for multi features
             xt = x_train_dict[key][0]
+            xt = [[d[k] for k in d] for d in xt] # need to be a list of list
             model_name = x_train_dict[key][1]
 
             data_train = [xt[i] for i in train_idx]
@@ -362,8 +206,143 @@ if __name__ == '__main__':
     mean_tpr = {k:np.array(tpr_dict[k]).mean(axis=0) for k in tpr_dict}
     mean_auc = {k:np.array(auc_dict[k]).mean(axis=0) for k in auc_dict}
     mean_acc = {k:np.array(acc_dict[k]).mean(axis=0) for k in acc_dict}
-    print(mean_acc)
+    print("Mean accuracy", mean_acc, "\nMean auc", mean_auc)
 
     # left append 0 in base fpr just so we start at 0 (we did the same for the tpr)
     base_fpr = np.insert(base_fpr,0,0)
-    display_output(base_fpr, mean_tpr, mean_auc, path="here.png")
+    display_output(base_fpr, mean_tpr, mean_auc, path=plotname)
+
+if __name__ == '__main__':
+    #trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191004_coop-PBM_Ets1_v1_1st/training_data/training_overlap.tsv"
+    trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_p01_adjusted.tsv"
+    pd.set_option('display.max_columns', None)
+    dforig = pd.read_csv(trainingpath, sep="\t")
+    ori_one_hot = True
+    feature_dist_type = "numerical"
+
+    # only get cooperative and additive
+    dforig = dforig[(dforig["label"] == "cooperative") | (dforig["label"] == "additive")]
+    dftrain = dforig[~dforig['name'].str.contains(r'weak|dist')].reset_index(drop=True)# r'dist|weak
+    tr1 = Training(dftrain, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
+
+    x_ori = tr1.get_feature_orientation(["GGAA","GGAT"], one_hot = False)
+    dftrain["orientation"] = pd.DataFrame(x_ori)["ori"]
+    df_ht = dftrain #[dftrain["orientation"] == "TT"] #.head(5)
+
+    t = Training(df_ht, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
+    t.stacked_bar_categories("distance",avg=True)
+
+    t.df.to_csv("training.csv")
+
+    s_in = 5
+    s_out = 5
+    ds = DNAShape("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/training_p01_adjusted_reversed")
+
+    # ========== GETTING FEATURES FROM THE DATA ==========
+
+    x_dist_numeric = t.get_feature_distance(type="numerical")
+    #x_dist_cat = t.get_feature_distance(type="categorical")
+    x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
+    #x_link1 = t.get_feature_linker_composition(1)
+    #x_link2 = t.get_feature_linker_composition(2)
+    #x_link3 = t.get_feature_linker_composition(3)
+    x_gc = t.get_linker_GC_content()
+    x_pref = t.get_feature_site_pref()
+    x_flank_in = t.get_feature_flank_core(3, seqin = s_in)
+    x_flank_out = t.get_feature_flank_core(3, seqin = -s_out)
+    x_shape_in = t.get_feature_flank_shapes(ds, seqin = s_in)
+    x_shape_out = t.get_feature_flank_shapes(ds, seqin = -s_out)
+
+    x_mid_shape_mean = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="mean")
+    x_mid_shape_max = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="max")
+    x_mid_shape_min = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="min")
+
+    xtr = []
+    for x in [x_dist_numeric, x_ori, x_gc, x_pref, x_flank_in, x_flank_out, x_shape_in, x_shape_out, x_mid_shape_mean, x_mid_shape_max, x_mid_shape_min]:#[x_shape_out, x_flank_in, x_shape_in, x_flank_out, x_dist_numeric, x_pref, x_ori]: #x_flank_in, x_shape_in, [x_dist_numeric,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]: #  x_pref,
+        xtr = merge_listdict(xtr, x)
+    x_df = pd.DataFrame(xtr)
+    x_df.to_csv("features.csv", index=False)
+    print("ll")
+
+    # ========== CREATING THE RF OBJECT  ==========
+    x_train = pd.DataFrame(xtr).values.tolist()
+    y_train = get_numeric_label(t.df).values
+
+    rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10,random_state=0)
+    dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
+    #y_pred = model.predict(x_train)
+
+    # ========== GET TOP N FEATURES  ==========
+    model = rf.fit(x_train, y_train)
+    feature_importances = pd.DataFrame(rf.feature_importances_,
+                                   index = x_df.columns,
+                                   columns=['importance']).sort_values('importance', ascending=False)
+    imp = list(feature_importances.index[:8])
+    print("Top 10 feature importance list " + str(imp))
+    x_df_imp = x_df[imp].to_dict('records') # we only use the most important features
+    #x_train_dict = {"top5": x_df_imp.values.tolist()} #, "dist-numeric":x_df[["dist-numeric"]].values.tolist()}
+
+    x1 = merge_listdict([], x_dist_numeric)
+
+    xtr2 = []
+    for x in [x_shape_out, x_flank_in, x_shape_in, x_flank_out]: #[x_dist_numeric,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]: #  x_pref,
+        xtr2 = merge_listdict(xtr2, x)
+
+    xtr3 = []
+    for x in [x_dist_numeric, x_ori, x_pref]: #[x_dist_numeric,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]: #  x_pref,
+        xtr3 = merge_listdict(xtr3, x)
+
+
+    x_imp = merge_listdict([], x_df_imp)
+    #x_train_dict  = {"distance,strength,orientation":[x6,"dt"], "distance,orientation":[x5,"dt"], "distance,strength":[x4,"dt"], "site strength":[x3,"dt"], "orientation":[x2,"dt"], "distance":[x1,"dt"]}
+    x_train_dict = {"distance":[x1,"dt"], "flanks":[xtr2,"dt"], "all":[xtr,"dt"], "topn":[x_df_imp,"rf"], "dist-pref-ori":[xtr3,"dt"]}
+
+    plot_auc(x_train_dict,t.df)
+
+    # ========== TREE DRAWING FROM A MODEL  ==========
+    """
+
+    x_dict_tree = x6
+    x_df_tree = pd.DataFrame(x_dict_tree)
+    print(x_df_tree)
+    x_list_tree = [[d[k] for k in x_df_tree.columns] for d in x_dict_tree]
+    model = dt.fit(x_list_tree, y_train) # make new model from the top features
+    # take a tree, let's say tree #5
+    estimator = model
+    tree.export_graphviz(estimator, out_file='tree.dot',
+            feature_names = x_df_tree.columns,
+            class_names = True,#['additive','cooperative'],
+            rounded = True, proportion = False,
+            precision = 2, filled = True)
+    subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])
+
+    #print("Accuracy on test: %.f" % accuracy_score(y_true, y_pred))
+
+
+    # ========== Using this result to train on different dataset  ==========
+
+    testpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_with_coop_anti.tsv"
+    dftest = pd.read_csv(testpath, sep="\t")
+    dftest = dftest[(dftest["label"] == "cooperative") | (dftest["label"] == "additive")]
+
+    test = Training(dftest, corelen=4)
+    xtest_dist = test.get_feature_distance(type=feature_dist_type)
+    xtest_link1 = test.get_feature_linker_composition(1)
+    xtest_link2 = test.get_feature_linker_composition(2)
+    xtest_link3 = test.get_feature_linker_composition(3)
+    #xtest_gc = test.get_linker_GC_content()
+    xtest_ori = test.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
+    xtest_pref = test.get_feature_site_pref()
+
+    x_test = []
+    for x in [xtest_dist,xtest_link1,xtest_link2,xtest_link3,xtest_ori,xtest_pref,xtest_gc]:
+        x_test = merge_listdict(x_test, x)
+    x_test = pd.DataFrame(x_test)[imp].values.tolist()
+    y_true = get_numeric_label(t.df).values
+
+    y_pred = model.predict(x_test)
+    lpred = ["cooperative" if p == 1 else "additive" for p in y_pred]
+    dfpred = dftest[["name"]]
+    dfpred["pred"] = lpred
+    dfpred.to_csv("aa.csv")
+    """
