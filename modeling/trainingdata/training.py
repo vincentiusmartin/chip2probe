@@ -25,10 +25,12 @@ class Training(object):
     '''
 
     # TODO: make column name more general
-    def __init__(self, trainingdata, corelen, sep="\t"):
-        '''
-        Constructor
-        '''
+    def __init__(self, trainingdata, corelen, sep="\t", site_mode="positional"):
+        """
+        Constructor.
+
+        Initialize dataframe and other variables.
+        """
         if isinstance(trainingdata, pd.DataFrame):
             self.df = trainingdata.copy().reset_index(drop=True)
         elif isinstance(trainingdata, str):
@@ -36,6 +38,11 @@ class Training(object):
         else:
             raise Exception("input must be string or data frame")
         self.motiflen = corelen
+        # add site position columns
+        self.site_strength_to_pos()
+        # set mode for binding sites: positional or strength
+        self.site_mode = site_mode
+
 
     def get_labels_indexes(self):
           return self.df.groupby("label").groups
@@ -53,7 +60,7 @@ class Training(object):
         plt.clf()
 
     # SHOULDN'T BE HERE, TODO: MOVE SOMEWHERE ELSE
-    def boxplot_categories(self, df, by=["label"], input_cols="default", plotname="boxplot.png"):
+    def boxplot_categories(self, df, by=["label"], input_cols="default", plotname="boxplot.png", alternative="greater"):
         if input_cols == "default":
             cols = list(set(df.columns) - set(by))
         else:
@@ -89,7 +96,7 @@ class Training(object):
                 max1 = max(data[x1])
                 max2 = max(data[x2])
                 mval = max1 if max1 > max2 else max2
-                p_gr = st.wilcox(data[x1],data[x2],alternative="two.sided")
+                p_gr = st.wilcox(data[x1],data[x2],alternative=alternative)
                 hfrac = -1 if mval < 0 else 1
                 hfactor = (max2 - max1)**1.5
                 pline_h = mval * 0.05
@@ -107,6 +114,17 @@ class Training(object):
             fig.delaxes(ax.flatten()[d])
         plt.savefig(plotname)
         plt.clf()
+
+    def site_strength_to_pos(self):
+        """
+        Add columns for site positions.
+
+        bsite1 for the lefthand site and bsite2 for the righthand site
+        """
+        self.df['bsite1'] = self.df.apply(lambda x: x['site_str_pos'] \
+                                          if x['site_str_pos'] < x['site_wk_pos'] else x['site_wk_pos'])
+        self.df['bsite2'] = self.df.apply(lambda x: x['site_wk_pos'] \
+                                          if x['site_str_pos'] < x['site_wk_pos'] else x['site_str_pos'])
 
     def get_ordered_site_list(self):
         site1 = {}
@@ -314,9 +332,11 @@ class Training(object):
     # =========
 
     def get_feature_site_pref(self):
+        """Get a dictionary of binding site preference scores"""
         rfeature = []
-        for idx,row in self.df.iterrows():
-            f = {"site_wk_score":row["site_wk_score"], "site_str_score":row["site_str_score"]}
+        for idx, row in self.df.iterrows():
+            f = {"site_wk_score": row["site_wk_score"],
+                 "site_str_score": row["site_str_score"]}
             rfeature.append(f)
         return rfeature
 
@@ -526,66 +546,78 @@ class Training(object):
         return rfeature
 
     def get_feature_distance(self, type="numerical"):
+        """
+        Return a list of dictionaries for distance feature.
+        Key is the column name and value is the column value
+        """
         if type == "numerical":
-            return [{"dist-numeric":x} for x in self.df["distance"].values]
+            return [{"dist_numeric":x} for x in self.df["distance"].values]
         elif type == "categorical":
+            # get one-hot encoded version of distance as a dataframe
             one_hot = pd.get_dummies(self.df['distance'])
-            one_hot.columns = ["dist-cat-%d"%col for col in one_hot.columns]
+            # rename the columns
+            one_hot.columns = ["dist_cat_%d"%col for col in one_hot.columns]
+            # return as a list of dictionaries
             return one_hot.to_dict('records')
         else:
             raise Exception("distance must be numerical or categorical")
 
     def get_linker_list(self):
+        """Get a dictionary of linker sequences for each pair of binding sites."""
         linkers = []
         falses = []
-        for idx,row in self.df.iterrows():
-            if row["site_wk_pos"] > row["site_str_pos"]:
-                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+        for idx, row in self.df.iterrows():
+            # get the binding sites
+            if self.site_mode == "positional":
+                site1, site2 = row["bsite1"], row["bsite2"]
             else:
-                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
-            # since position is the middle point of each site
+                if row["site_wk_pos"] > row["site_str_pos"]:
+                    site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+                else:
+                    site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+            # Get the start and end  positions of the linker
+            # Note: position is the third nucelotide of each site
             start = site1 + self.motiflen // 2
             end = site2 - self.motiflen // 2
+            # Check that binding sites are centered
             if site1 + site2 != 36 and site1 + site2 != 37:
                 falses.append(row["sequence"])
+                # get the linker sequence
             linker = row["sequence"][start:end]
             linkers.append({"linker":linker, "site1":site1, "site2":site2})
-        #print(len(falses))
+        
         return linkers
 
     def get_linker_GC_content(self):
+        """
+        Get the GC ratio of each linker.
+        """
         rfeature = []
-        for idx,row in self.df.iterrows():
-            if row["site_wk_pos"] > row["site_str_pos"]:
-                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+        linkers = self.get_linker_list()
+        # for each linker sequence, calculate the GC ratio
+        for linker in linkers:
+            linker_seq = linker['linker']
+            if len(linker_seq) == 0:
+                rfeature.append({"linker_GC_content":0})
             else:
-                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
-            # since position is the middle point of each site
-            start = site1 + self.motiflen // 2
-            end = site2 - self.motiflen // 2
-            linker = row["sequence"][start:end]
-            if len(linker) == 0:
-                rfeature.append({"GC_content":0})
-            else:
-                rfeature.append({"GC_content":float(linker.count('G') + linker.count('C'))/len(linker)})
+                rfeature.append({"linker_GC_content":float(linker_seq.count('G') + linker_seq.count('C'))/len(linker_seq)})
         return rfeature
 
     def get_feature_linker_composition(self, k):
+        """Get a dictionary of linker composition""".
         rfeature = []
-        for idx,row in self.df.iterrows():
-            if row["site_wk_pos"] > row["site_str_pos"]:
-                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
-            else:
-                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
-            # since position is the middle point of each site
-            start = site1 + self.motiflen // 2
-            end = site2 - self.motiflen // 2
-            linker = row["sequence"][start:end]
-            ratio = seqextractor.extract_kmer_ratio(linker,k)
+        # get the list of dictionary for linker for each pair of binding sites
+        linkers = self.get_linker_list()
+        # for each linker, get the kmer ratio
+        for linker in linkers:
+            ratio = seqextractor.extract_kmer_ratio(linker['linker'],k)
             rfeature.append(ratio)
         return rfeature
 
     def get_feature_orientation(self, positive_cores, relative=True, one_hot=False):
+        """
+        
+        """
         negative_cores = [seqextractor.revcompstr(p) for p in positive_cores]
         rfeature = []
         for idx,row in self.df.iterrows():
