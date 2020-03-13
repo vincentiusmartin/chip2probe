@@ -230,15 +230,13 @@ if __name__ == '__main__':
 
     x_ori = tr1.get_feature_orientation(["GGAA","GGAT"], one_hot = False)
     dftrain["orientation"] = pd.DataFrame(x_ori)["ori"]
-    df_ht = dftrain #[dftrain["orientation"] == "TT"] #.head(5)
+    df_ht = dftrain #[dftrain["orientation"] == "HT/TH"]
 
     t = Training(df_ht, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
-    t.stacked_bar_categories("distance",avg=True)
-
-    t.df.to_csv("training.csv")
+    #t.stacked_bar_categories("distance",avg=True)
 
     s_in = 5
-    s_out = 5
+    s_out = 4
     ds = DNAShape("/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/training_p01_adjusted_reversed")
 
     # ========== GETTING FEATURES FROM THE DATA ==========
@@ -260,12 +258,12 @@ if __name__ == '__main__':
     x_mid_shape_max = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="max")
     x_mid_shape_min = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="min")
 
+    """
     xtr = []
-    for x in [x_dist_numeric, x_ori, x_gc, x_pref, x_flank_in, x_flank_out, x_shape_in, x_shape_out, x_mid_shape_mean, x_mid_shape_max, x_mid_shape_min]:#[x_shape_out, x_flank_in, x_shape_in, x_flank_out, x_dist_numeric, x_pref, x_ori]: #x_flank_in, x_shape_in, [x_dist_numeric,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]: #  x_pref,
+    for x in [x_dist_numeric, x_pref, x_flank_in, x_flank_out, x_shape_in, x_shape_out, x_ori]:#[x_shape_out, x_flank_in, x_shape_in, x_flank_out, x_dist_numeric, x_pref, x_ori]: #x_flank_in, x_shape_in, [x_dist_numeric,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]: #  x_pref, , x_mid_shape_mean, x_mid_shape_max, x_mid_shape_min
         xtr = merge_listdict(xtr, x)
     x_df = pd.DataFrame(xtr)
     x_df.to_csv("features.csv", index=False)
-    print("ll")
 
     # ========== CREATING THE RF OBJECT  ==========
     x_train = pd.DataFrame(xtr).values.tolist()
@@ -280,8 +278,8 @@ if __name__ == '__main__':
     feature_importances = pd.DataFrame(rf.feature_importances_,
                                    index = x_df.columns,
                                    columns=['importance']).sort_values('importance', ascending=False)
-    imp = list(feature_importances.index[:8])
-    print("Top 10 feature importance list " + str(imp))
+    imp = list(feature_importances.index[:9])
+    print("Top 9 feature importance list " + str(imp))
     x_df_imp = x_df[imp].to_dict('records') # we only use the most important features
     #x_train_dict = {"top5": x_df_imp.values.tolist()} #, "dist-numeric":x_df[["dist-numeric"]].values.tolist()}
 
@@ -303,7 +301,7 @@ if __name__ == '__main__':
     plot_auc(x_train_dict,t.df)
 
     # ========== TREE DRAWING FROM A MODEL  ==========
-    """
+
 
     x_dict_tree = x6
     x_df_tree = pd.DataFrame(x_dict_tree)

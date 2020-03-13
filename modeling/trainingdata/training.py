@@ -590,7 +590,7 @@ class Training(object):
                 # get the linker sequence
             linker = row["sequence"][start:end]
             linkers.append({"linker":linker, "site1":site1, "site2":site2})
-        
+
         return linkers
 
     def get_linker_GC_content(self):
@@ -621,7 +621,7 @@ class Training(object):
 
     def get_feature_orientation(self, positive_cores, relative=True, one_hot=False):
         """
-        
+
         """
         negative_cores = [seqextractor.revcompstr(p) for p in positive_cores]
         rfeature = []
