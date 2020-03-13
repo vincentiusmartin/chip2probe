@@ -122,9 +122,9 @@ class Training(object):
         bsite1 for the lefthand site and bsite2 for the righthand site
         """
         self.df['bsite1'] = self.df.apply(lambda x: x['site_str_pos'] \
-                                          if x['site_str_pos'] < x['site_wk_pos'] else x['site_wk_pos'])
+                                          if x['site_str_pos'] < x['site_wk_pos'] else x['site_wk_pos'], axis=1)
         self.df['bsite2'] = self.df.apply(lambda x: x['site_wk_pos'] \
-                                          if x['site_str_pos'] < x['site_wk_pos'] else x['site_str_pos'])
+                                          if x['site_str_pos'] < x['site_wk_pos'] else x['site_str_pos'], axis=1)
 
     def get_ordered_site_list(self):
         site1 = {}
@@ -604,7 +604,7 @@ class Training(object):
         return rfeature
 
     def get_feature_linker_composition(self, k):
-        """Get a dictionary of linker composition""".
+        """Get a dictionary of linker composition."""
         rfeature = []
         # get the list of dictionary for linker for each pair of binding sites
         linkers = self.get_linker_list()
@@ -621,10 +621,14 @@ class Training(object):
         negative_cores = [seqextractor.revcompstr(p) for p in positive_cores]
         rfeature = []
         for idx,row in self.df.iterrows():
-            if row["site_wk_pos"] > row["site_str_pos"]:
-                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+            # get the binding sites
+            if self.site_mode == "positional":
+                site1, site2 = row["bsite1"], row["bsite2"]
             else:
-                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+                if row["site_wk_pos"] > row["site_str_pos"]:
+                    site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+                else:
+                    site1, site2 = row["site_wk_pos"], row["site_str_pos"]
             seq = row["sequence"]
             p1 = seq[site1 - self.motiflen//2:site1 + self.motiflen//2]
             p2 = seq[site2 - self.motiflen//2:site2 + self.motiflen//2]
