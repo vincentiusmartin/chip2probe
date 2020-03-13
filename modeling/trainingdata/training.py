@@ -354,7 +354,7 @@ class Training(object):
                     dfeature[key] = dfeature[key] / (len(seq) + 1 - len(kmer))
         return dfeature
 
-    def get_middle_avgshape_feature(self, freqs, dnashape, maxk=2, action="avg", site_mode="strength"):
+    def get_middle_avgshape_feature(self, freqs, dnashape, maxk=2, action="avg"):
         rfeature = []
         for idx,row in self.df.iterrows():
             dfeature = {}
@@ -392,7 +392,7 @@ class Training(object):
             rfeature.append(dfeature)
         return rfeature
 
-    def get_middle_feature(self, freqs, maxk=2, site_mode="strength"):
+    def get_middle_feature(self, freqs, maxk=2):
         # pos needs to be odd number
         # the representation is average
         rfeature = []
@@ -424,15 +424,21 @@ class Training(object):
 
 
     def get_feature_flank_shapes(self, dnashape, seqin, site_mode="strength"):
+        if site_mode!="strength" and site_mode!="positional":
+            raise Exception("Site mode can only be 'strength' or 'positional'")
         shapes = {"prot":dnashape.prot, "mgw":dnashape.mgw, "roll":dnashape.roll, "helt":dnashape.helt}
         rfeature = []
         for idx,row in self.df.iterrows():
             if row["site_wk_pos"] > row["site_str_pos"]:
                 site1, site2 = row["site_str_pos"], row["site_wk_pos"]
-                s1type, s2type = "str", "wk"
+                if site_mode == "strength":
+                    s1type, s2type = "str", "wk"
             else:
                 site1, site2 = row["site_wk_pos"], row["site_str_pos"]
-                s1type, s2type = "wk", "str"
+                if site_mode == "strength":
+                    s1type, s2type = "wk", "str"
+            if site_mode == "positional":
+                s1type, s2type = "s1", "s2"
             dfeature = {}
             for s in shapes:
                 if seqin > 0: # inner
