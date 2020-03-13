@@ -25,7 +25,7 @@ class Training(object):
     '''
 
     # TODO: make column name more general
-    def __init__(self, trainingdata, corelen, sep="\t", site_mode="positional"):
+    def __init__(self, trainingdata, corelen, sep="\t"):
         """
         Constructor.
 
@@ -38,11 +38,6 @@ class Training(object):
         else:
             raise Exception("input must be string or data frame")
         self.motiflen = corelen
-        # add site position columns
-        self.site_strength_to_pos()
-        # set mode for binding sites: positional or strength
-        self.site_mode = site_mode
-
 
     def get_labels_indexes(self):
           return self.df.groupby("label").groups
@@ -114,17 +109,6 @@ class Training(object):
             fig.delaxes(ax.flatten()[d])
         plt.savefig(plotname)
         plt.clf()
-
-    def site_strength_to_pos(self):
-        """
-        Add columns for site positions.
-
-        bsite1 for the lefthand site and bsite2 for the righthand site
-        """
-        self.df['bsite1'] = self.df.apply(lambda x: x['site_str_pos'] \
-                                          if x['site_str_pos'] < x['site_wk_pos'] else x['site_wk_pos'], axis=1)
-        self.df['bsite2'] = self.df.apply(lambda x: x['site_wk_pos'] \
-                                          if x['site_str_pos'] < x['site_wk_pos'] else x['site_str_pos'], axis=1)
 
     def get_ordered_site_list(self):
         site1 = {}
@@ -370,7 +354,7 @@ class Training(object):
                     dfeature[key] = dfeature[key] / (len(seq) + 1 - len(kmer))
         return dfeature
 
-    def get_middle_avgshape_feature(self, freqs, dnashape, maxk=2, action="avg"):
+    def get_middle_avgshape_feature(self, freqs, dnashape, maxk=2, action="avg", site_mode="strength"):
         rfeature = []
         for idx,row in self.df.iterrows():
             dfeature = {}
@@ -408,7 +392,7 @@ class Training(object):
             rfeature.append(dfeature)
         return rfeature
 
-    def get_middle_feature(self, freqs, maxk=2):
+    def get_middle_feature(self, freqs, maxk=2, site_mode="strength"):
         # pos needs to be odd number
         # the representation is average
         rfeature = []
@@ -439,7 +423,7 @@ class Training(object):
         return rfeature
 
 
-    def get_feature_flank_shapes(self, dnashape, seqin):
+    def get_feature_flank_shapes(self, dnashape, seqin, site_mode="strength"):
         shapes = {"prot":dnashape.prot, "mgw":dnashape.mgw, "roll":dnashape.roll, "helt":dnashape.helt}
         rfeature = []
         for idx,row in self.df.iterrows():
@@ -466,7 +450,9 @@ class Training(object):
         return rfeature
 
 
-    def get_feature_flank_shapes_inlink(self, dnashape, seqin):
+    def get_feature_flank_shapes_inlink(self, dnashape, seqin, site_mode="strength"):
+        if site_mode != "strength" and site_mode != "positional":
+            raise Exception("Site mode can only be 'strength' or 'positional'")
         # seqin: how many base inside the linker
         shapes = {"prot":dnashape.prot, "mgw":dnashape.mgw, "roll":dnashape.roll, "helt":dnashape.helt}
         rfeature = []
@@ -474,10 +460,14 @@ class Training(object):
             dfeature = {}
             if row["site_wk_pos"] > row["site_str_pos"]:
                 site1, site2 = row["site_str_pos"], row["site_wk_pos"]
-                s1type, s2type = "str", "wk"
+                if site_mode == "strength":
+                    s1type, s2type = "str", "wk"
             else:
                 site1, site2 = row["site_wk_pos"], row["site_str_pos"]
-                s1type, s2type = "wk", "str"
+                if site_mode == "strength":
+                    s1type, s2type = "wk", "str"
+            if site_mode == "positional":
+                s1type, s2type = "s1", "s2"
             # since position is the middle point of each site
             start = site1 + self.motiflen // 2
             end = site2 - self.motiflen // 2
@@ -499,17 +489,23 @@ class Training(object):
             rfeature.append(dfeature)
         return rfeature
 
-    def get_feature_flank_core(self, k, seqin=0):
+    def get_feature_flank_core(self, k, seqin=0, site_mode="strength"):
         # seqin can be negative to get outer flank
         # i don't think we have to take complement here
+        if site_mode != "strength" and site_mode != "positional":
+            raise Exception("Site mode can only be 'strength' or 'positional'")
         rfeature = []
         for idx,row in self.df.iterrows():
             if row["site_wk_pos"] > row["site_str_pos"]:
                 site1, site2 = row["site_str_pos"], row["site_wk_pos"]
-                s1type, s2type = "str", "wk"
+                if site_mode == "strength":
+                    s1type, s2type = "str", "wk"
             else:
                 site1, site2 = row["site_wk_pos"], row["site_str_pos"]
-                s1type, s2type = "wk", "str"
+                if site_mode == "strength":
+                    s1type, s2type = "wk", "str"
+            if site_mode == "positional":
+                s1type, s2type = "s1", "s2"
             if seqin >= 0: # inner
                 flank1 = row["sequence"][site1:site1+seqin]
                 flank2 = row["sequence"][site2-seqin:site2][::-1]
@@ -524,15 +520,21 @@ class Training(object):
         return rfeature
 
     # only linker now
-    def get_feature_flank_in_linker(self, k, seqin=0):
+    def get_feature_flank_in_linker(self, k, seqin=0, site_mode="strength"):
+        if site_mode != "strength" and site_mode != "positional":
+            raise Exception("Site mode can only be 'strength' or 'positional'")
         rfeature = []
         for idx,row in self.df.iterrows():
             if row["site_wk_pos"] > row["site_str_pos"]:
                 site1, site2 = row["site_str_pos"], row["site_wk_pos"]
-                s1type, s2type = "str", "wk"
+                if site_mode == "strength":
+                    s1type, s2type = "str", "wk"
             else:
                 site1, site2 = row["site_wk_pos"], row["site_str_pos"]
-                s1type, s2type = "wk", "str"
+                if site_mode == "strength":
+                    s1type, s2type = "wk", "str"
+            if site_mode == "positional":
+                s1type, s2type = "s1", "s2"
             # since position is the middle point of each site
             start = site1 + self.motiflen // 2
             end = site2 - self.motiflen // 2
@@ -562,19 +564,16 @@ class Training(object):
         else:
             raise Exception("distance must be numerical or categorical")
 
-    def get_linker_list(self):
+    def get_linker_list(self,):
         """Get a dictionary of linker sequences for each pair of binding sites."""
         linkers = []
         falses = []
         for idx, row in self.df.iterrows():
             # get the binding sites
-            if self.site_mode == "positional":
-                site1, site2 = row["bsite1"], row["bsite2"]
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
             else:
-                if row["site_wk_pos"] > row["site_str_pos"]:
-                    site1, site2 = row["site_str_pos"], row["site_wk_pos"]
-                else:
-                    site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
             # Get the start and end  positions of the linker
             # Note: position is the third nucelotide of each site
             start = site1 + self.motiflen // 2
@@ -622,13 +621,10 @@ class Training(object):
         rfeature = []
         for idx,row in self.df.iterrows():
             # get the binding sites
-            if self.site_mode == "positional":
-                site1, site2 = row["bsite1"], row["bsite2"]
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
             else:
-                if row["site_wk_pos"] > row["site_str_pos"]:
-                    site1, site2 = row["site_str_pos"], row["site_wk_pos"]
-                else:
-                    site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
             seq = row["sequence"]
             p1 = seq[site1 - self.motiflen//2:site1 + self.motiflen//2]
             p2 = seq[site2 - self.motiflen//2:site2 + self.motiflen//2]
