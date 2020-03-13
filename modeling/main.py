@@ -58,8 +58,11 @@ def display_output(fpr_list, tpr_dict, auc_dict, path):
 
 
 def merge_listdict(ld1, ld2):
+    """
+    
+    """
     if len(ld1) > 0 and len(ld2) > 0 and len(ld1) != len(ld2):
-        print("Error:list length is not the same")
+        print("Error: list lengths are not the same")
         return 0
     if len(ld1) == 0:
         return ld2
