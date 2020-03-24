@@ -19,6 +19,7 @@ import math
 import statistics
 import util.stats as st
 import util.bio as bio
+import util.util as util
 
 
 class Training(object):
@@ -333,6 +334,42 @@ class Training(object):
         return features
     # =========
 
+    def get_feature_all(self, feature_dict):
+        """
+        list of key:
+        1. distance: {type:"numeric/categorical"}
+        2. orientation: {"positive_cores=[]", relative=Bool, one_hot=Bool}
+        3. sitepref: {} #no param
+        4. flankseq: {"k":int, seqin=int, smode="positional/strength"}
+        5. flankshape: (ds:DNAShape, seqin=int, site_mode="positional/strength")
+        """
+        ldict = []
+        for key in feature_dict:
+            ftr = feature_dict[key]
+            print(ftr)
+            if "include" in ftr and ftr["include"] == "F": #for testing purpose
+                continue
+            if key == "distance":
+                rfeature = self.get_feature_distance(ftr["type"])
+            elif key == "orientation":
+                pc = ftr["positive_cores"]
+                rel = ftr["relative"] if "relative" in ftr else True
+                oh = ftr["one_hot"] if "one_hot" in ftr else True
+                rfeature = self.get_feature_orientation(pc,rel,oh)
+            elif key == "sitepref":
+                rfeature = self.get_feature_site_pref()
+            elif key == "flankseq":
+                smode = ftr["site_mode"] if "site_mode" in ftr else "strength"
+                rfeature = self.get_feature_flank_core(ftr["k"], seqin = ftr["seqin"], site_mode=smode)
+            elif key == "flankshape":
+                smode = ftr["site_mode"] if "site_mode" in ftr else "strength"
+                rfeature = self.get_feature_flank_shapes(ftr["ds"], seqin = ftr["seqin"], site_mode=smode)
+            else:
+                raise Exception("Feature %s is not available" % key)
+            ldict = util.merge_listdict(rfeature,ldict)
+        return ldict
+
+
     def get_feature_site_pref(self):
         """Get a dictionary of binding site preference scores."""
         rfeature = []
@@ -410,10 +447,13 @@ class Training(object):
             rfeature.append(dfeature)
         return rfeature
 
-    def get_middle_feature(self, freqs, maxk=2):
-        # pos needs to be odd number
+    def get_linker_positional_seq_feature(self, linkerlen, maxk=2):
+        # linkerlen needs to be even number
         # the representation is average
         rfeature = []
+        seqlen = len(self.df["sequence"].iloc[0]) # should be 36
+        mid = seqlen // 2
+        span = linkerlen // 2
         for idx,row in self.df.iterrows():
             dfeature = {}
             if row["site_wk_pos"] > row["site_str_pos"]:
@@ -421,23 +461,49 @@ class Training(object):
             else:
                 site1, site2 = row["site_wk_pos"], row["site_str_pos"]
             # since position is the middle point of each site
-            start = site1 + self.motiflen // 2
-            end = site2 - self.motiflen // 2
-            linker = row["sequence"][start:end]
-            for freq in freqs:
-                span = freq // 2
-                label = "middle_%d_%d" % (freq, freq + 1)
-                if len(linker) < freq:
-                    for k in range(0,maxk):
-                        dfeature = {**dfeature,**self.get_nonrev_dfeature(k + 1, label=label, initcount=-1)}
-                else:
-                    mid = len(linker) // 2
-                    if len(linker) % 2 == 0: # even
-                        midseq = linker[mid-span-1:mid+span+1]
-                    else: # odd
-                        midseq = linker[mid-span:mid+span+1]
-                    dfeature = {**dfeature, **self.count_nonrev_kmer(midseq,maxk=maxk,label=label,avg=True)}
-            rfeature.append(dfeature)
+            linker = row["sequence"][mid-span:mid+span]
+            rf = self.extract_positional(linker,maxk=maxk,label="linker_%d_%d"%(linkerlen, linkerlen+1))
+            rfeature.append(rf)
+        return rfeature
+
+    def get_linker_positional_feature(self, linkerlen, maxk=2, dnashape=False):
+        """
+        if dnashape is false then do sequence
+        maxk for dnashape = False
+        """
+        # linkerlen needs to be even number
+        # the representation is average
+        rfeature = []
+        seqlen = len(self.df["sequence"].iloc[0]) # should be 36
+        mid = seqlen // 2
+        span = linkerlen // 2
+        if dnashape:
+            shapes = {"prot":dnashape.prot, "mgw":dnashape.mgw, "roll":dnashape.roll, "helt":dnashape.helt}
+        dfeature = {}
+        for idx,row in self.df.iterrows():
+            dfeature = {}
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+            else:
+                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+            start = mid - span if row["distance"] % 2 == 0 else mid - span +1
+            end = mid + span if row["distance"] % 2 == 0 else mid + span
+            # go from the mid point of the linker, we go from there
+            idx_left = [-1 * p for p in range(mid - start,0,-1)] # to the left
+            idx_right = [p + 1 for p in range(end - mid)] if row["distance"] % 2 == 0 else [p for p in range(end - mid)] # to the right
+            allidxs = idx_left + idx_right
+            if dnashape:
+                for s in shapes:
+                    svals = shapes[s][str(idx + 1)][start:end] #if using mid position
+                    for i in range(len(svals)):
+                        dfeature["%s_pos_%d" % (s,allidxs[i])] = svals[i]
+                rfeature.append(dfeature)
+            else:
+                seqleft = row["sequence"][start:mid][::-1]
+                seqright = row["sequence"][mid:end]
+                d1 = self.extract_positional(seqleft,maxk=maxk,label="linker_left")
+                d2 = self.extract_positional(seqright,maxk=maxk,label="linker_right")
+                rfeature.append({**d1, **d2})
         return rfeature
 
 
@@ -694,6 +760,13 @@ class Training(object):
             else:
                 rfeature.append({"ori1":s1, "ori2":s2})
         if one_hot:
-            return pd.get_dummies(pd.DataFrame(rfeature)).to_dict('records')
+            dum_df = pd.DataFrame(rfeature)
+            notfound = {"HH","HT/TH","TT"} - set(dum_df["ori"].unique())
+            dum_rec = pd.get_dummies(dum_df).to_dict('records')
+            for nf in notfound:
+                print(nf)
+                for i in range(len(dum_rec)):
+                    dum_rec[i]["ori_%s" % nf] = 0
+            return dum_rec
         else:
             return rfeature

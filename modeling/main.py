@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
+import pickle
 
 import trainingdata.seqextractor as seqextractor
 from trainingdata.dnashape import DNAShape
@@ -59,7 +60,7 @@ def display_output(fpr_list, tpr_dict, auc_dict, path):
 
 def merge_listdict(ld1, ld2):
     """
-    
+
     """
     if len(ld1) > 0 and len(ld2) > 0 and len(ld1) != len(ld2):
         print("Error: list lengths are not the same")
@@ -227,10 +228,12 @@ if __name__ == '__main__':
     dforig = dforig[(dforig["label"] == "cooperative") | (dforig["label"] == "additive")]
     dftrain = dforig[~dforig['name'].str.contains(r'weak|dist')].reset_index(drop=True)# r'dist|weak
     tr1 = Training(dftrain, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
+    dftr = tr1.df
 
     x_ori = tr1.get_feature_orientation(["GGAA","GGAT"], one_hot = False)
-    dftrain["orientation"] = pd.DataFrame(x_ori)["ori"]
-    df_ht = dftrain #[dftrain["orientation"] == "HT/TH"]
+    dftr["orientation"] = pd.DataFrame(x_ori)["ori"]
+    df_ht = dftrain #[dftrain["orientation"] == "HT/TH"] #[dftrain["distance"] % 2 == 0] #[dftrain["orientation"] == "HT/TH"]
+    dftr.to_csv("train1.tsv",sep="\t")
 
     t = Training(df_ht, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
     #t.stacked_bar_categories("distance",avg=True)
@@ -241,26 +244,25 @@ if __name__ == '__main__':
 
     # ========== GETTING FEATURES FROM THE DATA ==========
 
+    x_linker_pos = t.get_linker_positional_feature(6, maxk=3)
+    x_linker_shape = t.get_linker_positional_feature(6, dnashape=ds)
+
     x_dist_numeric = t.get_feature_distance(type="numerical")
-    #x_dist_cat = t.get_feature_distance(type="categorical")
     x_ori = t.get_feature_orientation(["GGAA","GGAT"], one_hot = ori_one_hot)
-    #x_link1 = t.get_feature_linker_composition(1)
-    #x_link2 = t.get_feature_linker_composition(2)
-    #x_link3 = t.get_feature_linker_composition(3)
     x_gc = t.get_linker_GC_content()
     x_pref = t.get_feature_site_pref()
-    x_flank_in = t.get_feature_flank_core(3, seqin = s_in)
-    x_flank_out = t.get_feature_flank_core(3, seqin = -s_out)
-    x_shape_in = t.get_feature_flank_shapes(ds, seqin = s_in)
-    x_shape_out = t.get_feature_flank_shapes(ds, seqin = -s_out)
+    smode = "strength" # or positional
+    x_flank_in = t.get_feature_flank_core(k=3, seqin = s_in, site_mode=smode)
+    x_flank_out = t.get_feature_flank_core(k=3, seqin = -s_out, site_mode=smode)
+    x_shape_in = t.get_feature_flank_shapes(ds, seqin = s_in, site_mode=smode)
+    x_shape_out = t.get_feature_flank_shapes(ds, seqin = -s_out, site_mode=smode)
 
     x_mid_shape_mean = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="mean")
     x_mid_shape_max = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="max")
     x_mid_shape_min = t.get_middle_avgshape_feature([1,3,5], ds ,maxk=2, action="min")
 
-    """
     xtr = []
-    for x in [x_dist_numeric, x_pref, x_flank_in, x_flank_out, x_shape_in, x_shape_out, x_ori]:#[x_shape_out, x_flank_in, x_shape_in, x_flank_out, x_dist_numeric, x_pref, x_ori]: #x_flank_in, x_shape_in, [x_dist_numeric,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]: #  x_pref, , x_mid_shape_mean, x_mid_shape_max, x_mid_shape_min
+    for x in [x_dist_numeric, x_ori, x_flank_in, x_flank_out]: #
         xtr = merge_listdict(xtr, x)
     x_df = pd.DataFrame(xtr)
     x_df.to_csv("features.csv", index=False)
@@ -278,41 +280,56 @@ if __name__ == '__main__':
     feature_importances = pd.DataFrame(rf.feature_importances_,
                                    index = x_df.columns,
                                    columns=['importance']).sort_values('importance', ascending=False)
-    imp = list(feature_importances.index[:9])
-    print("Top 9 feature importance list " + str(imp))
+    imp = list(feature_importances.index[:10])
+    print("Top 10 feature importance list " + str(imp))
     x_df_imp = x_df[imp].to_dict('records') # we only use the most important features
+    xtr_imp =  merge_listdict([], x_df_imp)
+
     #x_train_dict = {"top5": x_df_imp.values.tolist()} #, "dist-numeric":x_df[["dist-numeric"]].values.tolist()}
 
     x1 = merge_listdict([], x_dist_numeric)
 
-    xtr2 = []
+    xt2 = []
+    for x in [x_dist_numeric, x_linker_shape]:
+        xt2 = merge_listdict(xt2, x)
+
+    xt3 = []
+    for x in [x_dist_numeric, x_linker_pos]:
+        xt3 = merge_listdict(xt3, x)
+    """
     for x in [x_shape_out, x_flank_in, x_shape_in, x_flank_out]: #[x_dist_numeric,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]: #  x_pref,
-        xtr2 = merge_listdict(xtr2, x)
+        x2 = merge_listdict(x2, x)
 
-    xtr3 = []
+    x3 = []
     for x in [x_dist_numeric, x_ori, x_pref]: #[x_dist_numeric,x_ori,x_link1,x_link2,x_link3,x_gc,x_pref]: #  x_pref,
-        xtr3 = merge_listdict(xtr3, x)
-
+        x3 = merge_listdict(x3, x)
+    """
 
     x_imp = merge_listdict([], x_df_imp)
     #x_train_dict  = {"distance,strength,orientation":[x6,"dt"], "distance,orientation":[x5,"dt"], "distance,strength":[x4,"dt"], "site strength":[x3,"dt"], "orientation":[x2,"dt"], "distance":[x1,"dt"]}
-    x_train_dict = {"distance":[x1,"dt"], "flanks":[xtr2,"dt"], "all":[xtr,"dt"], "topn":[x_df_imp,"rf"], "dist-pref-ori":[xtr3,"dt"]}
+    x_train_dict = {"distance":[x1,"dt"], "all":[xtr,"dt"], "top10": [xtr_imp,"rf"]}
 
+    # make_model
+    rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10,random_state=0)
+    dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
+    print(pd.DataFrame(xtr).columns)
+    xt = [[d[k] for k in d] for d in xtr]
+    yt = get_numeric_label(t.df).values
+    dt.fit(xt,yt)
+    pickle.dump(rf, open("model1_all_all_dt.sav", 'wb'))
     plot_auc(x_train_dict,t.df)
 
     # ========== TREE DRAWING FROM A MODEL  ==========
-
-
-    x_dict_tree = x6
+    """
+    x_dict_tree = xtr_imp
     x_df_tree = pd.DataFrame(x_dict_tree)
-    print(x_df_tree)
     x_list_tree = [[d[k] for k in x_df_tree.columns] for d in x_dict_tree]
     model = dt.fit(x_list_tree, y_train) # make new model from the top features
     # take a tree, let's say tree #5
     estimator = model
     tree.export_graphviz(estimator, out_file='tree.dot',
             feature_names = x_df_tree.columns,
-            class_names = True,#['additive','cooperative'],
+            class_names = ['additive','cooperative'],
             rounded = True, proportion = False,
             precision = 2, filled = True)
     subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])
