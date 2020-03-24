@@ -18,6 +18,7 @@ import math
 import statistics
 import util.stats as st
 import util.bio as bio
+import util.util as util
 
 class Training(object):
     '''
@@ -314,6 +315,42 @@ class Training(object):
                     i += 1
         return features
     # =========
+
+    def get_feature_all(self, feature_dict):
+        """
+        list of key:
+        1. distance: {type:"numeric/categorical"}
+        2. orientation: {"positive_cores=[]", relative=Bool, one_hot=Bool}
+        3. sitepref: {} #no param
+        4. flankseq: {"k":int, seqin=int, smode="positional/strength"}
+        5. flankshape: (ds:DNAShape, seqin=int, site_mode="positional/strength")
+        """
+        ldict = []
+        for key in feature_dict:
+            ftr = feature_dict[key]
+            print(ftr)
+            if "include" in ftr and ftr["include"] == "F": #for testing purpose
+                continue
+            if key == "distance":
+                rfeature = self.get_feature_distance(ftr["type"])
+            elif key == "orientation":
+                pc = ftr["positive_cores"]
+                rel = ftr["relative"] if "relative" in ftr else True
+                oh = ftr["one_hot"] if "one_hot" in ftr else True
+                rfeature = self.get_feature_orientation(pc,rel,oh)
+            elif key == "sitepref":
+                rfeature = self.get_feature_site_pref()
+            elif key == "flankseq":
+                smode = ftr["site_mode"] if "site_mode" in ftr else "strength"
+                rfeature = self.get_feature_flank_core(ftr["k"], seqin = ftr["seqin"], site_mode=smode)
+            elif key == "flankshape":
+                smode = ftr["site_mode"] if "site_mode" in ftr else "strength"
+                rfeature = self.get_feature_flank_shapes(ftr["ds"], seqin = ftr["seqin"], site_mode=smode)
+            else:
+                raise Exception("Feature %s is not available" % key)
+            ldict = util.merge_listdict(rfeature,ldict)
+        return ldict
+
 
     def get_feature_site_pref(self):
         """Get a dictionary of binding site preference scores"""

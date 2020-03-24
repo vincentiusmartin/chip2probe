@@ -12,3 +12,10 @@ if __name__ == "__main__":
     df = pd.read_csv(trainingpath, sep="\t")
 
     t = Training(df, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
+
+    xtr = t.get_feature_all({
+                            "distance":{"type":"numerical", "include":"T"},
+                            "orientation":{"positive_cores":["GGAA","GGAT"]},
+                            "sitepref":{}
+                            })
+    print(xtr)
