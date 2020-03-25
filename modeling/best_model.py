@@ -54,6 +54,15 @@ class BestModel:
     def set_lasso(self, comb):
         pass
 
+    def set_mlp(self, comb):
+        pass
+
+    def set_svm(self, comb):
+        pass
+
+    def set_nb(self, comb):
+        pass
+
     def get_best_param(self, save_to_file=False):
         # find the best model for the data
         x_train = self.x_train.values
@@ -118,10 +127,7 @@ class BestModel:
         # get the new x 
         self.x_train = self.train_data.iloc[:, feat_impt.argsort()[::-1][:self.topn]]
         return self.x_train
-
-    def get_topn(self):
-
-        
+ 
 
 if __name__=="__main__":
 
