@@ -64,7 +64,8 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
     cv = model_selection.KFold(n_splits=10,shuffle=True)
 
     random_x = next(iter(x_train_dict.values()))[0]
-    x_train = pd.DataFrame(random_x).values.tolist()
+    y_train = random_x['label'].values
+    x_train = random_x.values.tolist() # .loc[:,random_x.columns != 'label']
 
     for train_idx,test_idx in cv.split(x_train):
         tprs = []
@@ -73,7 +74,7 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
         for key in x_train_dict:
             # need to convert this with index, somehow cannot do
             # x_train[train_idx] for multi features
-            xt = x_train_dict[key][0].values.tolist() # need to be a list of list
+            xt = x_train_dict[key][0].loc[:,random_x.columns != 'label'].values.tolist() # need to be a list of list
 
             data_train = [xt[i] for i in train_idx]
             data_test = [xt[i] for i in test_idx]
@@ -102,18 +103,6 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
     # left append 0 in base fpr just so we start at 0 (we did the same for the tpr)
     display_output(base_fpr, mean_tpr, mean_auc, path=plotname, title=title)
 
-def get_top_n(n, xdict, ytrain, rf):
-    x_df = pd.DataFrame(xdict)
-    xtrain = x_df.values.tolist()
-    model = rf.fit(xtrain, ytrain)
-    feature_importances = pd.DataFrame(rf.feature_importances_,
-                                   index = x_df.columns,
-                                   columns=['importance']).sort_values('importance', ascending=False)
-    imp = list(feature_importances.index[:n])
-    print("Top 10 feature importance list " + str(imp))
-    x_df_imp = x_df[imp].to_dict('records') # we only use the most important features
-    return  util.merge_listdict([], x_df_imp)
-
 if __name__ == "__main__":
     trainingpath = "train1.tsv"
     #trainingpath = "trainingdata/training_new.csv"
@@ -121,8 +110,8 @@ if __name__ == "__main__":
     ds = DNAShape(shapepath)
 
     rf_param_dict = {
-    				'n_estimators': [i for i in range(2,11)],
-    				'max_depth': [i for i in range(100,1001,100)]
+    				'n_estimators': [i for i in range(2,3)],
+    				'max_depth': [i for i in range(100,2001,100)]
     			}
     dt_param_dict = {
     				"criterion" : ['gini', 'entropy'],
@@ -144,15 +133,15 @@ if __name__ == "__main__":
                                   "distance":{"type":"numerical"}
                               })
                 ).run_all(),
-            "flankshape":
-                BestModel(clf="RF",
-                          param_dict=rf_param_dict,
-                          train_data=t.get_training_df({
-                                  "distance":{"type":"numerical"},
-                                  "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
-                                  "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-                              })
-                ).run_all()
+            # "flankshape":
+            #     BestModel(clf="RF",
+            #               param_dict=rf_param_dict,
+            #               train_data=t.get_training_df({
+            #                       "distance":{"type":"numerical"},
+            #                       "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
+            #                       "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+            #                   })
+            #     ).run_all(),
             # "dist-flankshape":
             #     BestModel(clf="RF",
             #               param_dict=rf_param_dict,
@@ -175,7 +164,7 @@ if __name__ == "__main__":
         }
 
 
-
+    print(xtr,y_train)
     plot_auc(xtr, y_train, "Average ROC Curves Using RF for All Orientations", "dist_flank_seq_auc.png")
 
     # # save the first model
