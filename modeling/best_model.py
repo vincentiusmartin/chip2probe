@@ -41,9 +41,13 @@ class BestModel:
         self.y_train = df.loc[:, 'label']
 
     def set_clf(self, comb):
-        d = {'RF': self.set_rf(comb),
-             'DT': self.set_dt(comb)}
-        d[self.classifier]
+        if self.classifier == "RF":
+            self.set_rf(comb)
+        elif self.classifier == "DT":
+            self.set_dt(comb)
+        # d = {'RF': self.set_rf(comb),
+        #      'DT': self.set_dt(comb)}
+        # d[self.classifier]
 
     def set_rf(self, comb):
         self.clf = RandomForestClassifier(n_estimators=comb[0],
