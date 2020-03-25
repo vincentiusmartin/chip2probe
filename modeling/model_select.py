@@ -118,6 +118,9 @@ def get_top_n(n, xdict, ytrain, rf):
 if __name__ == "__main__":
     trainingpath = "train1.tsv"
     #trainingpath = "trainingdata/training_new.csv"
+    shapepath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/training_p01_adjusted_reversed""
+    ds = DNAShape(shapepath)
+
     rf_param_dict = {
     				'n_estimators': [i for i in range(2,5)],
     				'max_depth': [i for i in range(100,301,100)]
@@ -147,8 +150,8 @@ if __name__ == "__main__":
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"},
-                                  "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-                                  "flankseq": {"k":3, "seqin":-3, "smode":"strength"}
+                                  "flankshape": {"ds":3, "seqin":4, "smode":"strength"},
+                                  "flankshape": {"k":3, "seqin":-3, "smode":"strength"}
                               })
                 ).run_all(),
             "topn":
@@ -156,8 +159,8 @@ if __name__ == "__main__":
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"},
-                                  "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-                                  "flankseq": {"k":3, "seqin":-3, "smode":"strength"}
+                                  "flankshape": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankshape": {"k":3, "seqin":-3, "smode":"strength"}
                               }),
                            topn = 10
                 ).run_all()

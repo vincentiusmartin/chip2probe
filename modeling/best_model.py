@@ -21,7 +21,7 @@ class BestModel:
         if self.topn == -1:
             self.topn = len(train_data.columns)-1
 
-        self.cv_fold_num = 2
+        self.cv_fold_num = 10
         self.cv_num = 1
 
     def run_all(self):
