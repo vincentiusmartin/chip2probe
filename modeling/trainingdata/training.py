@@ -42,6 +42,11 @@ class Training(object):
             raise Exception("input must be string or data frame")
         self.motiflen = corelen
 
+    def get_numeric_label(training):
+        # hard coded but change add to anti coop / additive when needed
+        train = training['label'].map({'cooperative': 1, 'additive': 0})
+        return train
+
     def get_labels_indexes(self):
         """
         Get a dictionary of labels and indices.
@@ -337,7 +342,10 @@ class Training(object):
     def get_training_df(self, feature_dict):
         """Get training df from a dictionary of features."""
         ldict = get_feature_all(feature_dict)
-        
+        train = pd.DataFrame(xtr).values.tolist()
+        train['label'] = get_numeric_label(t.df).values
+
+        return train
         
     def get_feature_all(self, feature_dict):
         """
