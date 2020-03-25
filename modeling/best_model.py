@@ -18,7 +18,7 @@ class BestModel:
         self.topn = topn
         self.train_data = train_data
 
-        if self.topn = -1:
+        if self.topn == -1:
             self.topn = len(train_data.columns)-1
 
         self.cv_fold_num = 2
