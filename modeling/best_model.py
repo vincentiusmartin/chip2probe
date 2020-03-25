@@ -21,7 +21,7 @@ class BestModel:
         if self.topn == -1:
             self.topn = len(train_data.columns)-1
 
-        self.cv_fold_num = 2
+        self.cv_fold_num = 10
         self.cv_num = 1
 
     def run_all(self):
@@ -129,8 +129,9 @@ class BestModel:
     def set_topn(self):
         model = self.clf.fit(self.x_train,self.y_train)
         feat_impt = model.feature_importances_
-        print(sorted(zip(map(lambda x: round(x, 4), feat_impt), self.x_train.columns),
-             reverse=True)[:self.topn])
+        if self.topn < len(self.train_data) - 1:
+            print(sorted(zip(map(lambda x: round(x, 4), feat_impt), self.x_train.columns),
+                 reverse=True)[:self.topn])
         # get the new x
         self.x_train = self.train_data.iloc[:, feat_impt.argsort()[::-1][:self.topn]]
         return self.x_train
