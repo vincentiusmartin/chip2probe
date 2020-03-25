@@ -351,7 +351,6 @@ class Training(object):
         ldict = []
         for key in feature_dict:
             ftr = feature_dict[key]
-            print(ftr)
             if "include" in ftr and ftr["include"] == "F": #for testing purpose
                 continue
             if key == "distance":
