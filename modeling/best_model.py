@@ -31,7 +31,7 @@ class BestModel:
         # get best hyperparam for top n
         clf = self.get_best_param()
         # return the best model for top n
-        return clf, new_x
+        return new_x, clf
 
     def init_data(self, df):
         self.x_train = df.loc[:, df.columns != 'label']
