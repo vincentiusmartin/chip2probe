@@ -27,11 +27,11 @@ class BestModel:
         # get best hyperparam combination
         self.get_best_param()
         # get best top n 
-        self.set_topn()
+        new_x = self.set_topn()
         # get best hyperparam for top n
         clf = self.get_best_param()
         # return the best model for top n
-        return clf
+        return clf, new_x
 
     def init_data(self, df):
         self.x_train = df.loc[:, df.columns != 'label']
@@ -114,8 +114,12 @@ class BestModel:
         print(sorted(zip(map(lambda x: round(x, 4), feat_impt), self.x_train.columns), 
              reverse=True)[:self.topn])
         # get the new x 
-        self.x_train = self.x_train.iloc[:, feat_impt.argsort()[::-1][:self.topn]]
-    
+        self.x_train = self.train_data.iloc[:, feat_impt.argsort()[::-1][:self.topn]]
+        return self.x_train
+
+    def get_topn(self):
+
+        
 
 if __name__=="__main__":
 
