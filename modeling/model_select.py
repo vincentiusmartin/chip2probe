@@ -4,6 +4,7 @@ sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe") # PATH
 from trainingdata.training import Training
 import util.util as util
 from best_model import BestModel
+from trainingdata.dnashape import DNAShape
 
 from sklearn import ensemble, model_selection, metrics, tree
 import pandas as pd
@@ -11,6 +12,7 @@ import numpy as np
 import scipy
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
+import pickle
 
 def get_numeric_label(training):
     # hard coded but change add to anti coop / additive when needed
@@ -118,26 +120,28 @@ def get_top_n(n, xdict, ytrain, rf):
 if __name__ == "__main__":
     trainingpath = "train1.tsv"
     #trainingpath = "trainingdata/training_new.csv"
-    shapepath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/training_p01_adjusted_reversed""
+    shapepath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/training_p01_adjusted_reversed"
     ds = DNAShape(shapepath)
 
     rf_param_dict = {
-    				'n_estimators': [i for i in range(2,5)],
-    				'max_depth': [i for i in range(100,301,100)]
+    				'n_estimators': [i for i in range(2,21)],
+    				'max_depth': [i for i in range(100,2001,100)]
     			}
     dt_param_dict = {
     				"criterion" : ['gini', 'entropy'],
-                    "min_samples_split" : [i for i in range(2,5)],
-                    "min_samples_leaf" : [i for i in range(1,5)]
+                    "min_samples_split" : [i for i in range(2,41)],
+                    "min_samples_leaf" : [i for i in range(1,31)]
     			}
 
     df = pd.read_csv(trainingpath, sep="\t")
+    #df = df #[dftrain["orientation"] == "HT/TH"]
 
     t = Training(df, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
     y_train = get_numeric_label(t.df).values
 
     rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10,random_state=0)
     dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
+    """
     xtr = {"distance":
                 BestModel(clf="DT",
                           param_dict=dt_param_dict,
@@ -150,8 +154,8 @@ if __name__ == "__main__":
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"},
-                                  "flankshape": {"ds":3, "seqin":4, "smode":"strength"},
-                                  "flankshape": {"k":3, "seqin":-3, "smode":"strength"}
+                                  "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
+                                  "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
                               })
                 ).run_all(),
             "topn":
@@ -159,11 +163,19 @@ if __name__ == "__main__":
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"},
-                                  "flankshape": {"k":3, "seqin":4, "smode":"strength"},
-                                  "flankshape": {"k":3, "seqin":-3, "smode":"strength"}
+                                  "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
+                                  "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"},
                               }),
-                           topn = 10
-                ).run_all()
+                           topn=10
+                ).run_all(),
         }
+    """
 
-    plot_auc(xtr, y_train, "auc.png")
+    dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
+    #plot_auc(xtr, y_train, "auc.png")
+    xt = t.get_feature_all({
+        "distance":{"type":"numerical"}
+        })
+    xt = pd.DataFrame(xt).values.tolist()
+    dt.fit(xt,y_train)
+    pickle.dump(rf, open("model1.sav", 'wb'))
