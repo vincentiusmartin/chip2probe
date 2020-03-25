@@ -1,9 +1,10 @@
 import sys
-#sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe") # PATH TO UTIL
-sys.path.append("/Users/faricazjj/Desktop/homotf/chip2probe")
+sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe") # PATH TO UTIL
+#sys.path.append("/Users/faricazjj/Desktop/homotf/chip2probe")
 from trainingdata.training import Training
 import util.util as util
 from best_model import BestModel
+from trainingdata.dnashape import DNAShape
 
 from sklearn import ensemble, model_selection, metrics, tree
 import pandas as pd
@@ -11,6 +12,7 @@ import numpy as np
 import scipy
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
+import pickle
 
 def get_numeric_label(training):
     # hard coded but change add to anti coop / additive when needed
@@ -18,7 +20,7 @@ def get_numeric_label(training):
     return train
 
 
-def display_output(fpr_list, tpr_dict, auc_dict, path):
+def display_output(fpr_list, tpr_dict, auc_dict, path, title):
     """
         This plots the average ROC curve of all the classifiers in a single plot
     """
@@ -45,12 +47,12 @@ def display_output(fpr_list, tpr_dict, auc_dict, path):
         plt.ylabel('True Positive Rate')
 
     plt.grid()
-    plt.title('Average ROC Curves Using RF for All Orientations')
+    plt.title(title)
     leg = plt.legend(loc="lower right",title="AUC for each combination:")
     leg._legend_box.align = "left"
     plt.savefig(path)
 
-def plot_auc(x_train_dict, df, plotname="auc.png"):
+def plot_auc(x_train_dict, df, title="Average ROC Curves", plotname="auc.png"):
     tpr_dict = {key:[] for key in x_train_dict}
     auc_dict = {key:[] for key in x_train_dict}
     acc_dict = {key:[] for key in x_train_dict}
@@ -112,8 +114,11 @@ def get_top_n(n, xdict, ytrain, rf):
     return  util.merge_listdict([], x_df_imp)
 
 if __name__ == "__main__":
-    #trainingpath = "train1.tsv"
-    trainingpath = "trainingdata/training_new.csv"
+    trainingpath = "train1.tsv"
+    #trainingpath = "trainingdata/training_new.csv"
+    shapepath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/training_p01_adjusted_reversed"
+    ds = DNAShape(shapepath)
+
     rf_param_dict = {
     				'n_estimators': [i for i in range(2,21)],
     				'max_depth': [i for i in range(100,2001,100)]
@@ -124,7 +129,8 @@ if __name__ == "__main__":
                     "min_samples_leaf" : [i for i in range(1,31)]
     			}
 
-    df = pd.read_csv(trainingpath, sep=",")
+    df = pd.read_csv(trainingpath, sep="\t")
+    #df = df #[dftrain["orientation"] == "HT/TH"]
 
     t = Training(df, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
     y_train = get_numeric_label(t.df).values
@@ -133,6 +139,10 @@ if __name__ == "__main__":
             "dist":
                 BestModel(clf="RF",
                           param_dict=rf_param_dict,
+    # xtr = {"distance":
+    #             BestModel(clf="DT",
+    #                       param_dict=dt_param_dict,
+
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"}
                               })
@@ -144,6 +154,10 @@ if __name__ == "__main__":
                                   "flankseq": {"k":3, "seqin":4, "smode":"strength"},
                                   "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
                               }),
+                                  # "distance":{"type":"numerical"},
+                                  # "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
+                                  # "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+                              # })
                 ).run_all(),
             "dist-flank-seq":
                 BestModel(clf="RF",
@@ -161,9 +175,25 @@ if __name__ == "__main__":
                                   "distance":{"type":"numerical"},
                                   "flankseq": {"k":3, "seqin":4, "smode":"strength"},
                                   "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
+                                  # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
+                                  # "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"},
+
                               }),
-                           topn = 10
-                ).run_all()
+                           topn=10
+                ).run_all(),
         }
 
-    plot_auc(xtr, y_train, "dist_flank_seq_auc.png")
+
+
+    plot_auc(xtr, y_train, "Average ROC Curves Using RF for All Orientations", "dist_flank_seq_auc.png")
+
+    # # save the first model
+    # dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
+    # #plot_auc(xtr, y_train, "auc.png")
+    # xt = t.get_feature_all({
+    #     "distance":{"type":"numerical"}
+    #     })
+    # xt = pd.DataFrame(xt).values.tolist()
+    # dt.fit(xt,y_train)
+    # pickle.dump(rf, open("model1.sav", 'wb'))
+

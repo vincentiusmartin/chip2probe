@@ -28,11 +28,13 @@ class BestModel:
         # initialize classifier
         self.init_data(self.train_data)
         # get best hyperparam combination
-        self.get_best_param()
-        # get best top n
-        new_x = self.set_topn()
-        # get best hyperparam for top n
         clf = self.get_best_param()
+        new_x = self.train_data
+        # get best top n
+        if self.topn < len(self.train_data.columns) - 1:
+            new_x = self.set_topn()
+            # get best hyperparam for top n
+            clf = self.get_best_param()
         # return the best model for top n
         return new_x, clf
 
@@ -129,9 +131,8 @@ class BestModel:
     def set_topn(self):
         model = self.clf.fit(self.x_train,self.y_train)
         feat_impt = model.feature_importances_
-        if self.topn < len(self.train_data) - 1:
-            print(sorted(zip(map(lambda x: round(x, 4), feat_impt), self.x_train.columns),
-                 reverse=True)[:self.topn])
+        print(sorted(zip(map(lambda x: round(x, 4), feat_impt), self.x_train.columns),
+             reverse=True)[:self.topn])
         # get the new x
         self.x_train = self.train_data.iloc[:, feat_impt.argsort()[::-1][:self.topn]]
         return self.x_train
