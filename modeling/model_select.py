@@ -1,6 +1,6 @@
 import sys
-sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe") # PATH TO UTIL
-#sys.path.append("/Users/faricazjj/Desktop/homotf/chip2probe")
+#sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe") # PATH TO UTIL
+sys.path.append("/Users/faricazjj/Desktop/homotf/chip2probe")
 from trainingdata.training import Training
 import util.util as util
 from best_model import BestModel
@@ -117,8 +117,8 @@ def get_top_n(n, xdict, ytrain, rf):
     return  util.merge_listdict([], x_df_imp)
 
 if __name__ == "__main__":
-    trainingpath = "train1.tsv"
-    #trainingpath = "trainingdata/training_new.csv"
+    #trainingpath = "train1.tsv"
+    trainingpath = "trainingdata/training_new.csv"
     rf_param_dict = {
     				'n_estimators': [i for i in range(2,21)],
     				'max_depth': [i for i in range(100,2001,100)]
@@ -129,7 +129,7 @@ if __name__ == "__main__":
                     "min_samples_leaf" : [i for i in range(1,31)]
     			}
 
-    df = pd.read_csv(trainingpath, sep="\t")
+    df = pd.read_csv(trainingpath, sep=",")
 
     t = Training(df, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
     y_train = get_numeric_label(t.df).values
