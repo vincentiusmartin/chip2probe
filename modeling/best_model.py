@@ -12,7 +12,7 @@ from sklearn.model_selection import StratifiedKFold
 import itertools
 
 class BestModel:
-    def __init__(self, clf, param_dict, topn, train_data):
+    def __init__(self, clf, param_dict, train_data, topn = len(train_data)):
         self.classifier = clf
         self.param_dict = param_dict
         self.topn = topn
