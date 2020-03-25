@@ -29,7 +29,7 @@ class BestModel:
         self.init_data(self.train_data)
         # get best hyperparam combination
         self.get_best_param()
-        # get best top n 
+        # get best top n
         new_x = self.set_topn()
         # get best hyperparam for top n
         clf = self.get_best_param()
@@ -70,7 +70,7 @@ class BestModel:
         # find the best model for the data
         x_train = self.x_train.values
         y_train = self.y_train.values
-        
+
 
         comb_lst = list(self.param_dict.values())
         combinations = list(itertools.product(*comb_lst))
@@ -108,7 +108,7 @@ class BestModel:
             output.append([comb[0], comb[1], avg_acc, avg_auc])
             if save_to_file:
                 # write preliminary output
-                columns = ["n_est", "max_depth", "acc", "auc"] 
+                columns = ["n_est", "max_depth", "acc", "auc"]
                 output_df = pd.DataFrame.from_records(output, columns = columns)
                 output_df.to_csv("rf_all_params_results_step1.csv", index=False)
 
@@ -125,12 +125,12 @@ class BestModel:
     def set_topn(self):
         model = self.clf.fit(self.x_train,self.y_train)
         feat_impt = model.feature_importances_
-        print(sorted(zip(map(lambda x: round(x, 4), feat_impt), self.x_train.columns), 
+        print(sorted(zip(map(lambda x: round(x, 4), feat_impt), self.x_train.columns),
              reverse=True)[:self.topn])
-        # get the new x 
+        # get the new x
         self.x_train = self.train_data.iloc[:, feat_impt.argsort()[::-1][:self.topn]]
         return self.x_train
- 
+
 
 if __name__=="__main__":
 
@@ -141,18 +141,18 @@ if __name__=="__main__":
     #n_estimators = [100]
     #max_depth = [10]
     comb_lst = [n_estimators, max_depth]
-    
+
 
     # initialize an empty list for outputs
     output = []
 
     # set random state so the folds are the same for
     # each combination
-    
+
     output = []
-     
+
     #-------------------------Step 1------------------------
-    
+
     '''
     #----------------------------Step 2--------------------------------
 
@@ -205,15 +205,15 @@ if __name__=="__main__":
         output.append([i, n_est, max_depth, curr_acc, max_auc])
 
         # write preliminary output
-        columns = ["top_n", "best_n_est", "best_max_depth", "acc", "auc"] 
+        columns = ["top_n", "best_n_est", "best_max_depth", "acc", "auc"]
         output_df = pd.DataFrame.from_records(output, columns = columns)
         output_df.to_csv("rf_best_for_each_topn.csv", index=False)
-    
-    
+
+
     #-------------------------Step 3------------------------
     # using the top_n features found above, find the best params
 
-    
+
 
     # loop through every hyperparameter combination
     max_auc = 0
@@ -241,7 +241,7 @@ if __name__=="__main__":
         auc = tot_auc/10
         output.append([comb[0], comb[1], acc, auc])
         # write preliminary output
-        columns = ["n_est", "max_depth", "acc", "auc"] 
+        columns = ["n_est", "max_depth", "acc", "auc"]
         output_df = pd.DataFrame.from_records(output, columns = columns)
         output_df.to_csv("rf_best_params_results_step3.csv", index=False)
 
@@ -252,4 +252,3 @@ if __name__=="__main__":
     print("Best params:", best_comb[0], best_comb[1])
     '''
     print("DONE!!!")
-    

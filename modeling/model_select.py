@@ -1,6 +1,6 @@
 import sys
-#sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe") # PATH TO UTIL
-sys.path.append("/Users/faricazjj/Desktop/homotf/chip2probe")
+sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe") # PATH TO UTIL
+#sys.path.append("/Users/faricazjj/Desktop/homotf/chip2probe")
 from trainingdata.training import Training
 import util.util as util
 from best_model import BestModel
@@ -117,39 +117,50 @@ def get_top_n(n, xdict, ytrain, rf):
     return  util.merge_listdict([], x_df_imp)
 
 if __name__ == "__main__":
-    #trainingpath = "train1.tsv"
-    trainingpath = "trainingdata/training_new.csv"
+    trainingpath = "train1.tsv"
+    #trainingpath = "trainingdata/training_new.csv"
+    rf_param_dict = {
+    				'n_estimators': [i for i in range(2,21)],
+    				'max_depth': [i for i in range(100,2001,100)]
+    			}
+    dt_param_dict = {
+    				"criterion" : ['gini', 'entropy'],
+                    "min_samples_split" : [i for i in range(2,41)],
+                    "min_samples_leaf" : [i for i in range(1,31)]
+    			}
 
-    df = pd.read_csv(trainingpath, sep=",")
+    df = pd.read_csv(trainingpath, sep="\t")
 
     t = Training(df, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
     y_train = get_numeric_label(t.df).values
 
     rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10,random_state=0)
     dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
-    xtr = {"distance": [
-                    t.get_feature_all({
-                        "distance":{"type":"numerical"}
-                    }),
-                    dt
-                ],
-            "all": [
-                    t.get_feature_all({
-                        "distance":{"type":"numerical"},
-                        "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-                        "flankseq": {"k":3, "seqin":-3, "smode":"strength"}
-                    }),
-                    rf
-                ]
+    xtr = {"distance":
+                BestModel(clf="DT",
+                          param_dict=dt_param_dict,
+                          train_data=t.get_training_df({
+                              "distance":{"type":"numerical"}
+                              })
+                ).run_all(),
+            "all":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "distance":{"type":"numerical"},
+                                  "flankseq": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq": {"k":3, "seqin":-3, "smode":"strength"}
+                              })
+                ).run_all()
         }
-    xtr["topn"] = [get_top_n(10, xtr["all"][0], y_train, rf), rf]
+    #xtr["topn"] = [get_top_n(10, xtr["all"][0], y_train, rf), rf]
 
     plot_auc(xtr, y_train, "auc.png")
 
-    """
-    param_dict = {
-    				'n_estimators': [i for i in range(2,21)],
-    				'max_depth': [i for i in range(100,2001,100)]
-    			}
+    train_data = t.get_training_df({
+                            "distance":{"type":"numerical", "include":"T"},
+                            "orientation":{"positive_cores": ["GGAA","GGAT"]},
+                            "sitepref":{}
+                            })
+
     rf = BestModel(clf="RF", param_dict=param_dict, topn=10, train_data=train_data).run_all()
-    """
