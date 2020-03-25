@@ -69,8 +69,7 @@ def plot_auc(x_train_dict, df, plotname="auc.png"):
         for key in x_train_dict:
             # need to convert this with index, somehow cannot do
             # x_train[train_idx] for multi features
-            xt = x_train_dict[key][0]
-            xt = [[d[k] for k in d] for d in xt] # need to be a list of list
+            xt = x_train_dict[key][0].values.tolist() # need to be a list of list
             model_name = x_train_dict[key][1]
 
             data_train = [xt[i] for i in train_idx]
@@ -120,13 +119,13 @@ if __name__ == "__main__":
     trainingpath = "train1.tsv"
     #trainingpath = "trainingdata/training_new.csv"
     rf_param_dict = {
-    				'n_estimators': [i for i in range(2,21)],
-    				'max_depth': [i for i in range(100,2001,100)]
+    				'n_estimators': [i for i in range(2,5)],
+    				'max_depth': [i for i in range(100,301,100)]
     			}
     dt_param_dict = {
     				"criterion" : ['gini', 'entropy'],
-                    "min_samples_split" : [i for i in range(2,41)],
-                    "min_samples_leaf" : [i for i in range(1,31)]
+                    "min_samples_split" : [i for i in range(2,5)],
+                    "min_samples_leaf" : [i for i in range(1,5)]
     			}
 
     df = pd.read_csv(trainingpath, sep="\t")
@@ -151,16 +150,17 @@ if __name__ == "__main__":
                                   "flankseq": {"k":3, "seqin":4, "smode":"strength"},
                                   "flankseq": {"k":3, "seqin":-3, "smode":"strength"}
                               })
+                ).run_all(),
+            "topn":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "distance":{"type":"numerical"},
+                                  "flankseq": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq": {"k":3, "seqin":-3, "smode":"strength"}
+                              }),
+                           topn = 10
                 ).run_all()
         }
-    #xtr["topn"] = [get_top_n(10, xtr["all"][0], y_train, rf), rf]
 
     plot_auc(xtr, y_train, "auc.png")
-
-    train_data = t.get_training_df({
-                            "distance":{"type":"numerical", "include":"T"},
-                            "orientation":{"positive_cores": ["GGAA","GGAT"]},
-                            "sitepref":{}
-                            })
-
-    rf = BestModel(clf="RF", param_dict=param_dict, topn=10, train_data=train_data).run_all()

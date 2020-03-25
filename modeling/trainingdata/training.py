@@ -2,7 +2,7 @@
 Created on Oct 30, 2019
 
 @author: vincentiusmartin
-Edited by: Farica Zhuang
+@editedby: Farica Zhuang
 '''
 
 import pandas as pd
@@ -346,7 +346,7 @@ class Training(object):
         train['label'] = self.get_numeric_label(self.df).values
 
         return train
-        
+
     def get_feature_all(self, feature_dict):
         """
         list of key:
