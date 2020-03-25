@@ -47,7 +47,9 @@ class BestModel:
                                           max_depth=comb[1])
 
     def set_dt(self, comb):
-        self.clf = DecisionTreeClassifier()
+        self.clf = DecisionTreeClassifier(criterion=comb[0],
+                                        min_samples_split=comb[1],
+                                        min_samples_leaf=comb[2])
 
     def set_lasso(self, comb):
         pass
