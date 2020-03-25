@@ -334,6 +334,11 @@ class Training(object):
         return features
     # =========
 
+    def get_training_df(self, feature_dict):
+        """Get training df from a dictionary of features."""
+        ldict = get_feature_all(feature_dict)
+        
+        
     def get_feature_all(self, feature_dict):
         """
         list of key:
