@@ -40,6 +40,8 @@ def display_output(fpr_list, tpr_dict, auc_dict, path, title):
         else:
         plt.plot(fpr_list, tpr_list, linestyle="--", lw=1, label='%s: %.3f' % (key,auc))
         """
+        print(len(fpr_list),len(tpr_list))
+        print(fpr_list,tpr_list)
         plt.plot(fpr_list, tpr_list, lw=2, label='%s: %.3f' % (key,auc))
 
         # Show the ROC curves for all classifiers on the same plot
@@ -52,7 +54,7 @@ def display_output(fpr_list, tpr_dict, auc_dict, path, title):
     leg._legend_box.align = "left"
     plt.savefig(path)
 
-def plot_auc(x_train_dict, df, title="Average ROC Curves", plotname="auc.png"):
+def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.png"):
     tpr_dict = {key:[] for key in x_train_dict}
     auc_dict = {key:[] for key in x_train_dict}
     acc_dict = {key:[] for key in x_train_dict}
@@ -98,8 +100,7 @@ def plot_auc(x_train_dict, df, title="Average ROC Curves", plotname="auc.png"):
     print("Mean accuracy", mean_acc, "\nMean auc", mean_auc)
 
     # left append 0 in base fpr just so we start at 0 (we did the same for the tpr)
-    base_fpr = np.insert(base_fpr,0,0)
-    display_output(base_fpr, mean_tpr, mean_auc, path=plotname)
+    display_output(base_fpr, mean_tpr, mean_auc, path=plotname, title=title)
 
 def get_top_n(n, xdict, ytrain, rf):
     x_df = pd.DataFrame(xdict)
@@ -120,13 +121,13 @@ if __name__ == "__main__":
     ds = DNAShape(shapepath)
 
     rf_param_dict = {
-    				'n_estimators': [i for i in range(2,21)],
-    				'max_depth': [i for i in range(100,2001,100)]
+    				'n_estimators': [i for i in range(2,11)],
+    				'max_depth': [i for i in range(100,1001,100)]
     			}
     dt_param_dict = {
     				"criterion" : ['gini', 'entropy'],
-                    "min_samples_split" : [i for i in range(2,41)],
-                    "min_samples_leaf" : [i for i in range(1,31)]
+                    "min_samples_split" : [i for i in range(20,41)],
+                    "min_samples_leaf" : [i for i in range(20,31)]
     			}
 
     df = pd.read_csv(trainingpath, sep="\t")
@@ -139,48 +140,38 @@ if __name__ == "__main__":
             "dist":
                 BestModel(clf="RF",
                           param_dict=rf_param_dict,
-    # xtr = {"distance":
-    #             BestModel(clf="DT",
-    #                       param_dict=dt_param_dict,
-
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"}
                               })
                 ).run_all(),
-            "flank-seq":
-                BestModel(clf="RF",
-                          param_dict=rf_param_dict,
-                          train_data=t.get_training_df({
-                                  "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
-                              }),
-                                  # "distance":{"type":"numerical"},
-                                  # "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
-                                  # "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-                              # })
-                ).run_all(),
-            "dist-flank-seq":
+            "flankshape":
                 BestModel(clf="RF",
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"},
-                                  "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
-                              }),
-                ).run_all(),
-             "top10":
-             	BestModel(clf="RF",
-                          param_dict=rf_param_dict,
-                          train_data=t.get_training_df({
-                                  "distance":{"type":"numerical"},
-                                  "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
-                                  # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
-                                  # "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"},
-
-                              }),
-                           topn=10
-                ).run_all(),
+                                  "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
+                                  "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+                              })
+                ).run_all()
+            # "dist-flankshape":
+            #     BestModel(clf="RF",
+            #               param_dict=rf_param_dict,
+            #               train_data=t.get_training_df({
+            #                       "distance":{"type":"numerical"},
+            #                        "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
+            #                        "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+            #                   }),
+            #     ).run_all(),
+            #  "top10":
+            #  	BestModel(clf="RF",
+            #               param_dict=rf_param_dict,
+            #               train_data=t.get_training_df({
+            #                       "distance":{"type":"numerical"},
+            #                       "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
+            #                       "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+            #                   }),
+            #                topn=10
+            #     ).run_all(),
         }
 
 
@@ -196,4 +187,3 @@ if __name__ == "__main__":
     # xt = pd.DataFrame(xt).values.tolist()
     # dt.fit(xt,y_train)
     # pickle.dump(rf, open("model1.sav", 'wb'))
-
