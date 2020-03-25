@@ -12,11 +12,14 @@ from sklearn.model_selection import StratifiedKFold
 import itertools
 
 class BestModel:
-    def __init__(self, clf, param_dict, train_data, topn = len(train_data.columns)-1):
+    def __init__(self, clf, param_dict, train_data, topn = -1):
         self.classifier = clf
         self.param_dict = param_dict
         self.topn = topn
         self.train_data = train_data
+
+        if self.topn = -1:
+            self.topn = len(train_data.columns)-1
 
         self.cv_fold_num = 2
         self.cv_num = 1
