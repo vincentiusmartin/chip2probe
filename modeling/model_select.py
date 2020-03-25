@@ -138,14 +138,14 @@ if __name__ == "__main__":
     dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
     xtr = {"distance":
                 BestModel(clf="DT",
-                          param_dict=param_dict,
+                          param_dict=dt_param_dict,
                           train_data=t.get_training_df({
                               "distance":{"type":"numerical"}
                               })
                 ).run_all(),
             "all":
                 BestModel(clf="RF",
-                          param_dict=param_dict,
+                          param_dict=rf_param_dict,
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"},
                                   "flankseq": {"k":3, "seqin":4, "smode":"strength"},
