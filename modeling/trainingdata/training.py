@@ -2,6 +2,7 @@
 Created on Oct 30, 2019
 
 @author: vincentiusmartin
+Edited by: Farica Zhuang
 '''
 
 import pandas as pd
@@ -20,10 +21,11 @@ import util.stats as st
 import util.bio as bio
 import util.util as util
 
+
 class Training(object):
-    '''
-    classdocs
-    '''
+    """
+    Class for Training object.
+    """
 
     # TODO: make column name more general
     def __init__(self, trainingdata, corelen, sep="\t"):
@@ -35,22 +37,42 @@ class Training(object):
         if isinstance(trainingdata, pd.DataFrame):
             self.df = trainingdata.copy().reset_index(drop=True)
         elif isinstance(trainingdata, str):
-            self.df = pd.read_csv(trainingpath,sep=sep)
+            self.df = pd.read_csv(trainingpath, sep=sep)
         else:
             raise Exception("input must be string or data frame")
         self.motiflen = corelen
 
-    def get_labels_indexes(self):
-          return self.df.groupby("label").groups
+    def get_numeric_label(self, training):
+        # hard coded but change add to anti coop / additive when needed
+        train = training['label'].map({'cooperative': 1, 'additive': 0})
+        return train
 
-    def stacked_bar_categories(self, x, y=["label"],plotname="stackedbar.png",avg=False,legend=True, ylabel=""):
+    def get_labels_indexes(self):
+        """
+        Get a dictionary of labels and indices.
+
+        The keys of the dictionary are labels: additive, cooperative
+        The values of the dictionary are lists of indices associated with the
+        labels
+        """
+        return self.df.groupby("label").groups
+
+    def stacked_bar_categories(self, x, y=["label"], plotname="stackedbar.png",
+                               avg=False, legend=True, ylabel=""):
+        """
+        Plot a stacked bar graph.
+
+        The groups are in the x-axis and counts are in the y-axis.
+        Each bar is separated into two colors for additive and cooeprative.
+        """
         cat_df = self.df[[x]]
         cat_df["label"] = self.df['label']
         group = [x] + y
         df2 = cat_df.groupby(group)['label'].count() # .unstack(x).fillna(0)
         if avg:
             df2 = df2.groupby(level=0).apply(lambda x: x / float(x.sum()))
-        ax = df2.unstack(x).fillna(0).T.plot(kind='bar', stacked=True,legend=legend,rot=0)
+        ax = df2.unstack(x).fillna(0).T.plot(kind='bar', stacked=True,
+                                             legend=legend, rot=0)
         ax.set_ylabel(ylabel)
         plt.savefig(plotname)
         plt.clf()
@@ -66,7 +88,7 @@ class Training(object):
         numrow = math.ceil(len(cols) / numcol)
         # to make axis with different y-scale
         fig, ax = plt.subplots(numrow, numcol, figsize=(14, 5))
-        plt.subplots_adjust(hspace = 0.4, wspace=0.6)
+        plt.subplots_adjust(hspace =0.4, wspace=0.6)
         grouped = df.groupby(by=by)
         # need to sort to keep the order consistent
         cols.sort()
@@ -112,16 +134,17 @@ class Training(object):
         plt.clf()
 
     def get_ordered_site_list(self):
+        """Get two lists for binding site positions 1 and 2."""
         site1 = {}
         site2 = {}
-        for idx,row in self.df.iterrows():
+        for idx, row in self.df.iterrows():
             if row["site_wk_pos"] > row["site_str_pos"]:
                 site1[idx] = row["site_str_pos"]
                 site2[idx] = row["site_wk_pos"]
             else:
                 site1[idx] = row["site_wk_pos"]
                 site2[idx] = row["site_str_pos"]
-        return site1,site2
+        return site1, site2
 
     def training_summary(self, by=["label"], cols="default", plotname="training_summary.png"):
         if cols == "default":
@@ -147,8 +170,8 @@ class Training(object):
                     records[i]["site_wk_pos"] = len(records[i]["sequence"]) - str_pos
         return Training(pd.DataFrame(records), corelen=self.motiflen)
 
-
-    def weak_type_to_int(self,name):
+    def weak_type_to_int(self, name):
+        """Return the integer representation of names for custom sequences."""
         if name.endswith("_weak_s1"):
             return 1
         elif name.endswith("_weak_s2"):
@@ -316,6 +339,14 @@ class Training(object):
         return features
     # =========
 
+    def get_training_df(self, feature_dict):
+        """Get training df from a dictionary of features."""
+        ldict = self.get_feature_all(feature_dict)
+        train = pd.DataFrame(ldict)
+        train['label'] = self.get_numeric_label(self.df).values
+
+        return train
+        
     def get_feature_all(self, feature_dict):
         """
         list of key:
@@ -352,7 +383,7 @@ class Training(object):
 
 
     def get_feature_site_pref(self):
-        """Get a dictionary of binding site preference scores"""
+        """Get a dictionary of binding site preference scores."""
         rfeature = []
         for idx, row in self.df.iterrows():
             f = {"site_wk_score": row["site_wk_score"],
@@ -361,7 +392,7 @@ class Training(object):
         return rfeature
 
     def get_nonrev_dfeature(self, k, label="seq", initcount=0):
-        nucleotides = ['A','C','G','T']
+        nucleotides = ['A', 'C', 'G', 'T']
         perm = []
         dfeature = {}
         for p in itertools.product(nucleotides, repeat=k):
@@ -561,12 +592,19 @@ class Training(object):
         return rfeature
 
     def get_feature_flank_core(self, k, seqin=0, site_mode="strength"):
-        # seqin can be negative to get outer flank
-        # i don't think we have to take complement here
+        """
+        Get flanking regions of the cores as features.
+
+        params: k -- max k-mer to consider
+                seqin -- max distance to go towards the other core
+                         (inner flank), negative seqin indicates
+                         that we are going in the opposite direction
+                         of the other core (outer flank)
+        """
         if site_mode != "strength" and site_mode != "positional":
             raise Exception("Site mode can only be 'strength' or 'positional'")
         rfeature = []
-        for idx,row in self.df.iterrows():
+        for idx, row in self.df.iterrows():
             if row["site_wk_pos"] > row["site_str_pos"]:
                 site1, site2 = row["site_str_pos"], row["site_wk_pos"]
                 if site_mode == "strength":
@@ -577,21 +615,26 @@ class Training(object):
                     s1type, s2type = "wk", "str"
             if site_mode == "positional":
                 s1type, s2type = "s1", "s2"
-            if seqin >= 0: # inner
-                flank1 = row["sequence"][site1:site1+seqin]
-                flank2 = row["sequence"][site2-seqin:site2][::-1]
+            # get the inner flanking region
+            if seqin >= 0:
+                flank1 = row["sequence"][site1:site1 + seqin]
+                flank2 = row["sequence"][site2 - seqin:site2][::-1]
                 label = "flankseq_in"
-            else: # outer
-                flank1 = row["sequence"][site1+seqin:site1][::-1]
-                flank2 = row["sequence"][site2:site2-seqin]
+            # get the outer flanking region
+            else:
+                flank1 = row["sequence"][site1 + seqin:site1][::-1]
+                flank2 = row["sequence"][site2:site2 - seqin]
                 label = "flankseq_out"
-            d1 = self.extract_positional(flank1,maxk=k,minseqlen=seqin,label="%s_%s"%(label,s1type))
-            d2 = self.extract_positional(flank2,maxk=k,minseqlen=seqin,label="%s_%s"%(label,s2type))
+            d1 = self.extract_positional(flank1, maxk=k, minseqlen=seqin,
+                                         label="%s_%s" % (label, s1type))
+            d2 = self.extract_positional(flank2, maxk=k, minseqlen=seqin,
+                                         label="%s_%s" % (label, s2type))
             rfeature.append({**d1, **d2})
         return rfeature
 
     # only linker now
     def get_feature_flank_in_linker(self, k, seqin=0, site_mode="strength"):
+        """Get the positional linker feature between the binding sites."""
         if site_mode != "strength" and site_mode != "positional":
             raise Exception("Site mode can only be 'strength' or 'positional'")
         rfeature = []

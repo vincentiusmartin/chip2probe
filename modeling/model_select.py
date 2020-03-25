@@ -1,7 +1,9 @@
 import sys
-sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe") # PATH TO UTIL
+#sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe") # PATH TO UTIL
+sys.path.append("/Users/faricazjj/Desktop/homotf/chip2probe")
 from trainingdata.training import Training
 import util.util as util
+from best_model import BestModel
 
 from sklearn import ensemble, model_selection, metrics, tree
 import pandas as pd
@@ -48,8 +50,7 @@ def display_output(fpr_list, tpr_dict, auc_dict, path):
     leg._legend_box.align = "left"
     plt.savefig(path)
 
-def plot_auc(x_train_dict, y_train, plotname="auc.png"):
-    #fpr_dict = {key:[] for key in x_train}
+def plot_auc(x_train_dict, df, plotname="auc.png"):
     tpr_dict = {key:[] for key in x_train_dict}
     auc_dict = {key:[] for key in x_train_dict}
     acc_dict = {key:[] for key in x_train_dict}
@@ -116,9 +117,10 @@ def get_top_n(n, xdict, ytrain, rf):
     return  util.merge_listdict([], x_df_imp)
 
 if __name__ == "__main__":
-    trainingpath = "train1.tsv"
+    #trainingpath = "train1.tsv"
+    trainingpath = "trainingdata/training_new.csv"
 
-    df = pd.read_csv(trainingpath, sep="\t")
+    df = pd.read_csv(trainingpath, sep=",")
 
     t = Training(df, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
     y_train = get_numeric_label(t.df).values
@@ -143,3 +145,11 @@ if __name__ == "__main__":
     xtr["topn"] = [get_top_n(10, xtr["all"][0], y_train, rf), rf]
 
     plot_auc(xtr, y_train, "auc.png")
+
+    """
+    param_dict = {
+    				'n_estimators': [i for i in range(2,21)],
+    				'max_depth': [i for i in range(100,2001,100)]
+    			}
+    rf = BestModel(clf="RF", param_dict=param_dict, topn=10, train_data=train_data).run_all()
+    """
