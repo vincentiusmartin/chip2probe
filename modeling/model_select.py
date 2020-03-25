@@ -45,7 +45,7 @@ def display_output(fpr_list, tpr_dict, auc_dict, path):
         plt.ylabel('True Positive Rate')
 
     plt.grid()
-    plt.title('Average ROC curves using CART')
+    plt.title('Average ROC Curves Using RF for All Orientations')
     leg = plt.legend(loc="lower right",title="AUC for each combination:")
     leg._legend_box.align = "left"
     plt.savefig(path)
@@ -70,7 +70,6 @@ def plot_auc(x_train_dict, df, plotname="auc.png"):
             # need to convert this with index, somehow cannot do
             # x_train[train_idx] for multi features
             xt = x_train_dict[key][0].values.tolist() # need to be a list of list
-            model_name = x_train_dict[key][1]
 
             data_train = [xt[i] for i in train_idx]
             data_test = [xt[i] for i in test_idx]
@@ -79,10 +78,7 @@ def plot_auc(x_train_dict, df, plotname="auc.png"):
 
             model = x_train_dict[key][1]
 
-            if model_name == "rf":
-                model = rf.fit(data_train, lbl_train)
-            else:
-                model = dt.fit(data_train, lbl_train)
+            model = model.fit(data_train, lbl_train)
             y_score = model.predict_proba(data_test)
             fpr, tpr, _ = metrics.roc_curve(lbl_test, y_score[:, 1])
             #auc = metrics.roc_auc_score(lbl_test, y_score[:,1])
@@ -119,13 +115,13 @@ if __name__ == "__main__":
     #trainingpath = "train1.tsv"
     trainingpath = "trainingdata/training_new.csv"
     rf_param_dict = {
-    				'n_estimators': [i for i in range(2,5)],
-    				'max_depth': [i for i in range(100,301,100)]
+    				'n_estimators': [i for i in range(2,21)],
+    				'max_depth': [i for i in range(100,2001,100)]
     			}
     dt_param_dict = {
     				"criterion" : ['gini', 'entropy'],
-                    "min_samples_split" : [i for i in range(2,5)],
-                    "min_samples_leaf" : [i for i in range(1,5)]
+                    "min_samples_split" : [i for i in range(2,41)],
+                    "min_samples_leaf" : [i for i in range(1,31)]
     			}
 
     df = pd.read_csv(trainingpath, sep=",")
@@ -133,34 +129,41 @@ if __name__ == "__main__":
     t = Training(df, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
     y_train = get_numeric_label(t.df).values
 
-    rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10,random_state=0)
-    dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
-    xtr = {"distance":
-                BestModel(clf="DT",
-                          param_dict=dt_param_dict,
+    xtr = {
+            "dist":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
                           train_data=t.get_training_df({
-                              "distance":{"type":"numerical"}
+                                  "distance":{"type":"numerical"}
                               })
                 ).run_all(),
-            "all":
+            "flank-seq":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "flankseq": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
+                              }),
+                ).run_all(),
+            "dist-flank-seq":
                 BestModel(clf="RF",
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"},
                                   "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-                                  "flankseq": {"k":3, "seqin":-3, "smode":"strength"}
-                              })
+                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
+                              }),
                 ).run_all(),
-            "topn":
-                BestModel(clf="RF",
+             "top10":
+             	BestModel(clf="RF",
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"},
                                   "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-                                  "flankseq": {"k":3, "seqin":-3, "smode":"strength"}
+                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
                               }),
                            topn = 10
                 ).run_all()
         }
 
-    plot_auc(xtr, y_train, "auc.png")
+    plot_auc(xtr, y_train, "dist_flank_seq_auc.png")
