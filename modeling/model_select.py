@@ -66,7 +66,6 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
     y_train = random_x['label'].values
 
     rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10,random_state=0)
-
     for train_idx,test_idx in cv.split(x_train):
         tprs = []
         aucs_val = []
@@ -82,7 +81,7 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
             lbl_train = [y_train[i] for i in train_idx]
             lbl_test = [y_train[i] for i in test_idx]
 
-            model = x_train_dict[key][1]
+            model = rf# x_train_dict[key][1]
 
             model = model.fit(data_train, lbl_train)
             y_score = model.predict_proba(data_test)
@@ -112,8 +111,8 @@ if __name__ == "__main__":
     ds = DNAShape(shapepath)
 
     rf_param_dict = {
-    				'n_estimators': [i for i in range(2,3)],
-    				'max_depth': [i for i in range(100,2001,100)]
+                    'n_estimators': [i for i in range(100,601,100)],
+    				'max_depth': [i for i in range(3,11)]
     			}
     dt_param_dict = {
     				"criterion" : ['gini', 'entropy'],
@@ -128,11 +127,12 @@ if __name__ == "__main__":
     y_train = get_numeric_label(t.df).values
 
     xtr = {
-            "dist":
+            "dist-ori":
                 BestModel(clf="RF",
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
-                                  "distance":{"type":"numerical"}
+                                  "distance":{"type":"numerical"},
+                                  "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
                               })
                 ).run_all(),
             "flankshape":
@@ -141,15 +141,17 @@ if __name__ == "__main__":
                           train_data=t.get_training_df({
                                   "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
                                   "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+                                  "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
                               })
                 ).run_all(),
-            "dist-flankshape":
+            "dist-ori-flankshape":
                 BestModel(clf="RF",
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"},
                                    "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
                                    "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+                                   "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
                               }),
                 ).run_all(),
              "top10":
@@ -159,6 +161,7 @@ if __name__ == "__main__":
                                   "distance":{"type":"numerical"},
                                   "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
                                   "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+                                  "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
                               }),
                            topn=10
                 ).run_all()
