@@ -777,7 +777,7 @@ class Training(object):
             notfound = {"HH","HT/TH","TT"} - set(dum_df["ori"].unique())
             dum_rec = pd.get_dummies(dum_df).to_dict('records')
             for nf in notfound:
-                print(nf)
+                print("notfound orientation in the dataset: ",nf)
                 for i in range(len(dum_rec)):
                     dum_rec[i]["ori_%s" % nf] = 0
             return dum_rec

@@ -14,6 +14,8 @@ from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 import pickle
 
+import subprocess
+
 def get_numeric_label(training):
     # hard coded but change add to anti coop / additive when needed
     train = training['label'].map({'cooperative': 1, 'additive': 0})
@@ -52,7 +54,7 @@ def display_output(fpr_list, tpr_dict, auc_dict, path, title):
     leg._legend_box.align = "left"
     plt.savefig(path)
 
-def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.png"):
+def plot_auc(x_train_dict, title="Average ROC Curves", plotname="auc.png"):
     tpr_dict = {key:[] for key in x_train_dict}
     auc_dict = {key:[] for key in x_train_dict}
     acc_dict = {key:[] for key in x_train_dict}
@@ -81,7 +83,7 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
             lbl_train = [y_train[i] for i in train_idx]
             lbl_test = [y_train[i] for i in test_idx]
 
-            model = rf# x_train_dict[key][1]
+            model = x_train_dict[key][1]
 
             model = model.fit(data_train, lbl_train)
             y_score = model.predict_proba(data_test)
@@ -111,8 +113,8 @@ if __name__ == "__main__":
     ds = DNAShape(shapepath)
 
     rf_param_dict = {
-                    'n_estimators': [i for i in range(100,601,100)],
-    				'max_depth': [i for i in range(3,11)]
+                    'n_estimators': [500],
+    				'max_depth': [10]
     			}
     dt_param_dict = {
     				"criterion" : ['gini', 'entropy'],
@@ -121,61 +123,77 @@ if __name__ == "__main__":
     			}
 
     df = pd.read_csv(trainingpath, sep="\t")
-    #df = df #[dftrain["orientation"] == "HT/TH"]
+    df = df[df["orientation"] == "TT"]
 
     t = Training(df, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
-    y_train = get_numeric_label(t.df).values
+
 
     xtr = {
-            "dist-ori":
+            "dist":
                 BestModel(clf="RF",
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"},
-                                  "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+                                  "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
                               })
-                ).run_all(),
-            "flankshape":
-                BestModel(clf="RF",
-                          param_dict=rf_param_dict,
-                          train_data=t.get_training_df({
-                                  "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
-                                  "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-                                  "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
-                              })
-                ).run_all(),
-            "dist-ori-flankshape":
-                BestModel(clf="RF",
-                          param_dict=rf_param_dict,
-                          train_data=t.get_training_df({
-                                  "distance":{"type":"numerical"},
-                                   "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
-                                   "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-                                   "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
-                              }),
-                ).run_all(),
-             "top10":
-             	BestModel(clf="RF",
-                          param_dict=rf_param_dict,
-                          train_data=t.get_training_df({
-                                  "distance":{"type":"numerical"},
-                                  "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
-                                  "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-                                  "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
-                              }),
-                           topn=10
                 ).run_all()
+            # "flankshape":
+            #     BestModel(clf="RF",
+            #               param_dict=rf_param_dict,
+            #               train_data=t.get_training_df({
+            #                       "flankshape": {"ds":ds, "seqin":5, "smode":"positional"},
+            #                       "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"},
+            #                       "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
+            #                   })
+            #     ).run_all(),
+            # "dist-flankshape":
+            #     BestModel(clf="RF",
+            #               param_dict=rf_param_dict,
+            #               train_data=t.get_training_df({
+            #                       "distance":{"type":"numerical"},
+            #                        "flankshape": {"ds":ds, "seqin":5, "smode":"positional"},
+            #                        "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"},
+            #                        "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
+            #                   }),
+            #     ).run_all(),
+            #  "top10":
+            #  	BestModel(clf="RF",
+            #               param_dict=rf_param_dict,
+            #               train_data=t.get_training_df({
+            #                       "distance":{"type":"numerical"},
+            #                       "flankshape": {"ds":ds, "seqin":5, "smode":"positional"},
+            #                       "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"},
+            #                       "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
+            #                   }),
+            #                topn=10
+            #     ).run_all()
         }
 
 
-    plot_auc(xtr, y_train, "Average ROC Curves Using RF for All Orientations", "dist_flank_seq_auc.png")
 
-    # # save the first model
-    # dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
-    # #plot_auc(xtr, y_train, "auc.png")
-    # xt = t.get_feature_all({
-    #     "distance":{"type":"numerical"}
-    #     })
-    # xt = pd.DataFrame(xt).values.tolist()
-    # dt.fit(xt,y_train)
+    plot_auc(xtr, "Average ROC Curves Using RF for All Orientations", "dist_flank_seq_auc.png")
+    """
+    # save the first model
+    xt = t.get_feature_all({
+        "distance":{"type":"numerical"},
+        "flankshape": {"ds":ds, "seqin":5, "smode":"positional"},
+        "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"}
+        })
+    topf = ['dist_numeric', 'prot_outer_wk_pos_2', 'helt_outer_str_pos_2', 'prot_outer_str_pos_1',  'roll_outer_wk_pos_2', 'roll_outer_str_pos_1', 'mgw_outer_wk_pos_0', 'prot_outer_str_pos_0', 'prot_outer_str_pos_2', 'mgw_outer_str_pos_0']
+    xt_df = pd.DataFrame(xt)#[topf]
+    xtlist = xt_df.values.tolist()
+    y_train = get_numeric_label(t.df).values
+    rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10,random_state=0,min_samples_leaf=20)
+    m = rf.fit(xtlist, y_train)
+    tree.export_graphviz(m.estimators_[5], out_file='tree.dot',
+            feature_names = xt_df.columns,
+            class_names = ['additive','cooperative'],
+            rounded = True, proportion = False,
+            precision = 2, filled = True)
+    subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])
+
+    #plot_auc(xtr, y_train, "auc.png")
+    # xt = xt_df.values.tolist()
+    # rf.fit(xt,y_train)
     # pickle.dump(rf, open("model1.sav", 'wb'))
+    """

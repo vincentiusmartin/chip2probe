@@ -12,17 +12,17 @@ from sklearn.model_selection import StratifiedKFold
 import itertools
 
 class BestModel:
-    def __init__(self, clf, param_dict, train_data, topn = -1):
+    def __init__(self, clf, param_dict, train_data, topn = -1, cv_fold_num=10, cv_num=1):
         self.classifier = clf
         self.param_dict = param_dict
-        self.topn = topn
+        self.topn = topn # integer
         self.train_data = train_data
 
         if self.topn == -1:
             self.topn = len(train_data.columns)-1
 
-        self.cv_fold_num = 10
-        self.cv_num = 1
+        self.cv_fold_num = cv_fold_num
+        self.cv_num = cv_num
 
     def run_all(self):
         # initialize classifier
@@ -42,41 +42,32 @@ class BestModel:
         self.x_train = df.loc[:, df.columns != 'label']
         self.y_train = df.loc[:, 'label']
 
-    def set_clf(self, comb):
+    def set_clf(self, comb_dict):
         if self.classifier == "RF":
-            self.set_rf(comb)
+            self.clf = RandomForestClassifier(**comb_dict)
         elif self.classifier == "DT":
-            self.set_dt(comb)
+            self.clf = DecisionTreeClassifier(**comb_dict)
         # d = {'RF': self.set_rf(comb),
         #      'DT': self.set_dt(comb)}
         # d[self.classifier]
 
-    def set_rf(self, comb):
-        self.clf = RandomForestClassifier(n_estimators=comb[0],
-                                          max_depth=comb[1])
 
-    def set_dt(self, comb):
-        self.clf = DecisionTreeClassifier(criterion=comb[0],
-                                        min_samples_split=comb[1],
-                                        min_samples_leaf=comb[2])
-
-    def set_lasso(self, comb):
-        pass
-
-    def set_mlp(self, comb):
-        pass
-
-    def set_svm(self, comb):
-        pass
-
-    def set_nb(self, comb):
-        pass
+    # def set_lasso(self, comb):
+    #     pass
+    #
+    # def set_mlp(self, comb):
+    #     pass
+    #
+    # def set_svm(self, comb):
+    #     pass
+    #
+    # def set_nb(self, comb):
+    #     pass
 
     def get_best_param(self, save_to_file=False):
         # find the best model for the data
         x_train = self.x_train.values
         y_train = self.y_train.values
-
 
         comb_lst = list(self.param_dict.values())
         combinations = list(itertools.product(*comb_lst))
@@ -86,7 +77,8 @@ class BestModel:
         # loop through every hyperparameter combination
         max_auc = 0
         for comb in tqdm(combinations):
-            self.set_clf(comb)
+            comb_dict = {keys[i]:comb[i] for i in range(len(keys))}
+            self.set_clf(comb_dict)
             avg_acc = 0
             avg_auc = 0
             # take the average of runs
@@ -138,4 +130,3 @@ class BestModel:
         df = self.x_train
         df['label'] = self.y_train
         return df
-
