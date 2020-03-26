@@ -52,7 +52,7 @@ def display_output(fpr_list, tpr_dict, auc_dict, path, title):
     leg._legend_box.align = "left"
     plt.savefig(path)
 
-def plot_auc(x_train_dict, df, title="Average ROC Curves", plotname="auc.png"):
+def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.png"):
     tpr_dict = {key:[] for key in x_train_dict}
     auc_dict = {key:[] for key in x_train_dict}
     acc_dict = {key:[] for key in x_train_dict}
@@ -62,7 +62,8 @@ def plot_auc(x_train_dict, df, title="Average ROC Curves", plotname="auc.png"):
     cv = model_selection.KFold(n_splits=10,shuffle=True)
 
     random_x = next(iter(x_train_dict.values()))[0]
-    x_train = pd.DataFrame(random_x).values.tolist()
+    x_train = random_x.values.tolist() # .loc[:,random_x.columns != 'label']
+    y_train = random_x['label'].values
 
     for train_idx,test_idx in cv.split(x_train):
         tprs = []
@@ -71,18 +72,19 @@ def plot_auc(x_train_dict, df, title="Average ROC Curves", plotname="auc.png"):
         for key in x_train_dict:
             # need to convert this with index, somehow cannot do
             # x_train[train_idx] for multi features
-            xt = x_train_dict[key][0].values.tolist() # need to be a list of list
+            xt_df = x_train_dict[key][0]
+            xt = xt_df.loc[:,xt_df.columns != 'label'].values.tolist() # need to be a list of list
 
             data_train = [xt[i] for i in train_idx]
             data_test = [xt[i] for i in test_idx]
             lbl_train = [y_train[i] for i in train_idx]
             lbl_test = [y_train[i] for i in test_idx]
 
-            model = x_train_dict[key][1]
+            #model = x_train_dict[key][1]
+            model = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10)
 
             model = model.fit(data_train, lbl_train)
             y_score = model.predict_proba(data_test)
-            print(y_score, lbl_test)
             fpr, tpr, _ = metrics.roc_curve(lbl_test, y_score[:, 1])
             #auc = metrics.roc_auc_score(lbl_test, y_score[:,1])
             tpr = scipy.interp(base_fpr, fpr, tpr) # add points to the plotting
@@ -121,13 +123,15 @@ if __name__ == "__main__":
     ds = DNAShape(shapepath)
 
     rf_param_dict = {
-    				'n_estimators': [i for i in range(2,21)],
-    				'max_depth': [i for i in range(100,2001,100)]
+    				# 'max_depth': [i for i in range(2,21)],
+    				# 'n_estimators': [i for i in range(100,2001,100)]
+    				'n_estimators': [i for i in range(100,201,100)],
+    				 'max_depth': [i for i in range(2,3)]
     			}
     dt_param_dict = {
     				"criterion" : ['gini', 'entropy'],
-                    "min_samples_split" : [i for i in range(2,41)],
-                    "min_samples_leaf" : [i for i in range(1,31)]
+                    "min_samples_split" : [i for i in range(20,41)],
+                    "min_samples_leaf" : [i for i in range(20,31)]
     			}
 
     df = pd.read_csv(trainingpath, sep=",")
@@ -137,17 +141,13 @@ if __name__ == "__main__":
     y_train = get_numeric_label(t.df).values
 
     xtr = {
-            "dist":
-                BestModel(clf="RF",
-                          param_dict=rf_param_dict,
-    # xtr = {"distance":
-    #             BestModel(clf="DT",
-    #                       param_dict=dt_param_dict,
-
-                          train_data=t.get_training_df({
-                                  "distance":{"type":"numerical"}
-                              })
-                ).run_all()
+            # "dist":
+            #     BestModel(clf="RF",
+            #               param_dict=rf_param_dict,
+            #               train_data=t.get_training_df({
+            #                       "distance":{"type":"numerical"}
+            #                   })
+            #     ).run_all(),
             # "flank-seq":
             #     BestModel(clf="RF",
             #               param_dict=rf_param_dict,
@@ -160,13 +160,43 @@ if __name__ == "__main__":
             #                       # "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
             #                   # })
             #     ).run_all(),
-            # "dist-flank-seq":
+            "dist-flank-seq":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "distance":{"type":"numerical"},
+                                  "flankseq": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
+                              }),
+                ).run_all(),
+             # "top10":
+             # 	BestModel(clf="RF",
+             #              param_dict=rf_param_dict,
+             #              train_data=t.get_training_df({
+             #                      "distance":{"type":"numerical"},
+             #                      "flankseq": {"k":3, "seqin":4, "smode":"strength"},
+             #                      "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
+             #                      # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
+             #                      # "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"},
+
+             #                  }),
+             #               topn=10
+             #    ).run_all()
+            # "flankshape":
+            #     BestModel(clf="RF",
+            #               param_dict=rf_param_dict,
+            #               train_data=t.get_training_df({
+            #                       "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
+            #                       "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+            #                   })
+            #     ).run_all(),
+            # "dist-flankshape":
             #     BestModel(clf="RF",
             #               param_dict=rf_param_dict,
             #               train_data=t.get_training_df({
             #                       "distance":{"type":"numerical"},
-            #                       "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-            #                       "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
+            #                        "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
+            #                        "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
             #                   }),
             #     ).run_all(),
             #  "top10":
@@ -174,19 +204,15 @@ if __name__ == "__main__":
             #               param_dict=rf_param_dict,
             #               train_data=t.get_training_df({
             #                       "distance":{"type":"numerical"},
-            #                       "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-            #                       "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
-            #                       # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
-            #                       # "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"},
-
+            #                       "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
+            #                       "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
             #                   }),
             #                topn=10
             #     ).run_all()
         }
 
 
-
-    plot_auc(xtr, y_train, "Average ROC Curves Using RF for All Orientations", "dist_flank_seq_auc.png")
+    plot_auc(xtr, y_train, "Average ROC Curves Using RF for All Orientations", "dist_flank_seq_auc3.png")
 
     # # save the first model
     # dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
@@ -197,4 +223,3 @@ if __name__ == "__main__":
     # xt = pd.DataFrame(xt).values.tolist()
     # dt.fit(xt,y_train)
     # pickle.dump(rf, open("model1.sav", 'wb'))
-
