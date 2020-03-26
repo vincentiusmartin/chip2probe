@@ -80,8 +80,8 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
             lbl_train = [y_train[i] for i in train_idx]
             lbl_test = [y_train[i] for i in test_idx]
 
-            #model = x_train_dict[key][1]
-            model = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10)
+            model = x_train_dict[key][1]
+            #model = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10)
 
             model = model.fit(data_train, lbl_train)
             y_score = model.predict_proba(data_test)
@@ -125,8 +125,8 @@ if __name__ == "__main__":
     rf_param_dict = {
     				# 'max_depth': [i for i in range(2,21)],
     				# 'n_estimators': [i for i in range(100,2001,100)]
-    				'n_estimators': [i for i in range(100,201,100)],
-    				 'max_depth': [i for i in range(2,3)]
+    				'n_estimators': [i for i in range(100,2001,100)],
+    				 'max_depth': [i for i in range(2,21)]
     			}
     dt_param_dict = {
     				"criterion" : ['gini', 'entropy'],
@@ -141,25 +141,25 @@ if __name__ == "__main__":
     y_train = get_numeric_label(t.df).values
 
     xtr = {
-            # "dist":
-            #     BestModel(clf="RF",
-            #               param_dict=rf_param_dict,
-            #               train_data=t.get_training_df({
-            #                       "distance":{"type":"numerical"}
-            #                   })
-            #     ).run_all(),
-            # "flank-seq":
-            #     BestModel(clf="RF",
-            #               param_dict=rf_param_dict,
-            #               train_data=t.get_training_df({
-            #                       "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-            #                       "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
-            #                   }),
-            #                       # "distance":{"type":"numerical"},
-            #                       # "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
-            #                       # "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-            #                   # })
-            #     ).run_all(),
+            "dist":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "distance":{"type":"numerical"}
+                              })
+                ).run_all(),
+            "flank-seq":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "flankseq": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
+                              }),
+                                  # "distance":{"type":"numerical"},
+                                  # "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
+                                  # "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+                              # })
+                ).run_all(),
             "dist-flank-seq":
                 BestModel(clf="RF",
                           param_dict=rf_param_dict,
@@ -169,19 +169,19 @@ if __name__ == "__main__":
                                   "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
                               }),
                 ).run_all(),
-             # "top10":
-             # 	BestModel(clf="RF",
-             #              param_dict=rf_param_dict,
-             #              train_data=t.get_training_df({
-             #                      "distance":{"type":"numerical"},
-             #                      "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-             #                      "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
-             #                      # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
-             #                      # "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"},
+             "top10":
+             	BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "distance":{"type":"numerical"},
+                                  "flankseq": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
+                                  # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
+                                  # "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"},
 
-             #                  }),
-             #               topn=10
-             #    ).run_all()
+                              }),
+                           topn=10
+                ).run_all()
             # "flankshape":
             #     BestModel(clf="RF",
             #               param_dict=rf_param_dict,
