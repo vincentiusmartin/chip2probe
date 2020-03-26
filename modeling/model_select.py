@@ -82,7 +82,7 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
             lbl_train = [y_train[i] for i in train_idx]
             lbl_test = [y_train[i] for i in test_idx]
 
-            model = rf # x_train_dict[key][1]
+            model = x_train_dict[key][1]
 
             model = model.fit(data_train, lbl_train)
             y_score = model.predict_proba(data_test)
