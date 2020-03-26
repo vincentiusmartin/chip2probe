@@ -1,6 +1,6 @@
 import sys
 sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe") # PATH TO UTIL
-sys.path.append("/Users/faricazjj/Desktop/homotf/chip2probe")
+#sys.path.append("/Users/faricazjj/Desktop/homotf/chip2probe")
 from trainingdata.training import Training
 import util.util as util
 from best_model import BestModel
@@ -65,6 +65,7 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
     x_train = random_x.values.tolist() # .loc[:,random_x.columns != 'label']
     y_train = random_x['label'].values
 
+    rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10,random_state=0)
     for train_idx,test_idx in cv.split(x_train):
         tprs = []
         aucs_val = []
@@ -80,8 +81,7 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
             lbl_train = [y_train[i] for i in train_idx]
             lbl_test = [y_train[i] for i in test_idx]
 
-            model = x_train_dict[key][1]
-            #model = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10)
+            model = rf# x_train_dict[key][1]
 
             model = model.fit(data_train, lbl_train)
             y_score = model.predict_proba(data_test)
@@ -104,36 +104,21 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
     base_fpr = np.insert(base_fpr,0,0)
     display_output(base_fpr, mean_tpr, mean_auc, path=plotname, title=title)
 
-def get_top_n(n, xdict, ytrain, rf):
-    x_df = pd.DataFrame(xdict)
-    xtrain = x_df.values.tolist()
-    model = rf.fit(xtrain, ytrain)
-    feature_importances = pd.DataFrame(rf.feature_importances_,
-                                   index = x_df.columns,
-                                   columns=['importance']).sort_values('importance', ascending=False)
-    imp = list(feature_importances.index[:n])
-    print("Top 10 feature importance list " + str(imp))
-    x_df_imp = x_df[imp].to_dict('records') # we only use the most important features
-    return  util.merge_listdict([], x_df_imp)
-
 if __name__ == "__main__":
     trainingpath = "train1.tsv"
-    trainingpath = "trainingdata/training_new.csv"
+    #trainingpath = "trainingdata/training_new.csv"
     shapepath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/training_p01_adjusted_reversed"
     ds = DNAShape(shapepath)
 
     rf_param_dict = {
-    				# 'max_depth': [i for i in range(2,21)],
-    				# 'n_estimators': [i for i in range(100,2001,100)]
-    				'n_estimators': [i for i in range(100,2001,100)],
-    				 'max_depth': [i for i in range(2,21)]
+                    'n_estimators': [i for i in range(100,601,100)],
+    				'max_depth': [i for i in range(3,11)]
     			}
     dt_param_dict = {
     				"criterion" : ['gini', 'entropy'],
                     "min_samples_split" : [i for i in range(20,41)],
                     "min_samples_leaf" : [i for i in range(20,31)]
     			}
-
     df = pd.read_csv(trainingpath, sep=",")
     #df = df[dftrain["orientation"] == "HT/TH"]
 
@@ -157,21 +142,38 @@ if __name__ == "__main__":
                                   "flankseq": {"k":3, "seqin":-4, "smode":"strength"},
                                   "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True}
                               }),
-                                  # "distance":{"type":"numerical"},
-                                  # "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
-                                  # "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+                                  # 
                               # })
                 ).run_all(),
             "dist-ori-flank-seq":
-                BestModel(clf="RF",
+            	BestModel(clf="RF",
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
-                                  "distance":{"type":"numerical"},
-                                  "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"},
-                                  "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True}
-                              }),
+            					  "distance":{"type":"numerical"},
+                                  "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
+                                  "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+                                  "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+                              })
                 ).run_all(),
+            # "flankshape":
+            #     BestModel(clf="RF",
+            #               param_dict=rf_param_dict,
+            #               train_data=t.get_training_df({
+            #                       "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
+            #                       "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+            #                       "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+            #                   })
+            #     ).run_all(),
+            # "dist-ori-flankshape":
+            #     BestModel(clf="RF",
+            #               param_dict=rf_param_dict,
+            #               train_data=t.get_training_df({
+            #                       "distance":{"type":"numerical"},
+                                   # "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
+                                   # "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+                                   # "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+                #               }),
+                # ).run_all(),
              "top10":
              	BestModel(clf="RF",
                           param_dict=rf_param_dict,
@@ -181,38 +183,13 @@ if __name__ == "__main__":
                                   "flankseq": {"k":3, "seqin":-4, "smode":"strength"},
                                   "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True}
                                   # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
-                                  # "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"},
-
+                                  # "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"}
+                                  # "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
+                                  # "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+                                  # "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
                               }),
                            topn=10
                 ).run_all()
-            # "flankshape":
-            #     BestModel(clf="RF",
-            #               param_dict=rf_param_dict,
-            #               train_data=t.get_training_df({
-            #                       "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
-            #                       "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-            #                   })
-            #     ).run_all(),
-            # "dist-flankshape":
-            #     BestModel(clf="RF",
-            #               param_dict=rf_param_dict,
-            #               train_data=t.get_training_df({
-            #                       "distance":{"type":"numerical"},
-            #                        "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
-            #                        "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-            #                   }),
-            #     ).run_all(),
-            #  "top10":
-            #  	BestModel(clf="RF",
-            #               param_dict=rf_param_dict,
-            #               train_data=t.get_training_df({
-            #                       "distance":{"type":"numerical"},
-            #                       "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
-            #                       "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-            #                   }),
-            #                topn=10
-            #     ).run_all()
         }
 
 
