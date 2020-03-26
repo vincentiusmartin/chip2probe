@@ -40,8 +40,6 @@ def display_output(fpr_list, tpr_dict, auc_dict, path, title):
         else:
         plt.plot(fpr_list, tpr_list, linestyle="--", lw=1, label='%s: %.3f' % (key,auc))
         """
-        print(len(fpr_list),len(tpr_list))
-        print(fpr_list,tpr_list)
         plt.plot(fpr_list, tpr_list, lw=2, label='%s: %.3f' % (key,auc))
 
         # Show the ROC curves for all classifiers on the same plot
@@ -64,8 +62,10 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
     cv = model_selection.KFold(n_splits=10,shuffle=True)
 
     random_x = next(iter(x_train_dict.values()))[0]
-    y_train = random_x['label'].values
     x_train = random_x.values.tolist() # .loc[:,random_x.columns != 'label']
+    y_train = random_x['label'].values
+
+    rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10,random_state=0)
 
     for train_idx,test_idx in cv.split(x_train):
         tprs = []
@@ -74,14 +74,15 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
         for key in x_train_dict:
             # need to convert this with index, somehow cannot do
             # x_train[train_idx] for multi features
-            xt = x_train_dict[key][0].loc[:,random_x.columns != 'label'].values.tolist() # need to be a list of list
+            xt_df = x_train_dict[key][0]
+            xt = xt_df.loc[:,xt_df.columns != 'label'].values.tolist() # need to be a list of list
 
             data_train = [xt[i] for i in train_idx]
             data_test = [xt[i] for i in test_idx]
             lbl_train = [y_train[i] for i in train_idx]
             lbl_test = [y_train[i] for i in test_idx]
 
-            model = x_train_dict[key][1]
+            model = rf # x_train_dict[key][1]
 
             model = model.fit(data_train, lbl_train)
             y_score = model.predict_proba(data_test)
@@ -101,6 +102,7 @@ def plot_auc(x_train_dict, y_train, title="Average ROC Curves", plotname="auc.pn
     print("Mean accuracy", mean_acc, "\nMean auc", mean_auc)
 
     # left append 0 in base fpr just so we start at 0 (we did the same for the tpr)
+    base_fpr = np.insert(base_fpr,0,0)
     display_output(base_fpr, mean_tpr, mean_auc, path=plotname, title=title)
 
 if __name__ == "__main__":
@@ -133,38 +135,36 @@ if __name__ == "__main__":
                                   "distance":{"type":"numerical"}
                               })
                 ).run_all(),
-            # "flankshape":
-            #     BestModel(clf="RF",
-            #               param_dict=rf_param_dict,
-            #               train_data=t.get_training_df({
-            #                       "distance":{"type":"numerical"},
-            #                       "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
-            #                       "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-            #                   })
-            #     ).run_all(),
-            # "dist-flankshape":
-            #     BestModel(clf="RF",
-            #               param_dict=rf_param_dict,
-            #               train_data=t.get_training_df({
-            #                       "distance":{"type":"numerical"},
-            #                        "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
-            #                        "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-            #                   }),
-            #     ).run_all(),
-            #  "top10":
-            #  	BestModel(clf="RF",
-            #               param_dict=rf_param_dict,
-            #               train_data=t.get_training_df({
-            #                       "distance":{"type":"numerical"},
-            #                       "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
-            #                       "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-            #                   }),
-            #                topn=10
-            #     ).run_all(),
+            "flankshape":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
+                                  "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+                              })
+                ).run_all(),
+            "dist-flankshape":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "distance":{"type":"numerical"},
+                                   "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
+                                   "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+                              }),
+                ).run_all(),
+             "top10":
+             	BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "distance":{"type":"numerical"},
+                                  "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
+                                  "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+                              }),
+                           topn=10
+                ).run_all()
         }
 
 
-    print(xtr,y_train)
     plot_auc(xtr, y_train, "Average ROC Curves Using RF for All Orientations", "dist_flank_seq_auc.png")
 
     # # save the first model

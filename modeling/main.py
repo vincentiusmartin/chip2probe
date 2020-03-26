@@ -213,7 +213,6 @@ def plot_auc(x_train_dict, df, plotname="auc.png"):
     print("Mean accuracy", mean_acc, "\nMean auc", mean_auc)
 
     # left append 0 in base fpr just so we start at 0 (we did the same for the tpr)
-    base_fpr = np.insert(base_fpr,0,0)
     display_output(base_fpr, mean_tpr, mean_auc, path=plotname)
 
 if __name__ == '__main__':
