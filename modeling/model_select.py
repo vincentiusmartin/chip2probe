@@ -135,38 +135,41 @@ if __name__ == "__main__":
     			}
 
     df = pd.read_csv(trainingpath, sep=",")
-    #df = df #[dftrain["orientation"] == "HT/TH"]
+    #df = df[dftrain["orientation"] == "HT/TH"]
 
     t = Training(df, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
     y_train = get_numeric_label(t.df).values
 
     xtr = {
-            "dist":
+            "dist-ori":
                 BestModel(clf="RF",
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
-                                  "distance":{"type":"numerical"}
+                                  "distance":{"type":"numerical"},
+                                  "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True}
                               })
                 ).run_all(),
-            "flank-seq":
+            "ori-flank-seq":
                 BestModel(clf="RF",
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
                                   "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
+                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"},
+                                  "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True}
                               }),
                                   # "distance":{"type":"numerical"},
                                   # "flankshape": {"ds":ds, "seqin":4, "smode":"strength"},
                                   # "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
                               # })
                 ).run_all(),
-            "dist-flank-seq":
+            "dist-ori-flank-seq":
                 BestModel(clf="RF",
                           param_dict=rf_param_dict,
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"},
                                   "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
+                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"},
+                                  "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True}
                               }),
                 ).run_all(),
              "top10":
@@ -175,7 +178,8 @@ if __name__ == "__main__":
                           train_data=t.get_training_df({
                                   "distance":{"type":"numerical"},
                                   "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
+                                  "flankseq": {"k":3, "seqin":-4, "smode":"strength"},
+                                  "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True}
                                   # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
                                   # "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"},
 
@@ -212,7 +216,7 @@ if __name__ == "__main__":
         }
 
 
-    plot_auc(xtr, y_train, "Average ROC Curves Using RF for All Orientations", "dist_flank_seq_auc3.png")
+    plot_auc(xtr, y_train, "Average ROC Curves Using RF for All Orientations", "dist_flank_seq_auc.png")
 
     # # save the first model
     # dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
