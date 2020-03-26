@@ -122,7 +122,7 @@ class BestModel:
                 best_comb = comb
                 max_auc = avg_auc
 
-        print("Best params:", best_comb[0], best_comb[1])
+        print("Best params:", best_comb)
 
         self.set_clf(best_comb)
 
@@ -135,5 +135,7 @@ class BestModel:
              reverse=True)[:self.topn])
         # get the new x
         self.x_train = self.train_data.iloc[:, feat_impt.argsort()[::-1][:self.topn]]
-        return self.x_train
+        df = self.x_train
+        df['label'] = self.y_train
+        return df
 
