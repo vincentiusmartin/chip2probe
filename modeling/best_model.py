@@ -111,11 +111,10 @@ class BestModel:
                 output_df.to_csv("rf_all_params_results_step1.csv", index=False)
 
             if avg_auc > max_auc:
-                best_comb = comb
+                best_comb = comb_dict
                 max_auc = avg_auc
 
         print("Best params:", best_comb)
-
         self.set_clf(best_comb)
 
         return self.clf
