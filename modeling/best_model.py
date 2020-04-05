@@ -7,6 +7,13 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
+from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import Lasso, ElasticNet, LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+
+
 import sklearn.metrics as metrics
 from sklearn.model_selection import StratifiedKFold
 import itertools
@@ -51,22 +58,24 @@ class BestModel:
             return RandomForestClassifier(**comb_dict)
         elif self.classifier == "DT":
             return DecisionTreeClassifier(**comb_dict)
-        # d = {'RF': self.set_rf(comb),
-        #      'DT': self.set_dt(comb)}
-        # d[self.classifier]
-
+        elif self.classifier == "NB":
+            return GaussianNB()
+        elif self.classifier == "MLP":
+            return MLPClassifier(**comb_dict)
+        elif self.classifier == "SVM":
+            return SVC(**comb_dict)
+        elif self.classifier == "lasso":
+            return Lasso(**comb_dict)
+        elif self.classifier == 'EN':
+            return ElasticNet(**comb_dict)
+        elif self.classifier == 'KNN':
+            return KNeighborsClassifier(**comb_dict)
+        elif self.classifier == 'LG':
+            return LogisticRegression(**comb_dict)
 
     # def set_lasso(self, comb):
     #     pass
     #
-    # def set_mlp(self, comb):
-    #     pass
-    #
-    # def set_svm(self, comb):
-    #     pass
-    #
-    # def set_nb(self, comb):
-    #     pass
 
     def run_kfold(self, comb, score="auc"):
         """
@@ -91,7 +100,11 @@ class BestModel:
                 model = clf.fit(x_train[train],y_train[train])
                 # get predictions
                 predict_label = model.predict(x_train[test])
-                predict_proba = model.predict_proba(x_train[test])[:,1]
+                if self.classifier == "EN" or self.classifier == "lasso":
+                    predict_proba = predict_label
+                    predict_label = [1 if i >= 0.5 else 0 for i in predict_label]
+                else:
+                    predict_proba = model.predict_proba(x_train[test])[:,1]
                 # calculate metrics
                 tot_acc += metrics.accuracy_score(y_train[test], predict_label)
                 if score == "pr":
