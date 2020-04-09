@@ -1,7 +1,7 @@
 '''
 Created on Aug 21, 2019
 
-@author: vincentiusmartin
+By: Vincentius Martin, Farica Zhuang
 '''
 
 import itertools
@@ -9,6 +9,7 @@ import itertools
 import random
 
 def make_flank_products(input_sequence, start_site, end_site, mutable_flank_length = 1):
+    '''Get '''
     #seuence = str(input_sequence)
     flank_pos = [*range(start_site - mutable_flank_length, start_site), *range(end_site, end_site + mutable_flank_length)]
 
@@ -106,25 +107,47 @@ def make_weak_site(input_sequence, pbmescore, imads, which_site, mutable_flank_l
         print("Could not find any weak sites with the given criteria")
         return str(input_sequence)
 
-def move_bsite(input_sequence, start_site, end_site, flank_to_append, step_to_right = 0):
-    """
-    moving sites will make the sequence smaller so we need to append the flank
+def move_single_bsite(input_sequence, site1_end, site2_start, flank_to_append, step_to_right = 0, add_flank = True):
+    '''
+    Shift the position of a binding site.
+    Remove the middle sequence and append the flanking sequence of the same length removed.
+    Take s1 as the bsite on the left and s2 as the bsite on the right
+    If step_to_right is positive, move s1 to the right while fixing s2.
+    If step_to_right is negative, move s2 to the left while fixing s1.
+    Return: New sequence
+
     TODO: give an option to generate random sequence instead if flank is not known
-    """
+    '''
+
+    # Get the original sequence and length of the sequence
     sequence = str(input_sequence)
     seqlen = len(input_sequence)
 
-    if abs(step_to_right) > len(flank_to_append):
+    # Check if there is enough flank provided
+    if add_flank and abs(step_to_right) > len(flank_to_append):
         raise Exception("step could not be larger than flank")
+     # check if the the shift is valid
+    if step_to_right > 0 and site1_end + step > site2_start:
+        raise Exception("step is larger than allowed")  
+    # check if the shift is valid
+    if step_to_right < 0 and site2_start + step < site1_end:
+        raise Exception("step is larger than allowed")
 
-    if step_to_right >= 0:
-        if end_site + step_to_right > seqlen:
-            raise Exception("step is larger than allowed")
-        movedseq = sequence[:end_site] + sequence[end_site+step_to_right:]
-        newseq = flank_to_append[-(seqlen-len(movedseq)):] + movedseq
-    else:
-        if start_site + step_to_right < 0:
-            raise Exception("step is less than allowed")
-        movedseq = sequence[:start_site + step_to_right] + sequence[start_site:]
-        newseq = movedseq + flank_to_append[:seqlen-len(movedseq)]
-    return newseq
+    mid = site1_end+(seqlen//2)
+    start = mid-(step//2)
+    end = mid+(step//2) 
+    if step%2==1:
+        end += 1
+    # get the sequence
+ with a shifted binding site
+    movedseq = sequence[:start] + sequence[end:]
+
+    # add flank if needed
+    if add_flank:
+        if step_to_right >= 0:
+            movedseq = flank_to_append[-(seqlen-len(movedseq)):] + movedseq
+        else:
+            movedseq = movedseq + flank_to_append[:seqlen-len(movedseq)]
+
+    # return the new sequence
+    return movedseq
