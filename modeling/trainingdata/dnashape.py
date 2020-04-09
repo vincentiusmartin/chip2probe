@@ -15,6 +15,8 @@ class DNAShape:
 
     def __init__(self, path): #bpos1_list, bpos2_list
         # TODO: Checking in here
+        if not os.path.isdir(path):
+            raise Exception("Shape path %s is not valid" % path)
         for root, dirs, files in os.walk(path):
             for filename in files:
                 path = "%s/%s" % (root,filename)

@@ -358,7 +358,6 @@ class Training(object):
         """
         ldict = []
         for key in feature_dict:
-            print("==== Working on %s ====" % key)
             ftr = feature_dict[key]
             if "include" in ftr and ftr["include"] == "F": #for testing purpose
                 continue
