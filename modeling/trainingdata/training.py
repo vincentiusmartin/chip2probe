@@ -370,9 +370,12 @@ class Training(object):
                 rfeature = self.get_feature_orientation(pc,rel,oh)
             elif key == "sitepref":
                 rfeature = self.get_feature_site_pref()
-            elif key == "flankseq":
+            elif key == "flankseq-io":
                 smode = ftr["site_mode"] if "site_mode" in ftr else "strength"
                 rfeature = self.get_feature_flank_core(ftr["k"], seqin = ftr["seqin"], site_mode=smode)
+            elif key == "flankseq-ht":
+                smode = ftr["site_mode"] if "site_mode" in ftr else "strength"
+                rfeature = self.get_feature_flank_core_orientation(ftr["k"], seqin = ftr["seqin"], site_mode=smode)
             elif key == "flankshape":
                 smode = ftr["site_mode"] if "site_mode" in ftr else "strength"
                 rfeature = self.get_feature_flank_shapes(ftr["ds"], seqin = ftr["seqin"], site_mode=smode)
@@ -625,6 +628,66 @@ class Training(object):
                 flank1 = row["sequence"][site1 + seqin:site1][::-1]
                 flank2 = row["sequence"][site2:site2 - seqin]
                 label = "flankseq_out"
+            d1 = self.extract_positional(flank1, maxk=k, minseqlen=seqin,
+                                         label="%s_%s" % (label, s1type))
+            d2 = self.extract_positional(flank2, maxk=k, minseqlen=seqin,
+                                         label="%s_%s" % (label, s2type))
+            rfeature.append({**d1, **d2})
+        return rfeature
+
+    def get_feature_flank_core_orientation(self, k, seqin=0, site_mode="strength"):
+        """
+        Get flanking regions of the cores as features.
+
+        params: k -- max k-mer to consider
+                seqin -- max distance to go towards the other core
+                         (inner flank), negative seqin indicates
+                         that we are going in the opposite direction
+                         of the other core (outer flank)
+        """
+        if site_mode != "strength" and site_mode != "positional":
+            raise Exception("Site mode can only be 'strength' or 'positional'")
+        rfeature = []
+        for idx, row in self.df.iterrows():
+            orientation = row["orientation"]
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+                if site_mode == "strength":
+                    s1type, s2type = "str", "wk"
+            else:
+                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+                if site_mode == "strength":
+                    s1type, s2type = "wk", "str"
+            if site_mode == "positional":
+                s1type, s2type = "s1", "s2"
+            # get the inner flanking region
+            if orientation == 'HH':
+                if seqin >= 0:
+                    flank1 = row["sequence"][site1:site1 + seqin]
+                    flank2 = row["sequence"][site2 - seqin:site2][::-1]
+                    label = "flankseq_head"
+                if seqin < 0:
+                    flank1 = row["sequence"][site1 + seqin:site1][::-1]
+                    flank2 = row["sequence"][site2:site2 - seqin]
+                    label = "flankseq_tail"
+            elif orientation == 'TT':
+                if seqin < 0:
+                    flank1 = row["sequence"][site1:site1 - seqin]
+                    flank2 = row["sequence"][site2 + seqin:site2][::-1]
+                    label = "flankseq_tail"
+                if seqin >= 0:
+                    flank1 = row["sequence"][site1 - seqin:site1][::-1]
+                    flank2 = row["sequence"][site2:site2 + seqin]
+                    label = "flankseq_head"
+            elif orientation == 'HT/TH':
+                if seqin >= 0:
+                    flank1 = row["sequence"][site1:site1 + seqin]
+                    flank2 = row["sequence"][site2:site2 + seqin]
+                    label = "flankseq_head"
+                if seqin < 0:
+                    flank1 = row["sequence"][site1 + seqin:site1][::-1]
+                    flank2 = row["sequence"][site2 + seqin:site2][::-1]
+                    label = "flankseq_tail"
             d1 = self.extract_positional(flank1, maxk=k, minseqlen=seqin,
                                          label="%s_%s" % (label, s1type))
             d2 = self.extract_positional(flank2, maxk=k, minseqlen=seqin,
