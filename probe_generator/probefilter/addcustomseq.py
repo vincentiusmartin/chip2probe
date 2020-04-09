@@ -185,8 +185,8 @@ if __name__ == "__main__":
         delta = site2_start - site1_start
         while delta > 5:
             step += 1
-            s1 = customseq.move_bsite(seq, site1_start, site1_end, flank_left, step_to_right = step)
-            s2 = customseq.move_bsite(s1, site2_start, site2_end, flank_right, step_to_right = -step)
+            s1 = customseq.move_single_bsite(seq, site1_end, site2_start, flank_left, step_to_right = step)
+            s2 = customseq.move_single_bsite(seq, site1_end, site2_start, flank_right, step_to_right = -step)
             delta = site2_start - site1_start - step * 2
             dist_custom.append({"key":"%s_dist_%d" % (key,delta), "flank_left":flank_left, "sequence":s2, "flank_right":flank_right})
 
