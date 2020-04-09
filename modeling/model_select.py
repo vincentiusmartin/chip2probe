@@ -23,18 +23,18 @@ def get_numeric_label(training):
     return train
 
 
-def display_output(xy, auc_dict, path, title, score_type="auc"):
+def display_output(xy, score_dict, path, title, score_type="auc"):
     """
         This plots the average ROC curve of all the classifiers in a single plot
     """
     plt.clf() # first, clear the canvas
-    if score_type == "pr":
-        print("here")
-        plt.plot([1, 0], [1, 0], color="gray", alpha=0.5, lw=0.3)#linestyle="--",
-    else:
+    # if score_type == "pr":
+    #     plt.plot([0, 1], [1, 0], color="gray", alpha=0.5, lw=0.3)#linestyle="--",
+    # else:
+    if score_type == "auc":
         plt.plot([0, 1], [0, 1], color="gray", alpha=0.5, lw=0.3)#linestyle="--",
     for key in  xy:
-        auc = auc_dict[key]
+        score = score_dict[key]
         #for key in fpr_dict:
         """
         ln = key.split(",")
@@ -45,8 +45,7 @@ def display_output(xy, auc_dict, path, title, score_type="auc"):
         else:
         plt.plot(fpr_list, tpr_list, linestyle="--", lw=1, label='%s: %.3f' % (key,auc))
         """
-        plt.plot(xy[key]['x'], xy[key]['y'], lw=2, label='%s: %.2f' % (key,auc))
-
+        plt.plot(xy[key]['x'], xy[key]['y'], lw=2, label='%s: %.2f' % (key,score))
 
         # Show the ROC curves for all classifiers on the same plot
         if score_type == "pr":
@@ -57,9 +56,9 @@ def display_output(xy, auc_dict, path, title, score_type="auc"):
             plt.ylabel('True Positive Rate')
 
     plt.title(title)
-    leg = plt.legend(loc="lower right",title="AUC for each combination:")
+    leg = plt.legend(loc="lower right",title="%s for each combination:"%str.upper(score_type))
     leg._legend_box.align = "left"
-    plt.savefig(path, dpi=1200)
+    plt.savefig(path, dpi=600)
 
 # plot_performance
 def plot_metrics(x_train_dict, title="Average ROC Curves",
@@ -127,40 +126,49 @@ def plot_metrics(x_train_dict, title="Average ROC Curves",
         for k in mets:
             mets[k] = {"x":mets[k][1], "y":mets[k][0]} #recall, precision
 
-    auc = {k:metrics.auc(mets[k]['x'],mets[k]['y']) for k in ytrue_dict} #{k:np.array(auc_dict[k]).mean(axis=0) for k in auc_dict}
+    if score_type == "auc":
+        scoreval = {k:metrics.auc(mets[k]['x'],mets[k]['y']) for k in ytrue_dict} #{k:np.array(auc_dict[k]).mean(axis=0) for k in auc_dict}
+    else: # average_precision_score
+        scoreval = {k:metrics.average_precision_score(ytrue_dict[k],yprob_dict[k]) for k in ytrue_dict}
     acc = {k:metrics.accuracy_score(ytrue_dict[k],ypred_dict[k]) for k in ytrue_dict}
-    print("Mean accuracy", acc, "\nMean auc (%s)" % score_type, auc)
+    confmat = {k:metrics.confusion_matrix(ytrue_dict[k],ypred_dict[k]).ravel() for k in ytrue_dict}
+    print("Mean accuracy", acc, "\nMean %s" % score_type, scoreval)
+    print("Confusion_matrix (tn,fp,fn,tp):", confmat)
     # left append 0 in base fpr just so we start at 0 (we did the same for the tpr)
     # if score_type == "auc":
     #     base_x = np.insert(base_x,0,0)
     #     for k in y_dict:
     #         mean_y[key] = np.insert(mean_y[key],0,0)
-    display_output(mets, auc, path=plotname, title=title, score_type=score_type)
+    display_output(mets, scoreval, path=plotname, title=title, score_type=score_type)
 
 if __name__ == "__main__":
     trainingpath = "train1.tsv"
     trainingpath = "trainingdata/training_new.csv"
     #shapepath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/dnashape/training_p01_adjusted_reversed"
     shapepath = "training_p01_adjusted_reversed"
-    
+
     ds = DNAShape(shapepath)
     score_type = "auc"
 
     rf_param_dict = {
-                    'n_estimators': [200,500,1000,1500],
-    				'max_depth': [5,10,15],
-                    'min_samples_split': [10,20,30]
+                    'n_estimators': [500, 1000, 1500],
+                    'max_depth': [5, 10, 15],
+                    "min_samples_leaf" : [10,15,20],
+                    "min_samples_split" : [10,15,20]
+                    # 'n_estimators': [200,500,1000,1500],
+                    # 'max_depth': [5,10,15],
+                    # 'min_samples_split': [10,20,30]
         #             'n_estimators': [500],
-    				# 'max_depth': [5],
-        #             "min_samples_leaf" : [10],
-        #             "min_samples_split" : [10]
+                    # 'max_depth': [5],
+                    # "min_samples_leaf" : [10],
+                    # "min_samples_split" : [10]
 
-    			}
+                }
     dt_param_dict = {
-    				"criterion" : ['gini', 'entropy'],
+                    "criterion" : ['gini', 'entropy'],
                     "min_samples_split" : [i for i in range(2,41)],
                     "min_samples_leaf" : [i for i in range(2,31)]
-    			}
+                }
 
     svm_param_dict = {
                     'kernel': ["linear", "poly", "rbf", "sigmoid"],
@@ -186,7 +194,7 @@ if __name__ == "__main__":
 
     nb_param_dict = {}
 
-    en_param_dict = { 
+    en_param_dict = {
                     'alpha': list(np.linspace(1e-4, 1001, 100)),
                     'l1_ratio': list(np.linspace(0,1,1))
     }
@@ -194,7 +202,7 @@ if __name__ == "__main__":
     knn_param_dict = {
                     'n_neighbors': [i for i in range(1,31)],
                     'p': [1,2,3,4,5],
-                    'weights': ['uniform', 'distance']   
+                    'weights': ['uniform', 'distance']
     }
 
     lg_param_dict = {
@@ -241,56 +249,95 @@ if __name__ == "__main__":
     #                       topn=10
     #             ).run_all()
     # }
-   
-    # xtr = {
 
-    #         "distance":
-    #             BestModel(clf="RF",
-    #                       param_dict=rf_param_dict,
-    #                       train_data=t.get_training_df({
-    #                               "distance":{"type":"numerical"},
-    #                               #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
-    #                           })
-    #             ).run_all(),
-    #         "flank seq":
-    #             BestModel(clf="RF",
-    #                       param_dict=rf_param_dict,
-    #                       train_data=t.get_training_df({
-    #                               "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-    #                               "flankseq": {"k":3, "seqin":-4, "smode":"strength"},
-    #                               # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
-    #                               # "flankshape": {"ds":ds, "seqin":-4, "smode":"positional"},
-    #                               #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
-    #                           })
-    #             ).run_all(),
-    #         "distance, flank seq":
-    #             BestModel(clf="RF",
-    #                       param_dict=rf_param_dict,
-    #                       train_data=t.get_training_df({
-    #                               "distance":{"type":"numerical"},
-    #                               "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-    #                               "flankseq": {"k":3, "seqin":-4, "smode":"strength"},
-    #                                # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
-    #                                # "flankshape": {"ds":ds, "seqin":-4, "smode":"positional"},
-    #                                #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
-    #                           })
-    #             ).run_all(),
-    #          "top10":
-    #          	BestModel(clf="RF",
-    #                       param_dict=rf_param_dict,
-    #                       train_data=t.get_training_df({
-    #                               "distance":{"type":"numerical"},
-    #                               "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-    #                               "flankseq": {"k":3, "seqin":-4, "smode":"strength"},
-    #                               # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
-    #                               # "flankshape": {"ds":ds, "seqin":-4, "smode":"positional"},
-    #                               #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
-    #                           }),
-    #                        topn=10
-    #             ).run_all()
-    #     }
+    xtr = {
 
-   
+            "distance":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "distance":{"type":"numerical"},
+                                  #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
+                              })
+                ).run_all(),
+            "flankseq-io":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "flankseq-io": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq-io": {"k":3, "seqin":-4, "smode":"strength"}
+                                  # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
+                                  # "flankshape": {"ds":ds, "seqin":-4, "smode":"positional"},
+                                  #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
+                              })
+                ).run_all(),
+            "flankseq-ht":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "flankseq-ht": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq-ht": {"k":3, "seqin":-4, "smode":"strength"}
+                                  # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
+                                  # "flankshape": {"ds":ds, "seqin":-4, "smode":"positional"},
+                                  #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
+                              })
+                ).run_all(),
+            "distance, flankseq-io":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "distance":{"type":"numerical"},
+                                  "flankseq-io": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq-io": {"k":3, "seqin":-4, "smode":"strength"}
+                                   # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
+                                   # "flankshape": {"ds":ds, "seqin":-4, "smode":"positional"},
+                                   #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
+                              })
+                ).run_all(),
+            "distance, flankseq-ht":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "distance":{"type":"numerical"},
+                                  "flankseq-ht": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq-ht": {"k":3, "seqin":-4, "smode":"strength"},
+                                   # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
+                                   # "flankshape": {"ds":ds, "seqin":-4, "smode":"positional"},
+                                   #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
+                              })
+                ).run_all(),
+            "distance, flankseq-io, flankseq-ht":
+                BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "distance":{"type":"numerical"},
+                                  "flankseq-io": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq-io": {"k":3, "seqin":-4, "smode":"strength"},
+                                  "flankseq-ht": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq-ht": {"k":3, "seqin":-4, "smode":"strength"}
+                                   # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
+                                   # "flankshape": {"ds":ds, "seqin":-4, "smode":"positional"},
+                                   #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
+                              })
+                ).run_all(),
+             "top10":
+              BestModel(clf="RF",
+                          param_dict=rf_param_dict,
+                          train_data=t.get_training_df({
+                                  "distance":{"type":"numerical"},
+                                  "flankseq-io": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq-io": {"k":3, "seqin":-4, "smode":"strength"},
+                                  "flankseq-ht": {"k":3, "seqin":4, "smode":"strength"},
+                                  "flankseq-ht": {"k":3, "seqin":-4, "smode":"strength"}
+                                  # "flankshape": {"ds":ds, "seqin":4, "smode":"positional"},
+                                  # "flankshape": {"ds":ds, "seqin":-4, "smode":"positional"},
+                                  #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True, "include":"F"}
+                              }),
+                           topn=10
+                ).run_all()
+        }
+
+
 
     # xtr = {
     #         "distance":
@@ -355,7 +402,7 @@ if __name__ == "__main__":
             #                       "flankseq": {"k":3, "seqin":-4, "smode":"strength"},
             #                       "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True}
             #                   }),
-            #                       # 
+            #                       #
             #                   # })
             #     ).run_all(),
             # "all":
@@ -378,7 +425,52 @@ if __name__ == "__main__":
             #                ),
             #                topn=10
             #     ).run_all()
-        
+
+
+
+    # xtr = {
+    #         "distance-ori":
+    #             BestModel(clf="RF",
+    #                       param_dict=rf_param_dict,
+    #                       train_data=t.get_training_df({
+    #                               "distance":{"type":"numerical"},
+    #                               "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+    #                           })
+    #             ).run_all(score_type=score_type),
+    #         "flankshape-ori":
+    #             BestModel(clf="RF",
+    #                       param_dict=rf_param_dict,
+    #                       train_data=t.get_training_df({
+    #                               "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
+    #                               "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+    #                               "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+    #                           })
+    #             ).run_all(),
+    #         "dist-flankshape-ori":
+    #             BestModel(clf="RF",
+    #                       param_dict=rf_param_dict,
+    #                       train_data=t.get_training_df({
+    #                               "distance":{"type":"numerical"},
+    #                                "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
+    #                                "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+    #                                "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+    #                           }),
+    #             ).run_all(score_type=score_type),
+    #          "top10":
+    #           BestModel(clf="RF",
+    #                       param_dict=rf_param_dict,
+    #                       train_data=t.get_training_df({
+    #                               "distance":{"type":"numerical"},
+    #                               "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
+    #                               "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+    #                               "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+    #                           }),
+    #                        topn=10
+    #             ).run_all()
+    #     }
+    #
+    # plot_metrics(xtr, "Average ROC Curves Using RF for All Orientations", "dist_flank_seq_auc.png",score_type=score_type)
+
 
             # "distance":
             #     BestModel(clf="RF",
@@ -408,7 +500,7 @@ if __name__ == "__main__":
             #                   }),
             #     ).run_all(score_type=score_type)
              # "top10-dist-flankshape":
-             # 	BestModel(clf="RF",
+             #  BestModel(clf="RF",
              #              param_dict=rf_param_dict,
              #              train_data=t.get_training_df({
              #                      "distance":{"type":"numerical"},
@@ -420,105 +512,104 @@ if __name__ == "__main__":
              #    ).run_all()
         # }
 
-    xtr = {
-        'Random Forest': BestModel(clf="RF",
-                  param_dict=rf_param_dict,
-                  train_data=t.get_training_df({
-                          "distance":{"type":"numerical"},
-                          "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
-                          "sitepref": {}
-                      })
-        ).run_all(),
-        'Multilayer Perceptron': BestModel(clf="MLP",
-                  param_dict=mlp_param_dict,
-                  train_data=t.get_training_df({
-                          "distance":{"type":"numerical"},
-                          "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
-                          "sitepref": {}
-                      })
-        ).run_all(),
-        'Decision Tree': BestModel(clf="DT",
-                  param_dict=dt_param_dict,
-                  train_data=t.get_training_df({
-                          "distance":{"type":"numerical"},
-                          "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
-                          "sitepref": {}
-                      })
-        ).run_all(),
-        'SVM': BestModel(clf="SVM",
-                  param_dict=svm_param_dict,
-                  train_data=t.get_training_df({
-                          "distance":{"type":"numerical"},
-                          "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
-                          "sitepref": {}
-                      })
-        ).run_all(),
-        'KNN': BestModel(clf="KNN",
-                  param_dict=knn_param_dict,
-                  train_data=t.get_training_df({
-                          "distance":{"type":"numerical"},
-                          "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
-                          "sitepref": {}
-                      })
-        ).run_all(),
-        'Logistic Regression': BestModel(clf="LG",
-                  param_dict=lg_param_dict,
-                  train_data=t.get_training_df({
-                          "distance":{"type":"numerical"},
-                          "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
-                          "sitepref": {}
-                      })
-        ).run_all(),
-        'Naive Bayes': BestModel(clf="NB",
-                  param_dict=nb_param_dict,
-                  train_data=t.get_training_df({
-                          "distance":{"type":"numerical"},
-                          "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
-                          "sitepref": {}
-                      })
-        ).run_all(),
-        'Elastic Net': BestModel(clf="EN",
-                  param_dict=en_param_dict,
-                  train_data=t.get_training_df({
-                          "distance":{"type":"numerical"},
-                          "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
-                          "sitepref": {}
-                      })
-        ).run_all(),
-        'Lasso': BestModel(clf="lasso",
-                  param_dict=lasso_param_dict,
-                  train_data=t.get_training_df({
-                          "distance":{"type":"numerical"},
-                          "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
-                          "sitepref": {}
-                      })
-        ).run_all()
-
-    }
-    plot_metrics(xtr, "Average ROC Curves for All Classifiers", "all_class_auc.png", score_type=score_type)
+    # xtr = {
+    #     'Random Forest': BestModel(clf="RF",
+    #               param_dict=rf_param_dict,
+    #               train_data=t.get_training_df({
+    #                       "distance":{"type":"numerical"},
+    #                       "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
+    #                       "sitepref": {}
+    #                   })
+    #     ).run_all(),
+    #     'Multilayer Perceptron': BestModel(clf="MLP",
+    #               param_dict=mlp_param_dict,
+    #               train_data=t.get_training_df({
+    #                       "distance":{"type":"numerical"},
+    #                       "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
+    #                       "sitepref": {}
+    #                   })
+    #     ).run_all(),
+    #     'Decision Tree': BestModel(clf="DT",
+    #               param_dict=dt_param_dict,
+    #               train_data=t.get_training_df({
+    #                       "distance":{"type":"numerical"},
+    #                       "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
+    #                       "sitepref": {}
+    #                   })
+    #     ).run_all(),
+    #     'SVM': BestModel(clf="SVM",
+    #               param_dict=svm_param_dict,
+    #               train_data=t.get_training_df({
+    #                       "distance":{"type":"numerical"},
+    #                       "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
+    #                       "sitepref": {}
+    #                   })
+    #     ).run_all(),
+    #     'KNN': BestModel(clf="KNN",
+    #               param_dict=knn_param_dict,
+    #               train_data=t.get_training_df({
+    #                       "distance":{"type":"numerical"},
+    #                       "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
+    #                       "sitepref": {}
+    #                   })
+    #     ).run_all(),
+    #     'Logistic Regression': BestModel(clf="LG",
+    #               param_dict=lg_param_dict,
+    #               train_data=t.get_training_df({
+    #                       "distance":{"type":"numerical"},
+    #                       "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
+    #                       "sitepref": {}
+    #                   })
+    #     ).run_all(),
+    #     'Naive Bayes': BestModel(clf="NB",
+    #               param_dict=nb_param_dict,
+    #               train_data=t.get_training_df({
+    #                       "distance":{"type":"numerical"},
+    #                       "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
+    #                       "sitepref": {}
+    #                   })
+    #     ).run_all(),
+    #     'Elastic Net': BestModel(clf="EN",
+    #               param_dict=en_param_dict,
+    #               train_data=t.get_training_df({
+    #                       "distance":{"type":"numerical"},
+    #                       "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
+    #                       "sitepref": {}
+    #                   })
+    #     ).run_all(),
+    #     'Lasso': BestModel(clf="lasso",
+    #               param_dict=lasso_param_dict,
+    #               train_data=t.get_training_df({
+    #                       "distance":{"type":"numerical"},
+    #                       "orientation":{"positive_cores":["GGAA", "GGAT"], "one_hot":True},
+    #                       "sitepref": {}
+    #                   })
+    #     ).run_all()
+    #
+    # }
+    plot_metrics(xtr, "Average ROC Curves Using RF", "flank_io_vs_ht_auc.png", score_type=score_type)
 
     """
-    # save the first model
-    xt = t.get_feature_all({
-        "distance":{"type":"numerical"},
-        "flankshape": {"ds":ds, "seqin":5, "smode":"positional"},
-        "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"}
-        })
-    topf = ['dist_numeric', 'prot_outer_wk_pos_2', 'helt_outer_str_pos_2', 'prot_outer_str_pos_1',  'roll_outer_wk_pos_2', 'roll_outer_str_pos_1', 'mgw_outer_wk_pos_0', 'prot_outer_str_pos_0', 'prot_outer_str_pos_2', 'mgw_outer_str_pos_0']
-    xt_df = pd.DataFrame(xt)#[topf]
-    xtlist = xt_df.values.tolist()
-    y_train = get_numeric_label(t.df).values
-    rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10,random_state=0,min_samples_leaf=20)
-    m = rf.fit(xtlist, y_train)
-    tree.export_graphviz(m.estimators_[5], out_file='tree.dot',
-            feature_names = xt_df.columns,
-            class_names = ['additive','cooperative'],
-            rounded = True, proportion = False,
-            precision = 2, filled = True)
-    subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])
-
-    #plot_auc(xtr, y_train, "auc.png")
+    # # save the first model
+    # xt = t.get_feature_all({
+    #     "distance":{"type":"numerical"},
+    #     "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
+    #     "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
+    #     "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+    # })
+    # topf = ['dist_numeric', 'roll_outer_wk_pos_2', 'helt_outer_wk_pos_2', 'roll_outer_wk_pos_1', 'helt_outer_wk_pos_0', 'roll_outer_wk_pos_0', 'roll_outer_str_pos_0', 'helt_outer_wk_pos_1', 'prot_outer_str_pos_0', 'mgw_outer_str_pos_1']
+    # xt_df = pd.DataFrame(xt)[topf]
+    # xtlist = xt_df.values.tolist()
+    # y_train = get_numeric_label(t.df).values
+    # rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=5,random_state=0,min_samples_leaf=10,min_samples_split=10)
+    # m = rf.fit(xtlist, y_train)
+    # tree.export_graphviz(m.estimators_[5], out_file='tree.dot',
+    #         feature_names = xt_df.columns,
+    #         class_names = ['additive','cooperative'],
+    #         rounded = True, proportion = False,
+    #         precision = 2, filled = True)
+    # subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])
     # xt = xt_df.values.tolist()
     # rf.fit(xt,y_train)
-    # pickle.dump(rf, open("model1.sav", 'wb'))
+    # pickle.dump(rf, open("dist_ori_flank_tt.sav", 'wb'))
     """
