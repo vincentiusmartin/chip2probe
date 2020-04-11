@@ -609,8 +609,15 @@ if __name__ == "__main__":
     #         rounded = True, proportion = False,
     #         precision = 2, filled = True)
     # subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])
+<<<<<<< HEAD
+    # xt = xt_df.values.tolist()
+    # rf.fit(xt,y_train)
+    # pickle.dump(rf, open("dist_ori_flank_tt.sav", 'wb'))
+    """
+=======
 
     # xt = xt_df.values.tolist()
     # rf.fit(xt,y_train)
     # pickle.dump(rf, open("dist_ori_flank_tt.sav", 'wb'))
     """
+>>>>>>> 6896a8fe19757fc464f8b4d18f23f6bd77ff03cf
