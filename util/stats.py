@@ -1,26 +1,27 @@
-import rpy2.robjects as robjects
+"""This file contains functions to perfrom hypothesis testing using Python."""
+from scipy.stats import mannwhitneyu, ttest_ind
+import numpy as np
 
-wilcox_r = robjects.r['wilcox.test']
-shapiro_r = robjects.r['shapiro.test']
-numeric = robjects.r['as.numeric']
-t_r = robjects.r['t.test']
 
-def wilcox(x,y,alternative="two.sided"):
+def wilcox(x, y, alternative="two-sided"):
     """
-    Return wilcox of x and y. From https://www.rdocumentation.org/packages/stats/versions/3.6.1/topics/wilcox.test
+    Return p-value using mannwhitney u test of x and y.
+
     :param x,y
     :param alternative: "two.sided", "less", "greater"
     """
-    x_num = numeric(x)
-    y_num = numeric(y)
-    return wilcox_r(x_num,y_num,alternative=alternative).rx("p.value")[0][0]
+    x = np.array(x).reshape((-1, 1)).flatten()
+    y = np.array(y).reshape((-1, 1)).flatten()
+    statistic, p_value = mannwhitneyu(x, y, alternative=alternative)
+    return p_value
 
-def t_test(x,y,alternative="two.sided"):
+
+def t_test(x, y):
     """
-    Return wilcox of x and y. From https://www.rdocumentation.org/packages/stats/versions/3.6.1/topics/wilcox.test
+    Return p-value using t-test of x and y.
+
     :param x,y
     :param alternative: "two.sided", "less", "greater"
     """
-    x_num = numeric(x)
-    y_num = numeric(y)
-    return t_r(x_num,y_num,alternative=alternative).rx("p.value")[0][0]
+    statistic, p_value = ttest_ind(x, y)
+    return p_value
