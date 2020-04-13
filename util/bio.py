@@ -5,6 +5,7 @@ import pandas as pd
 
 
 def revcompstr(seq):
+    """Return the reverse complement of the given sequence."""
     rev = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
     return "".join([rev[base] for base in reversed(seq)])
 
@@ -12,7 +13,7 @@ def revcompstr(seq):
 def get_seqdict(sequence_tbl, sequence_colname = "sequence", keycolname="" , keyname="sequence", 
                 ignore_missing_colname=False):
     """
-    Generates dictionary representation from sequence table or list
+    Generates dictionary representation from sequence table or list.
     :param sequence_tbl: 
     :param sequence_colname: 
     :param ignore_missing_colname: 
@@ -35,23 +36,32 @@ def get_seqdict(sequence_tbl, sequence_colname = "sequence", keycolname="" , key
         seqlist = list(sequence_tbl)
     return {"%s%d" % (keyname, (k+1)): v for k, v in enumerate(seqlist)}
 
-def itoseq(seqint,kmer):
-    nucleotides = {0:'A',1:'C',2:'G',3:'T'}
+
+def itoseq(seqint, kmer):
+    """Generate the sequence as a string from its integer representation."""
+    nucleotides = {0: 'A', 1: 'C', 2: 'G', 3: 'T'}
     seq = ""
     while(seqint > 0):
         seq = nucleotides[seqint & 3] + seq
+        # perform bitwise right shift to get the next nucleotide
         seqint >>= 2
-    while len(seq) < kmer:
-        seq = 'A' + seq
+    # append 'A' to the left of the string until the desired length
+    if len(seq) < kmer:
+        seq = 'A'*(kmer-len(seq)) + seq
+    # return the sequence as a string
     return seq
 
-'''
-does not append 1, used for integer indexing
-'''
+
 def seqtoi(seq):
-    nucleotides = {'A':0,'C':1,'G':2,'T':3}
+    """Generate the integer representation of the given sequence."""
+    nucleotides = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
     binrep = 0
-    for i in range(0,len(seq)):
+    # loop through each nucleotide
+    for i in range(0, len(seq)):
+        # perform bitwise left shift
         binrep <<= 2
+        # add the binary representation of the current nucleotide
         binrep |= nucleotides[seq[i]]
+    # return the integer representation of the sequence
     return binrep
+
