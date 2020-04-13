@@ -19,9 +19,10 @@ def wilcox(x, y, alternative="two.sided"):
     y_num = numeric(y)
     return wilcox_r(x_num, y_num, alternative=alternative).rx("p.value")[0][0]
 
+
 def t_test(x, y, alternative="two.sided"):
     """
-    Return wilcox of x and y. 
+    Return wilcox of x and y.
 
     Source https://www.rdocumentation.org/packages/stats/versions/3.6.1/topics/wilcox.test
     :param x,y
