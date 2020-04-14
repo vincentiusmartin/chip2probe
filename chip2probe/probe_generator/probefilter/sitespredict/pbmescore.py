@@ -6,7 +6,7 @@ Created on Jul 22, 2019
 Authors: Vincentius Martin, Farica Zhuang
 """
 from sitespredict import basepred, basemodel
-import util.bio as bio
+from chip2probe.util import bio as bio
 import pandas as pd
 
 class PBMEscore(basemodel.BaseModel):

@@ -4,11 +4,9 @@ Created on Jul 16, 2019
 @author: vincentiusmartin
 '''
 
-import sys
-
 import abc
 import pandas as pd
-import util.bio as bio
+from chip2probe.util import bio as bio
 
 class BaseModel(abc.ABC):
     '''
