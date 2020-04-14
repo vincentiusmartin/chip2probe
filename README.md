@@ -45,3 +45,11 @@ sites_all.tsv
 
 3. Probe filter 
 analysis_path -> path to site_all.tsv
+
+Download libsvm:
+https://www.csie.ntu.edu.tw/~cjlin/libsvm/oldfiles/index-1.0.html
+Unzip and rename to 'libsvm'
+Put libsvm under sitespredict directory
+Set up libsvm:
+Run 'make' in libsvm directory
+Run 'make' in libsvm/python directory

@@ -1,0 +1,11 @@
+Metadata-Version: 1.2
+Name: chip2probe
+Version: 1.0
+Summary: TF Cooperativity probe generation and analyses
+Home-page: UNKNOWN
+Author: Farica Zhuang
+Author-email: farica.zhuang@duke.com
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Requires-Python: >=3.6

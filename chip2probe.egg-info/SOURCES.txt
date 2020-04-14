@@ -1,0 +1,7 @@
+README.md
+setup.py
+chip2probe/__init__.py
+chip2probe.egg-info/PKG-INFO
+chip2probe.egg-info/SOURCES.txt
+chip2probe.egg-info/dependency_links.txt
+chip2probe.egg-info/top_level.txt
