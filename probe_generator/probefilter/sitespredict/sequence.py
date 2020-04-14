@@ -1,8 +1,10 @@
-'''
+"""
+This file contains BindingSite class and Sequence class.
+
 Created on Jul 25, 2019
 
-@author: vincentiusmartin
-'''
+Authors: Vincentius Martin, Farica ZHuang
+"""
 import collections
 import copy
 
@@ -35,41 +37,77 @@ class Sequence(object):
     classdocs
     '''
 
-    def __init__(self, escore_preds, imads_preds, escore_cutoff=0.4, escore_gap = 0):
+    def __init__(self, escore_preds, model_preds, proteins, escore_cutoff=0.4, escore_gap=0):
         """
-        Make a sequence object.
+        Initialize a sequence object.
+
         :param escore_preds: prediction from the Escore class, the sequence string will
                be obtained from this object.
-        :param imads_preds: give the position of the core. The quality of the prediction
-               will be assessed by using 'escore_preds'.
+        :param model_preds: give the position of the core predicted by a model (kompas or imads). 
+                            The quality of the prediction will be assessed by using 'escore_preds'.
+        :param proteins: list of proteins with length 1 if homotypic and 2 if heterotypic
         :param escore_cutoff: we determine that the site is specific when there are 2
                consecutive positions with escore above this cutoff. The escore range from
                -0.5 to 0.5, default cutoff is 0.4.
         :param escore_gap: how many gaps (i.e. value below cutoff) are permitted between specific
                escore position, the value is 0 by default
         """
-        # TODO: imads_preds can be changed to any prediction that give core position but right
-        #       now, we still need the predicted intensity
-        # we need to check the order between escore and imads
-        self.sequence = escore_preds.sequence
-        self.bsites = self.get_bsite(escore_preds, imads_preds, escore_cutoff, escore_gap)
+        self.escore_preds = escore_preds
+        self.model_preds = model_preds
+        self.bsites = {}
+        self.proteins = proteins
+
+        seq = ""
+        # initialize class variables
+        for protein in proteins:
+            # check that the sequences are the same for both proteins
+            if seq == "":
+                seq = escore_preds[protein].sequence
+            else:
+                assert seq == escore_preds[protein]
+                self.sequence = seq
+            self.bsites[protein] = self.get_bsite_escore_imads(self.escore_preds[protein],
+                                                               self.model_preds[protein], 
+                                                               protein, escore_cutoff, 
+                                                               escore_gap),
+
 
     def __str__(self):
-        return "Sequence object: {}\nsites {}".format(self.sequence,str(self.bsites))
+        return "Sequence object: {}\nsites {}".format(self.sequence, str(self.bsites))
 
-    def mutate_escore_seq_at_pos(self, seq, pos, pbmescore):
+    def mutate_escore_seq_at_pos(self, seq, pos, threshold):
+        """Return a mutated sequence that is nonspecific for all proteins."""
         if len(seq) != 8:
             raise Exception("sequence must be at length of 8")
-            # TODO: make length can be anything
+            
         nucleotides = "ACGT"
         all_muts = {}
+   
+        # get every mutation for the sequence at the given position
         for n in nucleotides:
             seqlist = list(seq)
+            # mutate the sequence
             seqlist[pos] = n
             mutseq = "".join(seqlist)
-            all_muts[mutseq] = pbmescore.predict_sequence(mutseq).predictions[0]
-        minseq = min(all_muts, key=lambda x:all_muts[x]['score'])
-        return minseq
+            all_muts[mutseq] = {}
+            # get esocre of this mutation for each protein
+            for protein in self.proteins:
+                # get the escore for the mutated sequence
+                all_muts[mutseq][protein] = self.escore_preds[protein].predict_sequence(mutseq).predictions[0]['score']
+
+        # find a mutated sequence that is non-specific for all proteins
+        min_sum = float("inf")
+        min_seq = ""
+
+        # iterate through mutated sequences
+        for seq in all_muts:
+            # get escores
+            if all(i < threshold for i in all_muts[seq].values()):
+                if sum(all_muts[seq].values()) < min_sum:
+                    min_sum = sum(all_muts[seq].values())
+                    min_seq = seq
+
+        return min_seq
 
     def get_non_core_intersecting_maxescore(self, full_seq, site_index, pbmescore):
         """
@@ -178,7 +216,7 @@ class Sequence(object):
     """
 
     # TODO: change to pbmescore.get_escores_specific
-    def get_bsite(self, escore_preds, imads_preds, escore_cutoff=0.4, escore_gap = 0):
+    def get_bsite(self, escore_preds, model_preds, escore_cutoff=0.4, escore_gap = 0):
         """
         escore_gap : value below threshold allowed to still say that an 8-mer is still within specific window
         """
@@ -207,23 +245,23 @@ class Sequence(object):
                         escore_bind = {"startpos":escores[startidx]['position'],  "escorelength":signifcount + gapcount,
                                 "escore_startidx":escores[startidx]['start_idx']}
                         # we get e-scores now we look for its imads binding site
-                        for imads_pred in imads_preds.predictions:
+                        for model_pred in model_preds.predictions:
                             escore_start = escore_bind['startpos']
                             escore_end = escore_start + escore_bind["escorelength"]
-                            core_start = imads_pred["core_start"]
-                            core_end = core_start + imads_pred["core_width"]
+                            core_start = model_pred["core_start"]
+                            core_end = core_start + model_pred["core_width"]
                             if escore_start <= core_end and core_start <= escore_end: #overlap
                                 # a site is found,
                                 # also sequence can be negative or have length above sequence length since we appended
                                 # flanking regions, so we need to define site start and site end
-                                site_start = max(0,imads_pred["site_start"])
-                                site_end = min(imads_pred["site_start"] + imads_pred["site_width"], len(sequence))
+                                site_start = max(0,model_pred["site_start"])
+                                site_end = min(model_pred["site_start"] + model_pred["site_width"], len(sequence))
                                 bsite = BindingSite(site_pos = (core_start + core_end) // 2,
-                                                    imads_score = imads_pred["score"],
+                                                    imads_score = model_pred["score"],
                                                     site_start = site_start,
                                                     site_end = site_end,
-                                                    core_start = imads_pred["core_start"],
-                                                    core_end = imads_pred["core_start"] + imads_pred["core_width"],
+                                                    core_start = model_pred["core_start"],
+                                                    core_end = model_pred["core_start"] + model_pred["core_width"],
                                                     sequence_in_site = sequence[site_start:site_end])
                                 bindingsites.append(bsite)
                     startidx = -1
@@ -246,7 +284,12 @@ class Sequence(object):
         return self.sites_to_dict(self.bsites)
 
     def site_exist(self):
-        return len(self.bsites) != 0
+        """Return true if there is at least 1 site in the sequence."""
+        return self.site_count != 0
 
     def site_count(self):
-        return len(self.bsites)
+        """Return the number of binding sites."""
+        tot = 0
+        for protein in self.proteins:
+            tot += self.bsites[protein]
+        return tot
