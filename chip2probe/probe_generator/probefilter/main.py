@@ -43,7 +43,7 @@ if __name__ == '__main__':
     #analysis_path = curdir + "result/cistrome_ets1_37927/analysis_result/"
 
     # set the model used, either kompas or imads
-    method = "kompas"
+    method = "imads"
     kmer_align_paths = {'ets1': "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/kompas/ets1/Ets1_kmer_alignment.txt",
                         'runx1': "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/kompas/runx1/Runx1_kmer_alignment.txt"}
     modelcores = {'ets1': ["GGAA", "GGAT"],
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     # gap used in determining what to mutate
     mutate_gap = 0
     # imads would usually use flanks to predict
-    predict_flanks = True
+    predict_flanks = False
     # boolean whether to show flanks used by the model. Kompas has no flanks, only imads does
     show_model_flanks = False
     # user can determine colors for the proteins as a list of tuples (escore color, model color)
@@ -186,52 +186,69 @@ if __name__ == '__main__':
                                           escore_threshold=mutate_cutoff)
                 seqdict["%s-m%d" % (key, idx + 1)] = mutseq.sequence
                 funcdict["%s-m%d" % (key, idx + 1)] = mutseq.plot_functions
-        break   
-    #         for e in list(itertools.product(egpas, thresholds)): 
-    #             egapthres = e[0]
-    #             ecutoff = e[1]
-    #             if coopfilter.filter_coopseq(seqdict["%s-wt"%key], seqdict["%s-m1"%key],
-    #                                          seqdict["%s-m2"%key], seqdict["%s-m3"%key],
-    #                                          filtered_seqs[key].get_sites_dict(), escore,
-    #                                          escore_cutoff=ecutoff, escore_gap = egapthres):
-    #                 bsites_dict = filtered_seqs[key].get_sites_dict()
-    #                 filtered_probes.append({"key":key,
-    #                                         "wt": seqdict["%s-wt"%key],
-    #                                         "m1": seqdict["%s-m1"%key],
-    #                                         "m2": seqdict["%s-m2"%key],
-    #                                         "m3": seqdict["%s-m3"%key],
-    #                                         "core1_start": bsites_dict["core_start_1"],
-    #                                         #"core1_mid": bsites_dict["core_mid_1"],
-    #                                         "core1_end": bsites_dict["core_end_1"],
-    #                                         "site1_pref": bsites_dict["imads_score_1"],
-    #                                         "core2_start": bsites_dict["core_start_2"],
-    #                                         #"core2_mid": bsites_dict["core_mid_2"],
-    #                                         "core2_end": bsites_dict["core_end_2"],
-    #                                         "site2_pref": bsites_dict["imads_score_2"],
-    #                                         "ecutoff": ecutoff,
-    #                                         "egapthres": egapthres,
-    #                                         "distance": filtered_seqs[key].get_sites_dist(),
-    #                                         "sites_in_peak": sitenum,
-    #                                         "peak_length": peaklen
-    #                                         })
-    #                 break # the sequence passes the filtering check, so stop
-    #     pp = escore.make_plot_data(escore.predict_sequences(seqdict),additional_functions=funcdict)
-    #     sp.plot_seq_combine([pp], filepath="%splot_mut_d%d_p%d.pdf" % (analysis_path,sitenum,peaklen))
+         
+            for e in list(itertools.product(egaps, thresholds)): 
+                egapthres = e[0]
+                ecutoff = e[1]
+                # check that wt, m1, m2, m3 are valid
+                if coopfilter.check_all_seqs(seqdict["%s-wt"%key], seqdict["%s-m1"%key],
+                                             seqdict["%s-m2"%key], seqdict["%s-m3"%key],
+                                             filtered_seqs[key].get_sites_dict(), escores,
+                                             escore_cutoff=ecutoff, escore_gap=egapthres):
+                    bsites_dict = filtered_seqs[key].get_sites_dict()
+                    filtered_probes.append({"key":key,
+                                            "wt": seqdict["%s-wt"%key],
+                                            "m1": seqdict["%s-m1"%key],
+                                            "m2": seqdict["%s-m2"%key],
+                                            "m3": seqdict["%s-m3"%key],
+                                            "core1_start": bsites_dict["core_start_1"],
+                                            #"core1_mid": bsites_dict["core_mid_1"],
+                                            "core1_end": bsites_dict["core_end_1"],
+                                            "site1_pref": bsites_dict["score_1"],
+                                            "core2_start": bsites_dict["core_start_2"],
+                                            #"core2_mid": bsites_dict["core_mid_2"],
+                                            "core2_end": bsites_dict["core_end_2"],
+                                            "site2_pref": bsites_dict["score_2"],
+                                            "ecutoff": ecutoff,
+                                            "egapthres": egapthres,
+                                            "distance": filtered_seqs[key].get_sites_dist(),
+                                            "sites_in_peak": sitenum,
+                                            "peak_length": peaklen
+                                            })
+                    break # the sequence passes the filtering check, so stop
+        filtered_es_preds = {}
+        filtered_esplots = {}
+        filtered_model_preds = {}
+        filtered_model_plots = {}
+        for protein in proteins:
+            protein_num = proteins.index(protein)
+            filtered_es_preds[protein] = escores[protein].predict_sequences(seqdict, key_colname="key")
+            filtered_esplots[protein] = escores[protein].make_plot_data(filtered_es_preds[protein], color=colors[protein_num][0])
 
-    # # initialize a dataframe of filtered probes with m1, m2, m3
-    # fp_df = pd.DataFrame(filtered_probes)
-    # req_cols = ["key", "wt", "m1", "m2", "m3", "flank_left", "flank_right", 
-    #             "core1_start", "core1_mid", "core1_end", "core2_start", "core2_mid",
-    #             "core2_end", "ecutoff", "egapthres", "distance", "sites_in_peak",
-    #             "peak_length", "coordinate"]
+            filtered_model_preds[protein] = models[protein].predict_sequences(seqdict, 
+                                                                     key_colname="key", 
+                                                                     predict_flanks=predict_flanks)
+            filtered_model_plots[protein] = models[protein].make_plot_data(filtered_model_preds[protein], 
+                                                                  color=colors[protein_num][1],
+                                                                  show_model_flanks=show_model_flanks) 
+        sp.plot_seq_combine([filtered_esplots, filtered_model_plots], 
+                            filepath="%splot_mut_d%d_p%d.pdf" % (analysis_path,sitenum,peaklen))
 
-    # df_init = seqdf[["key","flank_left","flank_right","chr","seqstart","seqend"]] # will produce warning but it is fine
-    # df_init["coordinate"] = df_init.apply(lambda row: "%s:%d-%d" % (row["chr"],row["seqstart"],row["seqend"]), axis=1)
-    # df_init.drop(['chr', 'seqstart', 'seqend'], axis=1)
-    # df_out = pd.concat([fp_df.set_index('key'),df_init.set_index('key')], axis=1, join='inner').reset_index()
+        break
+    # initialize a dataframe of filtered probes with m1, m2, m3
+    fp_df = pd.DataFrame(filtered_probes)
+    req_cols = ["key", "wt", "m1", "m2", "m3", "flank_left", "flank_right", 
+                "core1_start", "core1_mid", "core1_end", "core2_start", "core2_mid",
+                "core2_end", "ecutoff", "egapthres", "distance", "sites_in_peak",
+                "peak_length", "coordinate"]
 
-    # if fp_df.columns.isin(req_cols).all(): # this condition check if the columns match exactly
-    #     print("Saving result in %s/mutated_probes.tsv" % analysis_path)
-    #     df_out.to_csv("%s/mutated_probes.tsv" % (analysis_path),sep="\t",index=False,columns=req_cols)
-    # else:
-    #     print("No mutation rows found in %s" % sitepath)
+    df_init = seqdf[["key","flank_left","flank_right","chr","seqstart","seqend"]] # will produce warning but it is fine
+    df_init["coordinate"] = df_init.apply(lambda row: "%s:%d-%d" % (row["chr"],row["seqstart"],row["seqend"]), axis=1)
+    df_init.drop(['chr', 'seqstart', 'seqend'], axis=1)
+    df_out = pd.concat([fp_df.set_index('key'),df_init.set_index('key')], axis=1, join='inner').reset_index()
+
+    if fp_df.columns.isin(req_cols).all(): # this condition check if the columns match exactly
+        print("Saving result in %s/mutated_probes.tsv" % analysis_path)
+        df_out.to_csv("%s/mutated_probes.tsv" % (analysis_path),sep="\t",index=False,columns=req_cols)
+    else:
+        print("No mutation rows found in %s" % sitepath)

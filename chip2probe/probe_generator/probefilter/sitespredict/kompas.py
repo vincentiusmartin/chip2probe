@@ -200,8 +200,9 @@ class Kompas(basemodel.BaseModel):
            using the dataframe'''
 
         seqdict = self.pred_input_todict(sequence_df, sequence_colname=sequence_colname)
-        flank_left = bio.get_seqdict(sequence_df,"%s_left" % flank_colname, ignore_missing_colname=True)
-        flank_right = bio.get_seqdict(sequence_df,"%s_right" % flank_colname, ignore_missing_colname=True)
+        if predict_flanks:
+            flank_left = bio.get_seqdict(sequence_df,"%s_left" % flank_colname, ignore_missing_colname=True)
+            flank_right = bio.get_seqdict(sequence_df,"%s_right" % flank_colname, ignore_missing_colname=True)
         if self.protein == 'ets1':
             core = (11,15)
             centerPos = 12
@@ -213,8 +214,18 @@ class Kompas(basemodel.BaseModel):
         # for each sequence we want to predict
         for key in seqdict:
             sequence = seqdict[key]
+            if predict_flanks:
+                sequence = flank_left[key][-10:] + seqdict[key] + flank_right[key][:10]
             prediction = self.predict_sequence(sequence, kmerFile, core, centerPos, self.threshold, self.protein)
-            sequence = flank_left[key][-10:] + seqdict[key] + flank_right[key][:10]
+            if predict_flanks:
+                for result in prediction:
+                    result['site_start'] = result['site_start'] - flank_len
+                    result['core_start'] = result['core_start'] - flank_len
+                    # if a prediction is in the flanks
+                    if result['core_start'] < 0 or \
+                       result['core_start'] + result['core_width'] > len(seqdict[key]) - 1:
+                       # remove the prediction
+                       prediction.remove(result)
             predictions[key] = basepred.BasePrediction(sequence, prediction)
         return predictions
 

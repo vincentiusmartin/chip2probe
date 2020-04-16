@@ -22,7 +22,8 @@ def get_seqdict(sequence_tbl, sequence_colname="sequence", keycolname="", keynam
     :return: dictionary representation of sequence table
     """
     # if sequence table is neither a dataframe nor a list
-    if not isinstance(sequence_tbl, pd.DataFrame) and not isinstance(sequence_tbl, list):  # and not isinstance(sequence_tbl, dict):
+    if not isinstance(sequence_tbl, pd.DataFrame) and not isinstance(sequence_tbl, list)\
+       and not isinstance(sequence_tbl, dict):  # and not isinstance(sequence_tbl, dict):
         raise Exception('sequence_tbl must be either pandas data frame or a list')
     # if seqeunce table is a dataframe
     if type(sequence_tbl) == pd.DataFrame:
@@ -43,6 +44,8 @@ def get_seqdict(sequence_tbl, sequence_colname="sequence", keycolname="", keynam
             else:
                 seqlist = sequence_tbl[sequence_colname].tolist()
     # if sequence table is a list
+    elif type(sequence_tbl) == dict:
+        return sequence_tbl
     else:
         seqlist = list(sequence_tbl)
     # return the dictionary representation of the sequences

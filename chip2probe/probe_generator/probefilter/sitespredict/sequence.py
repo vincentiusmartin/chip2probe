@@ -13,7 +13,7 @@ class BindingSite(object):
     """Class for BindingSite object."""
 
     def __init__(self, site_pos, site_start, site_end, core_start, core_end, 
-                 sequence_in_site, score=1, barrier=1):
+                 sequence_in_site, protein, score=1, barrier=1):
         """
         Initialize class variables for BindingSite object.
 
@@ -30,6 +30,7 @@ class BindingSite(object):
         self.score = score
         # bp from the core that shouldn't be mutated
         self.barrier = barrier
+        self.protein = protein
 
     def __str__(self):
         """Return the string representation of the BindingSite object."""
@@ -141,7 +142,6 @@ class Sequence(object):
         s_end = self.bsites[protein][site_index].site_end
         site_seq = full_seq[s_start:s_end]
         # get the escore prediction for the sequence
-        print(self.pbmescore.keys())
         epreds = self.pbmescore[protein].predict_sequence(site_seq)
         # initialize non intersecting max escore
         max_escore = {"score": float("inf")}
@@ -338,7 +338,8 @@ class Sequence(object):
                                                     site_end=site_end,
                                                     core_start=model_pred["core_start"],
                                                     core_end=model_pred["core_start"] + model_pred["core_width"],
-                                                    sequence_in_site=sequence[site_start:site_end])
+                                                    sequence_in_site=sequence[site_start:site_end],
+                                                    protein=protein)
                                 bindingsites.append(bsite)
                                 # add this imads pred to the list of imads preds we
                                 # want to keep
@@ -351,17 +352,29 @@ class Sequence(object):
         return bindingsites
 
     def sites_to_dict(self, bindingsites):
+        """Put binding site objects into a dictionary of attributes."""
         out_dict = {}
-        for i in range(0, len(bindingsites)):
-            attrs = [attr for attr in dir(bindingsites[i]) if not callable(getattr(bindingsites[i], attr)) and not attr.startswith("__")]
-            for attr in attrs:
-                out_dict["%s_%d" % (attr, i+1)] = getattr(bindingsites[i], attr)
+        # loop through each list of binding site objects
+        for protein in bindingsites:
+            bs_list = bindingsites[protein]
+            # loop through each binding site object
+            for i in range(0, len(bs_list)):
+                attrs = [attr for attr in dir(bs_list[i]) \
+                         if not callable(getattr(bs_list[i], attr)) \
+                         and not attr.startswith("__")]
+                for attr in attrs:
+                    out_dict["%s_%d" % (attr, i+1)] = getattr(bs_list[i], attr)
         return out_dict
 
     def get_sites_dist(self, site1=0, site2=1):
-        return abs(self.bsites[site2].core_start - self.bsites[site1].core_start)
-
+        if len(self.proteins) == 1:
+            protein = self.proteins[0]
+            return abs(self.bsites[protein][site2].core_start - self.bsites[protein][site1].core_start)
+        protein1 = self.proteins[0]
+        protein2 = self.proteins[1]
+        return abs(self.bsites[protein1][site1].core_start - self.bsites[protein2][site1].core_start)
     def get_sites_dict(self):
+        """Get dictionary of sites in this sequence."""
         return self.sites_to_dict(self.bsites)
 
     def site_exist(self):
