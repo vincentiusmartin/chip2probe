@@ -39,13 +39,21 @@ class BindingSite(object):
                        self.site_end, self.core_start, self.core_end,
                        self.site_sequence)
 
-MutatedSequence = collections.namedtuple('MutatedSequence', 'sequence, mutpos, plot_functions')
+MutatedSequence = collections.namedtuple('MutatedSequence', 
+                                         'sequence, \
+                                          escore_preds, \
+                                          model_preds, \
+                                          proteins, \
+                                          escore_cutoff, \
+                                          escore_gap, \
+                                          mutpos, \
+                                          plot_functions')
 
 
 class Sequence(object):
     """Class for Sequence object."""
 
-    def __init__(self, escore_preds, model_preds, proteins, escore_cutoff=0.4, escore_gap=0):
+    def __init__(self, escore_preds, model_preds, proteins, pbmescore, escore_cutoff=0.4, escore_gap=0):
         """
         Initialize a sequence object.
 
@@ -64,6 +72,9 @@ class Sequence(object):
         self.model_preds = model_preds
         self.bsites = {}
         self.proteins = proteins
+        self.escore_cutoff = escore_cutoff
+        self.pbmescore = pbmescore
+        self.escore_gap = escore_gap
 
         seq = ""
         # initialize class variables
@@ -72,12 +83,14 @@ class Sequence(object):
             if seq == "":
                 seq = escore_preds[protein].sequence
             else:
-                assert seq == escore_preds[protein]
-                self.sequence = seq
-            self.bsites[protein] = self.get_bsite_escore_imads(self.escore_preds[protein],
-                                                               self.model_preds[protein], 
-                                                               protein, escore_cutoff, 
-                                                               escore_gap),
+                assert seq == escore_preds[protein].sequence
+            
+            self.bsites[protein] = self.get_bsite(self.escore_preds[protein],
+                                                  self.model_preds[protein], 
+                                                   protein, escore_cutoff, 
+                                                   escore_gap)
+
+        self.sequence = seq
 
     def __str__(self):
         """Get string representation of Sequence object."""
@@ -101,7 +114,7 @@ class Sequence(object):
             # get esocre of this mutation for each protein
             for protein in self.proteins:
                 # get the escore for the mutated sequence
-                all_muts[mutseq][protein] = self.escore_preds[protein].predict_sequence(mutseq).predictions[0]['score']
+                all_muts[mutseq][protein] = self.pbmescore[protein].predict_sequence(mutseq).predictions[0]['score']
 
         # find a mutated sequence that is non-specific for all proteins
         min_sum = float("inf")
@@ -117,7 +130,7 @@ class Sequence(object):
 
         return min_seq
 
-    def get_max_non_intersecting_escore(self, protein, full_seq, site_index, pbmescore):
+    def get_max_non_intersecting_escore(self, protein, full_seq, site_index):
         """
         Get maxescore from given core that doesn't intersect a different core.
 
@@ -128,7 +141,8 @@ class Sequence(object):
         s_end = self.bsites[protein][site_index].site_end
         site_seq = full_seq[s_start:s_end]
         # get the escore prediction for the sequence
-        epreds = pbmescore[protein].predict_sequence(site_seq)
+        print(self.pbmescore.keys())
+        epreds = self.pbmescore[protein].predict_sequence(site_seq)
         # initialize non intersecting max escore
         max_escore = {"score": float("inf")}
         # find non intersecting max escore
@@ -155,7 +169,7 @@ class Sequence(object):
                         max_escore = copy.copy(max_val)
         return max_escore
 
-    def eliminate_site(self, protein, sequence, site_index, pbmescore, escore_threshold = 0.3):
+    def eliminate_site(self, protein, sequence, site_index, escore_threshold=0.3):
         """
         This assumes that input is a sequence of a site
         site_index: which site to mutate
@@ -170,7 +184,9 @@ class Sequence(object):
         flag = True
         while flag and prevmax != maxescore:
             prevmax = float(maxescore)
-            maxepreds = self.get_non_intersecting_maxescore(protein, full_sequence, site_index, pbmescore)
+            maxepreds = self.get_max_non_intersecting_escore(protein=protein, 
+                                                             full_seq=full_sequence, 
+                                                             site_index=site_index)
             maxescore = maxepreds['score']
             # if the max non intersecting escore is below the threshold, nothing to mutate
             if maxescore < escore_threshold: 
@@ -192,8 +208,8 @@ class Sequence(object):
         # return the new mutated sequence and the positions mutated
         return full_sequence, site_mutpos
 
-    def abolish_sites(self, sites, all_sites, pbmescore,
-                      proteins, mode="to_eliminate", escore_threshold=0.3):
+    def abolish_sites(self, sites, mode="to_eliminate", 
+                      escore_threshold=0.3):
         """
         proteins: list of proteins whose core to be abolished.
 
@@ -201,19 +217,21 @@ class Sequence(object):
         """
         # if we have multiple pbmescore and proteins to abolish
         mutated = str(self.sequence)
-        for j in range(len(proteins)):
+        for j in range(len(self.proteins)):
+            protein = self.proteins[j]
             sites_to_mutate = []
             if mode == "to_eliminate":
-                sites_to_mutate = sites
+                sites_to_mutate = sites[protein]
             elif mode == "to_keep":
-                sites_to_mutate = [i for i in range(len(all_sites)) if i not in sites]
+                sites_to_mutate = [i for i in range(len(self.bsites[protein])) if i not in sites[protein]]
+                
             else:
                 raise Exception("type should either be to_eliminate or to_keep")
 
             mutpos = []
             for i in sites_to_mutate:
-                mutated, site_mutpos = self.eliminate_site(proteins[j], mutated,
-                                                           i, pbmescore[j],
+                mutated, site_mutpos = self.eliminate_site(protein=protein, sequence=mutated,
+                                                           site_index=i,
                                                            escore_threshold=escore_threshold)
                 mutpos.extend(site_mutpos)
 
@@ -223,7 +241,9 @@ class Sequence(object):
                                   "kwargs": {"color": "purple",
                                              "linestyle": "dashed",
                                              "linewidth": 1}})
-        return MutatedSequence(mutated, mutpos, functions)
+        return MutatedSequence(mutated, self.escore_preds, self.model_preds,
+                                self.proteins, self.escore_cutoff,
+                                self.escore_gap, mutpos, functions)
 
     def abolish_sites_original(self, sites, pbmescore, mode="to_eliminate", escore_threshold=0.3):
         """
@@ -233,7 +253,7 @@ class Sequence(object):
         if mode == "to_eliminate":
             sites_to_mutate = sites
         elif mode == "to_keep":
-            sites_to_mutate = [i for i in range(len(self.bsites)) if i not in sites]
+            sites_to_mutate = [i for i in range(len(sites[protein])) if i not in sites]
         else:
             raise Exception("type should either be to_eliminate or to_keep")
 
@@ -327,6 +347,7 @@ class Sequence(object):
                     signifcount = 0
                     gapcount = 0
         self.model_preds[protein].predictions = model_pred_keep
+        # return the list of binding sites for this protein
         return bindingsites
 
     def sites_to_dict(self, bindingsites):
@@ -347,12 +368,15 @@ class Sequence(object):
         """Return true if there is at least 1 site in the sequence."""
         return self.site_count != 0
 
-    def site_count(self):
+    def site_count_all(self):
         """Return the number of binding sites."""
         tot = 0
         for protein in self.proteins:
-            tot += self.bsites[protein]
+            tot += self.site_count(protein)
         return tot
+
+    def site_count(self, protein):
+        return len(self.bsites[protein])
 
     def get_center_bsites(self):
         """Find the indices of non-center binding sites."""
@@ -388,9 +412,10 @@ class Sequence(object):
     def are_centered(self):
         """Check if the pair of binding sites are centered."""
         # if more than 2 binding sites, raise exception
-        if self.site_count() != 2:
-            raise Exception("Number of binding sites found is {}. Should be 2."
-                            .format(self.site_count()))
+        if self.site_count_all() != 2:
+            return False
+            # raise Exception("Number of binding sites found is {}. Should be 2."
+            #                 .format(self.site_count_all()))
 
         # get the midpoints of binding sites for all proteins
         midpoints = []
@@ -402,3 +427,66 @@ class Sequence(object):
         if abs(dist) > 3:
             return False
         return True
+
+    def remove_pos(self, pos):
+        """
+        Return the indices of each protein after removing binding sites.
+
+        Binding site(s) removed are specified by pos.
+        pos: list of indices of binding sites to be removed from the sequence
+        Return: a dictionary of indices to mutate for each protein
+        """
+        # make sure there are 2 binding sites left
+        if not self.is_valid():
+            raise Exception("Not a valid wild type")
+
+        if len(self.proteins) == 1:
+            return {self.proteins[0]: pos}
+
+        if pos == [0, 1]:
+            return {self.proteins[0]: [0], self.proteins[1]:[0]}
+
+        # find left hand binding site
+        if pos == [0]:
+            print(self.bsites)
+            if self.bsites[self.proteins[0]][0]['core_start']\
+               < self.bsites[self.proteins[1]][0]['core_start']:
+                return {self.proteins[0]: [0], self.proteins[1]: []}
+            return {self.proteins[0]: [], self.proteins[1]: [0]}
+        else:
+            if self.bsites[self.proteins[0]][0]['core_start'] \
+               < self.bsites[self.proteins[1]][0]['core_start']:
+                return {self.proteins[0]: [], self.proteins[1]: [0]}
+            return {self.proteins[0]: [0], self.proteins[1]: []}
+
+    def is_valid(self, mutate=False):
+        # get sequences with exactly two centered binding sites
+        num_prot = len(self.proteins)
+        if num_prot == 1 and self.site_count_all() == 2 and self.are_centered():
+            return True
+        elif num_prot == 2:
+            if self.site_count(self.proteins[0])==self.site_count(self.proteins[1])==1 \
+               and self.are_centered:
+                return True
+            elif self.site_count(self.proteins[0])== 0 or self.site_count(self.proteins[1])== 0:
+                return False
+        
+        # if there are more than 2 significant binding sites, mutate
+        elif (num_prot==1 and self.site_count_all() > 2) \
+             or (num_prot==2 and (self.site_count(self.proteins[0]) > 1 or self.site_count(self.proteins[1])>1))\
+             and mutate:
+            to_keep = self.get_center_indices()
+            mut_seq = self.abolish_sites(to_keep, pbmescore=self.pbmescore, mode="to_keep", escore_threshold=self.escore_cutoff) 
+            # turn the mutated sequence into a Sequence object again
+            self.__init__(mut_seq.es_preds, mut_seq.model_preds,
+                          proteins=mut_seq.proteins,
+                          escore_cutoff=self.escore_cutoff,
+                          escore_gap=self.mutate_gap)
+            # check if mutation was successful
+            if (len(self.proteins) == 1 and self.site_count_all() == 2 \
+               or len(self.proteins) == 2 and self.site_count(self.proteins[0])==self.site_count(self.proteins[1])==1)\
+               and self.are_centered():
+                return True
+            else:
+                return False
+        return False

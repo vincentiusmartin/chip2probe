@@ -1,7 +1,7 @@
 import pandas as pd
 from sitespredict import basepred
 from sitespredict import basemodel
-import util.bio as bio
+from chip2probe.util import bio as bio
 import itertools
 import math
 import matplotlib.patches as patches
@@ -19,8 +19,11 @@ from pybedtools import BedTool
 import sys
 
 class Kompas(basemodel.BaseModel):
-    def __init__(self, clean=False):
+    def __init__(self, protein, threshold, kmer_align_path, clean=False):
+        self.protein = protein
+        self.threshold = threshold
         self.clean = clean
+        self.kmer_align_path = kmer_align_path
         #pass
     def predict_sequence(self, sequence, kmerFile, core, centerPos, threshold, protein):
         '''This function uses kompas to predict the position of a
@@ -183,46 +186,40 @@ class Kompas(basemodel.BaseModel):
                 to_start = -2
             position = int(row[1]) + to_start
 
-            prediction.append({"site_start": position-7, "site_width": 2*7 + core_width,
-                                   "core_start": position, "core_width": core_width
-                                })
+            prediction.append({"site_start": position - 7, "site_width": 2 * 7 + core_width,
+                               "core_start": position, "core_width": core_width,
+                               "score": 0
+                               })
         return prediction
         
-    def predict_sequences(self, sequence_df, protein, threshold, sequence_colname="sequence", 
-                  flank_colname="flank"):
+    def predict_sequences(self, sequence_df, key_colname="key",
+                          sequence_colname="sequence",
+                          flank_colname="flank", predict_flanks=False,
+                          flank_len=10):
         '''This is a temporary function that makes predictions dict
            using the dataframe'''
 
         seqdict = self.pred_input_todict(sequence_df, sequence_colname=sequence_colname)
         flank_left = bio.get_seqdict(sequence_df,"%s_left" % flank_colname, ignore_missing_colname=True)
         flank_right = bio.get_seqdict(sequence_df,"%s_right" % flank_colname, ignore_missing_colname=True)
-        if protein == 'ets1':
+        if self.protein == 'ets1':
             core = (11,15)
             centerPos = 12
-        if protein == 'runx1':
+        if self.protein == 'runx1':
             core = (12, 17)
             centerPos = 14
-        kmerFile = 'data/' + protein + '_kmer_alignment.txt'
+        kmerFile = self.kmer_align_path
         predictions = {}
         # for each sequence we want to predict
         for key in seqdict:
             sequence = seqdict[key]
-            prediction = self.predict_sequence(sequence, kmerFile, core, centerPos, threshold, protein)
+            prediction = self.predict_sequence(sequence, kmerFile, core, centerPos, self.threshold, self.protein)
             sequence = flank_left[key][-10:] + seqdict[key] + flank_right[key][:10]
-            #for model in self.models:
-            #    for result in self.predict_sequence(sequence, model, const_intercept, transform_scores):
-            #        # we need to have the start position relative to the main sequence instead of the flank
-            #        result['site_start'] = result['site_start'] - len(flank_left[key])
-            #        result['core_start'] = result['core_start'] - len(flank_left[key])
-            #        prediction.append(result)
-
-            # since we use flank, we need to update the result
-            #for result in prediction:
-            #    result['site_start'] = result['site_start'] + len(flank_left[key])
             predictions[key] = basepred.BasePrediction(sequence, prediction)
         return predictions
 
-    def make_plot_data(self, predictions_dict, color = "mediumspringgreen"):
+    def make_plot_data(self, predictions_dict, color = "mediumspringgreen", 
+                       show_model_flanks=False):
         func_dict = {}
         for key in predictions_dict:
             sequence = predictions_dict[key].sequence

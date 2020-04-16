@@ -48,6 +48,7 @@ analysis_path -> path to site_all.tsv
 
 Download libsvm:
 https://www.csie.ntu.edu.tw/~cjlin/libsvm/oldfiles/index-1.0.html
+libsvm >= 3.24
 Unzip and rename to 'libsvm'
 Put libsvm under sitespredict directory
 Set up libsvm:

@@ -55,7 +55,10 @@ class iMADSModel(object):
         model = svmutil.svm_load_model(model_file)
         model_dict = {'model': model}
         if check_size:
-            model_dict['size'] = len(model.get_SV()[0]) - 1 # sv includes a -1 term that is not present in the model file, so subtract 1
+            # with >= libsvm-3.24, use this
+            model_dict['size'] = len(model.get_SV()[0]) 
+            # with < libsvm-3.24, use this
+            # model_dict['size'] = len(model.get_SV()[0]) - 1 # sv includes a -1 term that is not present in the model file, so subtract 1
         return model_dict
     
     def predict(self, features, const_intercept=False):

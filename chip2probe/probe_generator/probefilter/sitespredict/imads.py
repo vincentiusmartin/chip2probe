@@ -1,14 +1,15 @@
 '''
+This file is a modified version of https://github.com/Duke-GCB/Predict-TF-Binding.
+
 Created on Jul 16, 2019
 
-@author:
-This file is a modified version of https://github.com/Duke-GCB/Predict-TF-Binding
+Authors: Vincentius Martin, Farica Zhuang
 '''
 
-from sitespredict import basepred
-from sitespredict import basemodel
-from sitespredict import imadsmodel
-import util.bio as bio
+import sitespredict.basepred as basepred
+import sitespredict.basemodel as basemodel
+import sitespredict.imadsmodel as imadsmodel
+from chip2probe.util import bio as bio
 import itertools
 import math
 import matplotlib.patches as patches
@@ -138,63 +139,83 @@ class iMADS(basemodel.BaseModel):
                     continue
                 if transform_scores:
                     best_prediction = self.transform_score(best_prediction)
-                prediction.append({"site_start": position, "site_width": model.width,
-                   "best_match":best_match, "score":best_prediction,
-                   "core_start": core_pos, "core_width": len(model.core)
-                   })
+                prediction.append({"site_start": position,
+                                   "site_width": model.width,
+                                   "best_match": best_match,
+                                   "score": best_prediction,
+                                   "core_start": core_pos,
+                                   "core_width": len(model.core)
+                                   })
         return prediction
 
     # or predict fasta?
-    def predict_sequences(self, sequence_df, const_intercept=False, transform_scores=True, key_colname = "" ,
-                          sequence_colname="sequence", flank_colname="flank"):
+    def predict_sequences(self, sequence_df, const_intercept=False, 
+                          transform_scores=True, key_colname="",
+                          sequence_colname="sequence", flank_colname="flank", 
+                          predict_flanks=False, flank_len=10):
         """
-        do not make this as generator, because we need to use it somewhere else
-        TODO: make flank to be optional
+        Do not make this as generator, because we need to use it somewhere else.
         """
-        seqdict = self.pred_input_todict(sequence_df, sequence_colname=sequence_colname, key_colname=key_colname)
-        flank_left = bio.get_seqdict(sequence_df,"%s_left" % flank_colname, keycolname=key_colname, ignore_missing_colname=True)
-        flank_right = bio.get_seqdict(sequence_df,"%s_right" % flank_colname, keycolname=key_colname, ignore_missing_colname=True)
+        seqdict = self.pred_input_todict(sequence_df,
+                                         sequence_colname=sequence_colname,
+                                         key_colname=key_colname)
+        flank_left = bio.get_seqdict(sequence_df, "%s_left" % flank_colname,
+                                     keycolname=key_colname,
+                                     ignore_missing_colname=True)
+        flank_right = bio.get_seqdict(sequence_df, "%s_right" % flank_colname,
+                                      keycolname=key_colname,
+                                      ignore_missing_colname=True)
         predictions = {}
         for key in seqdict:
-            sequence = flank_left[key] + seqdict[key] + flank_right[key]
+            sequence = flank_left[key][-flank_len:] + seqdict[key] + flank_right[key][:flank_len]
             prediction = self.predict_sequence(sequence, const_intercept, transform_scores)
-            #for model in self.models:
-            #    for result in self.predict_sequence(sequence, model, const_intercept, transform_scores):
-            #        # we need to have the start position relative to the main sequence instead of the flank
-            #        result['site_start'] = result['site_start'] - len(flank_left[key])
-            #        result['core_start'] = result['core_start'] - len(flank_left[key])
-            #        prediction.append(result)
 
             # since we use flank, we need to update the result
             for result in prediction:
-                result['site_start'] = result['site_start'] - len(flank_left[key])
-                result['core_start'] = result['core_start'] - len(flank_left[key])
+                result['site_start'] = result['site_start'] - flank_len
+                result['core_start'] = result['core_start'] - flank_len
+                # if a prediction is in the flanks
+                if result['core_start'] < 0 or \
+                   result['core_start'] + result['core_width'] > len(seqdict[key]) - 1:
+                   # remove the prediction
+                   prediction.remove(result)
+                #result['core_mid'] = result['core_mid'] - flank_len
             predictions[key] = basepred.BasePrediction(sequence, prediction)
         return predictions
 
-    def make_plot_data(self, predictions_dict):
-        #predictions = self.predict_sequences(sequence_df, const_intercept,
+    def make_plot_data(self, predictions_dict, color = "mediumspringgreen",
+                       show_model_flanks=True):
+        #predictions = self.predict_sequences(sequence_df, const_intercept, 
         #                                    transform_scores, sequence_colname, flank_colname)
         func_dict = {}
         for key in predictions_dict:
             sequence = predictions_dict[key].sequence
             sites_prediction = predictions_dict[key].predictions
+            # if clean is true, and sequence has no imads object, indicate set this sequence to None
+            # if self.clean and len(sites_prediction) == 0:
+            #     func_dict[key] = None
+            #     continue
+            # otherwise, set the appropriate dictionary as value for this key
             func_pred = []
             for pred in sites_prediction:
                 # first argument is x,y and y is basically just starts at 0
                 # first plot the binding site
                 # Note that it is important to do -1 on rectangle width so we only cover the site
-                site_rect = patches.Rectangle((pred["site_start"],0),pred["site_width"] - 1,pred["score"],
-                                 facecolor="mediumspringgreen",alpha=0.6,edgecolor='black')
-                func_pred.append({"func":"add_patch","args":[site_rect],"kwargs":{}})
+                if show_model_flanks:
+                    site_rect = patches.Rectangle((pred["site_start"],0),pred["site_width"] - 1,pred["score"],
+                                     facecolor=color,alpha=0.6,edgecolor='black')
+                    func_pred.append({"func":"add_patch","args":[site_rect],"kwargs":{}})
                 # then plot the core
                 core_rect = patches.Rectangle((pred["core_start"],0),pred["core_width"] - 1,pred["score"],
-                                 facecolor="mediumspringgreen",alpha=0.9,edgecolor='black')
-                func_pred.append({"func":"add_patch","args":[core_rect],"kwargs":{}})
-            func_pred.append({"func":"axhline","args":[self.imads_threshold],
-                              "kwargs": {"color" : "seagreen",
-                                        "linestyle" : "dashed",
-                                        "linewidth" : 1}})
-            func_dict[key] = {"sequence":sequence,
-                              "plt":func_pred}
+                                 facecolor=color,alpha=0.9,edgecolor='black')
+                func_pred.append({"func": "add_patch",
+                                  "args": [core_rect], 
+                                  "kwargs": {}})
+            func_pred.append({"func": "axhline", 
+                              "args": [self.imads_threshold],
+                              "kwargs": {"color": color,
+                              "linestyle": "dashed",
+                              "linewidth": 1}})
+            func_dict[key] = {"sequence": sequence,
+                              "plt": func_pred}
         return func_dict

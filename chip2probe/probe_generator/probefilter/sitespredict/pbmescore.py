@@ -93,19 +93,45 @@ class PBMEscore(basemodel.BaseModel):
                     signifcount = 0 
         # list of significant regions are in sorted order
         return escore_signifsites
-        
-    
-    def predict_sequences(self, sequence_df, sequence_colname = "sequence", key_colname=""):
+
+    def predict_sequences(self, sequence_df, sequence_colname="sequence",
+                          key_colname="", predict_flanks=False, flank_colname="flank",
+                          flank_len=10):
         """
+        Get a dictionary of escore predictions for each sequence.
+
         input: sequence data frame or sequence dictionary
         """
-        seqdict = self.pred_input_todict(sequence_df, sequence_colname=sequence_colname, key_colname=key_colname)
+        seqdict = self.pred_input_todict(sequence_df,
+                                         sequence_colname=sequence_colname,
+                                         key_colname=key_colname,
+                                         predict_flanks=predict_flanks)
+        # get the flanks if we are including flank predictions
+        if predict_flanks:
+            flank_left = bio.get_seqdict(sequence_df, "%s_left" % flank_colname,
+                                         keycolname=key_colname,
+                                         ignore_missing_colname=True)
+            flank_right = bio.get_seqdict(sequence_df, "%s_right" % flank_colname,
+                                          keycolname=key_colname,
+                                          ignore_missing_colname=True)
+        # get prediction of each sequence
         predictions = {}
-        for key,sequence in seqdict.items():
+        for key, sequence in seqdict.items():
+            # if we are including flanks in the prediction
+            if predict_flanks:
+                # make sure there are enough flanks to take
+                if len(flank_left[key]) < flank_len or len(flank_right[key]) < flank_len:
+                    raise Exception("flank_len is greater than the length of flanks available")
+                # update the sequence to be predicted
+                sequence = flank_left[key][-flank_len:] + sequence + flank_right[key][:flank_len]
+            # get the prediction for this sequence
             predictions[key] = self.predict_sequence(sequence)
+        # return the dictionary of predictions for each sequence
         return predictions
-            
-    def make_plot_data(self, predictions_dict, scale = 1, escore_cutoff = 0.4, additional_functions = {}):
+
+    def make_plot_data(self, predictions_dict, scale=1, escore_cutoff=0.4,
+                        additional_functions={}, color="orange", 
+                        line_color="darkorange"):
         func_dict = {}
         for key in predictions_dict:
             sequence = predictions_dict[key].sequence
@@ -113,8 +139,8 @@ class PBMEscore(basemodel.BaseModel):
             func_pred =[]
             y_escore = [x["score"] * scale for x in escores]
             x_escore = [x["position"] for x in escores]
-            func_pred.append({"func":"plot","args":[x_escore, y_escore],"kwargs":{"color":"orange", "linewidth" : 2.5}})
-            func_pred.append({"func":"axhline", "args":[escore_cutoff * scale], "kwargs":{"color":"darkorange", "linestyle" : "dashed", "linewidth":1}})
+            func_pred.append({"func":"plot","args":[x_escore, y_escore],"kwargs":{"color":color, "linewidth" : 2.5}})
+            func_pred.append({"func":"axhline", "args":[escore_cutoff * scale], "kwargs":{"color":line_color, "linestyle" : "dashed", "linewidth":1}})
             if key in additional_functions and additional_functions[key]:
                 func_pred.extend(additional_functions[key])
             func_dict[key] = {"sequence":sequence,

@@ -1,9 +1,6 @@
 
 # these paths need to be handled better
 import sys
-sys.path.append('libsvm-3.23/python')
-sys.path.append('..')
-sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe")
 from util import bio
 
 from sitespredict.pbmescore import PBMEscore
