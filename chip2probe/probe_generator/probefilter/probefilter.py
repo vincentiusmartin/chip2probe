@@ -94,7 +94,9 @@ class ProbeFilter:
                                                          predict_flanks=True,
                                                          key_colname="key",
                                                          show_model_flanks=self.show_model_flanks,
-                                                         get_complete_mutated=self.get_complete_mutated)
+                                                         get_complete_mutated=self.get_complete_mutated,
+                                                         primer=self.primer,
+                                                         max_mutate_count=self.max_mutate_count)
 
         # initialize a dataframe of filtered probes with wt, m1, m2, m3
         fp_df = pd.DataFrame(filtered_probes)
@@ -169,7 +171,9 @@ class ProbeFilter:
                                                          predict_flanks=True,
                                                          key_colname="key",
                                                          show_model_flanks=self.show_model_flanks,
-                                                         get_complete_mutated=self.get_complete_mutated)
+                                                         get_complete_mutated=self.get_complete_mutated,
+                                                         primer=self.primer,
+                                                         max_mutate_count=self.max_mutate_count)
 
         # probably should check here if filtered_probes is empty
         fp_df = pd.DataFrame(filtered_probes)

@@ -12,7 +12,7 @@ import copy
 class BindingSite(object):
     """Class for BindingSite object."""
 
-    def __init__(self, site_pos, site_start, site_end, core_start, core_end, 
+    def __init__(self, site_pos, site_start, site_end, core_start, core_end, core_mid,
                  sequence_in_site, protein, score=1, barrier=1):
         """
         Initialize class variables for BindingSite object.
@@ -26,6 +26,7 @@ class BindingSite(object):
         self.site_end = site_end
         self.core_start = core_start
         self.core_end = core_end
+        self.core_mid = core_mid
         self.site_sequence = sequence_in_site
         self.score = score
         # bp from the core that shouldn't be mutated
@@ -35,10 +36,10 @@ class BindingSite(object):
     def __str__(self):
         """Return the string representation of the BindingSite object."""
         return "site_pos: {}, score: {}, site_start: {}, site_end: {}, \
-               core_start: {}, core_end: {}, site_sequence {}"\
+               core_start: {}, core_end: {}, site_sequence {}, protein: {}"\
                .format(self.site_pos, self.score, self.site_start,
                        self.site_end, self.core_start, self.core_end,
-                       self.site_sequence)
+                       self.site_sequence, self.protein)
 
 MutatedSequence = collections.namedtuple('MutatedSequence', 
                                          'sequence, \
@@ -54,7 +55,7 @@ MutatedSequence = collections.namedtuple('MutatedSequence',
 class Sequence(object):
     """Class for Sequence object."""
 
-    def __init__(self, escore_preds, model_preds, proteins, pbmescore, escore_cutoff=0.4, escore_gap=0):
+    def __init__(self, escore_preds, model_preds, proteins, pbmescores, escore_cutoff=0.4, escore_gap=0):
         """
         Initialize a sequence object.
 
@@ -74,7 +75,7 @@ class Sequence(object):
         self.bsites = {}
         self.proteins = proteins
         self.escore_cutoff = escore_cutoff
-        self.pbmescore = pbmescore
+        self.pbmescores = pbmescores
         self.escore_gap = escore_gap
 
         seq = ""
@@ -85,11 +86,11 @@ class Sequence(object):
                 seq = escore_preds[protein].sequence
             else:
                 assert seq == escore_preds[protein].sequence
-            
+
             self.bsites[protein] = self.get_bsite(self.escore_preds[protein],
-                                                  self.model_preds[protein], 
-                                                   protein, escore_cutoff, 
-                                                   escore_gap)
+                                                  self.model_preds[protein],
+                                                  protein, escore_cutoff,
+                                                  escore_gap)
 
         self.sequence = seq
 
@@ -115,7 +116,7 @@ class Sequence(object):
             # get esocre of this mutation for each protein
             for protein in self.proteins:
                 # get the escore for the mutated sequence
-                all_muts[mutseq][protein] = self.pbmescore[protein].predict_sequence(mutseq).predictions[0]['score']
+                all_muts[mutseq][protein] = self.pbmescores[protein].predict_sequence(mutseq).predictions[0]['score']
 
         # find a mutated sequence that is non-specific for all proteins
         min_sum = float("inf")
@@ -142,13 +143,13 @@ class Sequence(object):
         s_end = self.bsites[protein][site_index].site_end
         site_seq = full_seq[s_start:s_end]
         # get the escore prediction for the sequence
-        epreds = self.pbmescore[protein].predict_sequence(site_seq)
+        epreds = self.pbmescores[protein].predict_sequence(site_seq).predictions
         # initialize non intersecting max escore
         max_escore = {"score": float("inf")}
         # find non intersecting max escore
-        while max_escore["score"] == float("inf") and epreds.predictions:
+        while max_escore["score"] == float("inf") and epreds:
             # get 8mer in the given core with the highest escore
-            max_val = max(epreds.predictions, key=lambda x: x['score'])
+            max_val = max(epreds, key=lambda x: x['score'])
             # get position of this max escore
             max_val_seqpos = self.bsites[protein][site_index].site_start + max_val['position']
             # loop through each protein
@@ -162,15 +163,18 @@ class Sequence(object):
                     unmutated_start = self.bsites[curr_protein][i].core_start - self.bsites[curr_protein][i].barrier
                     unmutated_end = self.bsites[curr_protein][i].core_end + self.bsites[curr_protein][i].barrier
                     # if this max escore intersects with another core, remove
-                    if max_val_seqpos >= unmutated_start and max_val_seqpos < unmutated_end and max_val in epreds.predictions:
-                        epreds.predictions.remove(max_val)
+                    if max_val_seqpos >= unmutated_start and max_val_seqpos < unmutated_end and max_val in epreds:
+                        epreds.remove(max_val)
                     # otherwise, initialize this as max non intersecting escore
                     else:
                         max_escore = copy.copy(max_val)
         return max_escore
 
-    def eliminate_site(self, protein, sequence, site_index, escore_threshold=0.3):
+    def eliminate_site(self, protein, sequence, site_index, 
+                       escore_threshold=0.3):
         """
+        Eliminate the given site from the sequence.
+
         This assumes that input is a sequence of a site
         site_index: which site to mutate
         """
@@ -200,11 +204,15 @@ class Sequence(object):
                 midpos = len(seq_tomutate) // 2
                 # get new mutated sequence
                 mutated_escore_seq = self.mutate_escore_seq_at_pos(seq_tomutate, midpos, escore_threshold)
-                # mutate the sequence
-                mut_start = self.bsites[protein][site_index].site_start + maxepreds["start_idx"]
-                mut_end = mut_start + len(mutated_escore_seq)
-                full_sequence = full_sequence[:mut_start] + mutated_escore_seq + full_sequence[mut_end:]
-                site_mutpos.append(mut_start + midpos)
+                if mutated_escore_seq != "":
+                    # mutate the sequence
+                    mut_start = self.bsites[protein][site_index].site_start + maxepreds["start_idx"]
+                    mut_end = mut_start + len(mutated_escore_seq)
+                    full_sequence = full_sequence[:mut_start] + mutated_escore_seq + full_sequence[mut_end:]
+                    site_mutpos.append(mut_start + midpos)
+                else:
+                    full_sequence = ""
+                    site_mutpos = []
         # return the new mutated sequence and the positions mutated
         return full_sequence, site_mutpos
 
@@ -224,7 +232,7 @@ class Sequence(object):
                 sites_to_mutate = sites[protein]
             elif mode == "to_keep":
                 sites_to_mutate = [i for i in range(len(self.bsites[protein])) if i not in sites[protein]]
-                
+
             else:
                 raise Exception("type should either be to_eliminate or to_keep")
 
@@ -242,52 +250,12 @@ class Sequence(object):
                                              "linestyle": "dashed",
                                              "linewidth": 1}})
         return MutatedSequence(mutated, self.escore_preds, self.model_preds,
-                                self.proteins, self.escore_cutoff,
-                                self.escore_gap, mutpos, functions)
-
-    def abolish_sites_original(self, sites, pbmescore, mode="to_eliminate", escore_threshold=0.3):
-        """
-        type can either be to_eliminate or to_keep
-        """
-        sites_to_mutate = []
-        if mode == "to_eliminate":
-            sites_to_mutate = sites
-        elif mode == "to_keep":
-            sites_to_mutate = [i for i in range(len(sites[protein])) if i not in sites]
-        else:
-            raise Exception("type should either be to_eliminate or to_keep")
-
-        mutpos = []
-        mutated = str(self.sequence)
-        for i in sites_to_mutate:
-            mutated, site_mutpos = self.eliminate_site(mutated, i, pbmescore)
-            mutpos.extend(site_mutpos)
-
-        functions = []
-        for pos in mutpos:
-            functions.append({"func":"axvline","args":[pos],"kwargs":{"color":"purple", "linestyle":"dashed", "linewidth":1}})
-
-        return MutatedSequence(mutated, mutpos, functions)
-
-    """
-    prev_idx = idx - 1
-    # we don't want to mutate if the position if within the barrier
-    mutable_prev = 0 if prev_idx == -1 else bsites[prev_idx].core_end + bsites[prev_idx].barrier
-    mutable_cur_start = bsites[idx].site_start
-    start_mutseq = max(mutable_prev, mutable_cur_start)
-
-    next_idx = idx + 1
-    mutable_next = len(seq) if next_idx >= len(bsites) else bsites[next_idx].core_start + bsites[next_idx].barrier
-    mutable_cur_end = bsites[idx].site_end
-    end_mutseq = min(mutable_next, mutable_cur_end)
-
-    to_mutate = seq[start_mutseq:end_mutseq]
-    epreds = pbmescore.predict_sequence(to_mutate)
-    print(epreds)
-    """
+                               self.proteins, self.escore_cutoff,
+                               self.escore_gap, mutpos, functions)
 
     # TODO: change to pbmescore.get_escores_specific
-    def get_bsite(self, escore_preds, model_preds, protein, escore_cutoff=0.4, escore_gap=0):
+    def get_bsite(self, escore_preds, model_preds, protein, 
+                  escore_cutoff=0.4, escore_gap=0):
         """
         Get binding site objects.
 
@@ -337,6 +305,7 @@ class Sequence(object):
                                                     site_start=site_start,
                                                     site_end=site_end,
                                                     core_start=model_pred["core_start"],
+                                                    core_mid=model_pred["core_mid"],
                                                     core_end=model_pred["core_start"] + model_pred["core_width"],
                                                     sequence_in_site=sequence[site_start:site_end],
                                                     protein=protein)
@@ -359,7 +328,7 @@ class Sequence(object):
             bs_list = bindingsites[protein]
             # loop through each binding site object
             for i in range(0, len(bs_list)):
-                attrs = [attr for attr in dir(bs_list[i]) \
+                attrs = [attr for attr in dir(bs_list[i])
                          if not callable(getattr(bs_list[i], attr)) \
                          and not attr.startswith("__")]
                 for attr in attrs:
@@ -367,12 +336,14 @@ class Sequence(object):
         return out_dict
 
     def get_sites_dist(self, site1=0, site2=1):
+        """Get distance between two binding sites."""
         if len(self.proteins) == 1:
             protein = self.proteins[0]
-            return abs(self.bsites[protein][site2].core_start - self.bsites[protein][site1].core_start)
+            return abs(self.bsites[protein][site2].core_mid - self.bsites[protein][site1].core_mid)
         protein1 = self.proteins[0]
         protein2 = self.proteins[1]
-        return abs(self.bsites[protein1][site1].core_start - self.bsites[protein2][site1].core_start)
+        return abs(self.bsites[protein1][site1].core_mid - self.bsites[protein2][site1].core_mid)
+
     def get_sites_dict(self):
         """Get dictionary of sites in this sequence."""
         return self.sites_to_dict(self.bsites)
@@ -389,15 +360,16 @@ class Sequence(object):
         return tot
 
     def site_count(self, protein):
+        """Get number of binding sites in the sequence for the given protein."""
         return len(self.bsites[protein])
 
     def get_center_bsites(self):
         """Find the indices of non-center binding sites."""
         # get the lists of midpoints of binding sites for all proteins
-        midpoints = []
+        midpoints = {}
         for protein in self.proteins:
             preds = self.model_preds[protein].predictions
-            midpoints[protein] = [(d['core_start'] + d['core_width']/2) for d in preds]
+            midpoints[protein] = [(int(d['core_start']) + int(d['core_width'])/2) for d in preds]
 
         min_dist = float('inf')
         mid_lst1 = midpoints[self.proteins[0]]
@@ -472,32 +444,43 @@ class Sequence(object):
                 return {self.proteins[0]: [], self.proteins[1]: [0]}
             return {self.proteins[0]: [0], self.proteins[1]: []}
 
-    def is_valid(self, mutate=False):
-        # get sequences with exactly two centered binding sites
+    def is_valid(self):
+        """
+        Mutate a sequence to make it valid.
+
+        A valid sequence has exactly two centered binding site.
+        Return: True if resulting sequence is valid, False otherwise
+        """
+        # get number of proteins we are dealing with
         num_prot = len(self.proteins)
-        if num_prot == 1 and self.site_count_all() == 2 and self.are_centered():
-            return True
-        elif num_prot == 2:
-            if self.site_count(self.proteins[0])==self.site_count(self.proteins[1])==1 \
-               and self.are_centered:
+        # check base cases for homotypic cluster
+        if num_prot == 1:
+            if self.site_count_all() == 2 and self.are_centered():
                 return True
-            elif self.site_count(self.proteins[0])== 0 or self.site_count(self.proteins[1])== 0:
+            elif self.site_count_all() < 2:
                 return False
-        
+        # check base cases for heterotypic cluster
+        elif num_prot == 2:
+            if self.site_count(self.proteins[0]) == self.site_count(self.proteins[1])==1 \
+               and self.are_centered():
+                return True
+            elif self.site_count(self.proteins[0]) == 0 \
+                    or self.site_count(self.proteins[1]) == 0:
+                return False
+
         # if there are more than 2 significant binding sites, mutate
-        elif (num_prot==1 and self.site_count_all() > 2) \
-             or (num_prot==2 and (self.site_count(self.proteins[0]) > 1 or self.site_count(self.proteins[1])>1))\
-             and mutate:
-            to_keep = self.get_center_indices()
-            mut_seq = self.abolish_sites(to_keep, pbmescore=self.pbmescore, mode="to_keep", escore_threshold=self.escore_cutoff) 
-            # turn the mutated sequence into a Sequence object again
-            self.__init__(mut_seq.es_preds, mut_seq.model_preds,
+        else:
+            to_keep = self.get_center_bsites()
+            mut_seq = self.abolish_sites(to_keep, mode="to_keep",
+                                         escore_threshold=self.escore_cutoff)
+            # Update the current Sequence object with the valid, mutated sequence
+            self.__init__(mut_seq.escore_preds, mut_seq.model_preds,
                           proteins=mut_seq.proteins,
                           escore_cutoff=self.escore_cutoff,
-                          escore_gap=self.mutate_gap)
+                          escore_gap=self.escore_gap, pbmescores=self.pbmescores)
             # check if mutation was successful
-            if (len(self.proteins) == 1 and self.site_count_all() == 2 \
-               or len(self.proteins) == 2 and self.site_count(self.proteins[0])==self.site_count(self.proteins[1])==1)\
+            if ((len(self.proteins) == 1 and self.site_count_all() == 2) \
+               or (len(self.proteins) == 2 and self.site_count(self.proteins[0])==self.site_count(self.proteins[1])==1)) \
                and self.are_centered():
                 return True
             else:
