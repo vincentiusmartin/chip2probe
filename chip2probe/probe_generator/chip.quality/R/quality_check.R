@@ -1,7 +1,7 @@
 library(data.table)
 library(dplyr)
 library(ggplot2)
-library("BSgenome.Hsapiens.UCSC.hg19")
+library("BSgenome.Hsapiens.UCSC.hg19") 
 
 # ================= ChIP-seq part ================= 
 
@@ -96,51 +96,50 @@ read.pileup <- function(pileup_path){
 #' @keywords 
 #' @export
 #' @examples
-#' read.imads.bed()
+#' calculate.peak.pileup()
 calculate.peak.pileup <- function(nrwp_df, pu_df, logpileup=FALSE, jointype="any"){
   pu_nrwp <- foverlaps(pu_df, nrwp_df, nomatch=NULL, type=jointype)[, .(
-    chr, peak.start = start, peak.end = end,
-    pileup.start = i.start, pileup.end = i.end,
+    chr, peak_start = start, peak_end = end,
+    pileup_start = i.start, pileup_end = i.end,
     pileup
   )] %>% 
     mutate(
       # Handle edge cases here, consider partial reads by bordering with both ends of the peak
-      pileup.start = ifelse(pileup.start < peak.start, peak.start, pileup.start),
-      pileup.end = ifelse(pileup.end > peak.end, peak.end, pileup.end),
-      pileup.score = (pileup.end - pileup.start) * pileup
+      pileup_start = ifelse(pileup_start < peak_start, peak_start, pileup_start),
+      pileup_end = ifelse(pileup_end > peak_end, peak_end, pileup_end),
+      pileup_score = (pileup_end - pileup_start) * pileup
     ) %>%
-    select(-c(pileup.end,pileup.start,pileup))
+    select(-c(pileup_end,pileup_start,pileup))
   
-  setDT(pu_nrwp, key = c("chr", "peak.start","peak.end"))
-  agg <- pu_nrwp[, lapply(.SD, sum), by=list(chr,peak.start,peak.end)]
+  setDT(pu_nrwp, key = c("chr", "peak_start","peak_end"))
+  agg <- pu_nrwp[, lapply(.SD, sum), by=list(chr,peak_start,peak_end)]
   if(logpileup){
     # +1 to avoid -inf on log
-    agg$pileup.score = log(agg$pileup.score+1)
+    agg$pileup_score = log(agg$pileup_score+1)
   }
   
   return(agg)
 }
 
-# ================= iMADS part ================= 
+# ================= sites bed file part ================= 
 
-#' Read imads bed
+#' Read sites bed
 #'
 #' This function reads a narrow peak file and make a data table from it.
-#' @param bed_path The input imads bed path prediction.
+#' @param bed_path The input sites bed path prediction.
 #' @keywords 
 #' @export
 #' @examples
 #' read.imads.bed()
-read.imads.bed <- function(bed_path){
-  imads_sites <- fread(bed_path,sep="\t",header=FALSE)[,1:4]
+read.sites.bed <- function(bed_path){
+  genome_sites <- fread(bed_path,sep="\t",header=FALSE)[,1:3] # imads: [,1:4]
   # the fifth column is basically the same, so just use 4 columns
-  colnames(imads_sites) <- c("chr","start","end","pref")
-  setDT(imads_sites, key = c("chr", "start","end"))
-  return(imads_sites)
+  colnames(genome_sites) <- c("chr","start","end")
+  setDT(genome_sites, key = c("chr", "start","end"))
+  return(genome_sites)
 }
 
-# ================= Analysis with imads and macs file =================
-
+# ================= Analysis with genome sites and macs file =================
 
 #' Get binding site count
 #'
@@ -150,16 +149,16 @@ read.imads.bed <- function(bed_path){
 #' @export
 #' @examples
 #' get.site.count()
-get.site.count <- function(nrwp_df, imads_df){
-  sites_peak <- foverlaps(imads_df,nrwp_df, nomatch=NULL)[, .(
-    chr, peak.start = start, peak.end = end,
-    pref
+get.site.count <- function(nrwp_df, sites_df){ #here todo
+  sites_peak <- foverlaps(sites_df,nrwp_df, nomatch=NULL)[, .(
+    chr, peak_start = start, peak_end = end
+    #pref
   )]
   
-  sites_peak$count <- ifelse(is.na(sites_peak$pref), 0, 1)
-  sites_peak <- sites_peak %>% select(-pref)
-  counted <- sites_peak[, lapply(.SD, sum), by=list(chr,peak.start,peak.end)]
-  colnames(counted) <- c("chr","peak.start","peak.end","site.count")
+  sites_peak$count <- 1 #ifelse(is.na(sites_peak$pref), 0, 1)
+  #sites_peak <- sites_peak %>% select(-pref)
+  counted <- sites_peak[, lapply(.SD, sum), by=list(chr,peak_start,peak_end)]
+  colnames(counted) <- c("chr","peak_start","peak_end","site_count")
   
   return(counted)
 }
@@ -167,17 +166,17 @@ get.site.count <- function(nrwp_df, imads_df){
 #' consecutive sites in peak
 #'
 #' For each peak, gets all binding sites available
-#' @param pileups_df The input imads bed path prediction.
-#' @param imads_df The input imads bed path prediction.
+#' @param pileups_df The input sites bed path prediction.
+#' @param imads_df The input sites bed path prediction.
 #' @keywords 
 #' @export
 #' @examples
-#' get.bsites.in.peak()
+#' get.sites.in.peak()
 get.sites.in.peak <- function(peak_df, imads_df, join_type="within"){
   peaks <- peak_df
   sites <- imads_df
-  colnames(peaks)[c(2,3)] <- c("peak.start","peak.end")
-  colnames(sites)[c(2,3)] <- c("bsite.start","bsite.end")
+  colnames(peaks)[c(2,3)] <- c("peak_start","peak_end")
+  colnames(sites)[c(2,3)] <- c("site_start","site_end")
   sites_in_peak <- foverlaps(sites, peaks, nomatch=NULL, type=join_type)
   return(sites_in_peak)
 }
@@ -185,19 +184,19 @@ get.sites.in.peak <- function(peak_df, imads_df, join_type="within"){
 #' consecutive sites in peak
 #'
 #' For each peak, gets all binding sites available
-#' @param pileups_df The input imads bed path prediction.
-#' @param imads_df The input imads bed path prediction.
+#' @param pileups_df The input sites bed path prediction.
+#' @param imads_df The input sites bed path prediction.
 #' @keywords 
 #' @export
 #' @examples
-#' get.bsites.in.peak()
-get.consecutive.sites.in.peak <- function(peak_df, imads_df, score_colname = "pileups"){
+#' get.sites.in.peak()
+get.consecutive.sites.in.peak <- function(peak_df, sites_df, score_colname = "pileups"){
   peaks <- peak_df
-  sites <- imads_df
-  names(peaks)[c(2,3)] <- c("peak.start","peak.end")
-  names(sites)[c(2,3)] <- c("bsite.start","bsite.end")
-  setDT(peaks, key=c("chr","peak.start","peak.end"))
-  setDT(sites, key=c("chr","bsite.start","bsite.end"))
+  sites <- sites_df
+  names(peaks)[c(2,3)] <- c("peak_start","peak_end")
+  names(sites)[c(2,3)] <- c("site_start","site_end")
+  setDT(peaks, key=c("chr","peak_start","peak_end"))
+  setDT(sites, key=c("chr","site_start","site_end"))
   sites_selected <- foverlaps(sites, peaks, nomatch=NULL, type="within")
   # order the chromosome
   chr_order<-c(paste("chr",1:22,sep=""),"chrX","chrY","chrM")
@@ -205,16 +204,17 @@ get.consecutive.sites.in.peak <- function(peak_df, imads_df, score_colname = "pi
   sites_selected <- sites_selected[order(sites_selected$chr),]
   
   sites_in_peak_df <- sites_selected %>%
-    group_by(chr, peak.start, peak.end) %>%
-    mutate(distance = (bsite.start + bsite.end) / 2 - lag((bsite.start + bsite.end)/2),
-           bsite.start.1 = lag(bsite.start),
-           bsite.end.1 = lag(bsite.end),
-           bsite.start.2 = bsite.start,
-           bsite.end.2 = bsite.end,
-           bsite.pref.1 = lag(pref),
-           bsite.pref.2 = pref) %>%
+    group_by(chr, peak_start, peak_end) %>%
+    mutate(distance = (site_start + site_end) / 2 - lag((site_start + site_end)/2),
+           site_start_1 = lag(site_start),
+           site_end_1 = lag(site_end),
+           site_start_2 = site_start,
+           site_end_2 = site_end
+           #site.pref.1 = lag(pref),
+           #site.pref.2 = pref
+           ) %>%
     filter(!is.na(distance)) %>%
-    select(-c(bsite.start, bsite.end, pref)) %>%
+    select(-c(site_start, site_end)) %>%
     select(-distance,everything()) #%>% # just to put distance as the last col
   
   return(sites_in_peak_df)
@@ -226,13 +226,13 @@ get.consecutive.sites.in.peak <- function(peak_df, imads_df, score_colname = "pi
 #' Important columns needed are:
 #' 
 #' 
-#' @param sites_in_peak_df The input imads bed path prediction.
-#' @param min_dist The input imads bed path prediction.
-#' @param max_dist The input imads bed path prediction.
+#' @param sites_in_peak_df The input sites bed path prediction.
+#' @param min_dist The input sites bed path prediction.
+#' @param max_dist The input sites bed path prediction.
 #' @keywords 
 #' @export
 #' @examples
-#' get.bsites.in.peak()
+#' get.probeseq.in.range 
 get.probeseq.in.range <- function(sites_in_peak_df, min_dist, max_dist, probe_len = 36, flank_size = 0){
   # TODO: filter chrM?
   # Get binding sites in min_dist .. max_dist
@@ -242,28 +242,28 @@ get.probeseq.in.range <- function(sites_in_peak_df, min_dist, max_dist, probe_le
     filter(distance >= min_dist & distance <= max_dist)  %>%
     # rowwise() %>% # need to calculate each row separately <- DON'T USE THIS
     mutate(
-      s1 = ifelse(bsite.start.1 < bsite.start.2, ((bsite.start.1 + bsite.end.1) / 2), ((bsite.start.2 + bsite.end.2) / 2)),
-      s2 = ifelse(bsite.start.1 > bsite.start.2, ((bsite.start.1 + bsite.end.1) / 2), ((bsite.start.2 + bsite.end.2) / 2)),
-      seqstart = s1 - ceiling((probe_len - distance) / 2) + 1,
-      seqend =  s2 + floor((probe_len - distance) / 2)
-    ) %>%
-    select(-c(s1,s2)) # made just as a tmp variable so remove here
+      mid_1 = ifelse(site_start_1 < site_start_2, ((site_start_1 + site_end_1) / 2), ((site_start_2 + site_end_2) / 2)),
+      mid_2 = ifelse(site_start_1 > site_start_2, ((site_start_1 + site_end_1) / 2), ((site_start_2 + site_end_2) / 2)),
+      seqstart = mid_1 - ceiling((probe_len - distance) / 2) + 1,
+      seqend =  mid_2 + floor((probe_len - distance) / 2)
+    )
   
   # don't add +1 on everything to conform with one index
   sequences <- getSeq(
-    Hsapiens,
+    BSgenome.Hsapiens.UCSC.hg19,
     sites_within_range$chr,
     start = sites_within_range$seqstart,
     end = sites_within_range$seqend
   )
+  
   flank_left <- getSeq(
-    Hsapiens,
+    BSgenome.Hsapiens.UCSC.hg19,
     sites_within_range$chr,
     start = sites_within_range$seqstart - flank_size,
     end = sites_within_range$seqstart - 1
   )
   flank_right <- getSeq(
-    Hsapiens,
+    BSgenome.Hsapiens.UCSC.hg19,
     sites_within_range$chr,
     start = sites_within_range$seqend,
     end = sites_within_range$seqend + flank_size - 1
@@ -283,21 +283,21 @@ get.probeseq.in.range <- function(sites_in_peak_df, min_dist, max_dist, probe_le
 #' Important columns needed are:
 #' 
 #' 
-#' @param sites_in_peak_df The input imads bed path prediction.
-#' @param min_dist The input imads bed path prediction.
-#' @param max_dist The input imads bed path prediction.
+#' @param sites_in_peak_df The input sites bed path prediction.
+#' @param min_dist The input sites bed path prediction.
+#' @param max_dist The input sites bed path prediction.
 #' @keywords 
 #' @export
 #' @examples
-#' get.bsites.in.peak()
+#' get.sites.in.peak()
 get.closest.site.in <- function(site_df1, site_df2){
-  if (!all(c("chr", "bsite.start", "bsite.end") %in% colnames(site_df1)) && 
+  if (!all(c("chr", "site.start", "site.end") %in% colnames(site_df1)) && 
       !all(c("chr", "start","end") %in% colnames(site_df1))
   ){
     stop("Could not find columns with genomic coordinates in the first table.") 
   }
   
-  if (!all(c("chr", "bsite.start", "bsite.end") %in% colnames(site_df2)) && 
+  if (!all(c("chr", "site.start", "site.end") %in% colnames(site_df2)) && 
       !all(c("chr", "start","end") %in% colnames(site_df2))
   ){
     stop("Could not find columns with genomic coordinates in the second table.") 
@@ -307,14 +307,15 @@ get.closest.site.in <- function(site_df1, site_df2){
   df2 <- copy(site_df2)
   
   if (all(c("chr", "start","end") %in% colnames(df1)) && 
-      !all(c("chr", "bsite.start", "bsite.end") %in% colnames(df1))){
-    setnames(df1, old = c("start", "end"), new = c("bsite.start", "bsite.end"))
+      !all(c("chr", "site_start", "site_end") %in% colnames(df1))){
+    setnames(df1, old = c("start", "end"), new = c("site_start", "site_end"))
   }
   if (all(c("chr", "start","end") %in% colnames(df2)) && 
-      !all(c("chr", "bsite.start", "bsite.end") %in% colnames(df2))){
-    setnames(df2, old = c("start", "end"), new = c("bsite.start", "bsite.end"))
+      !all(c("chr", "site_start", "site_end") %in% colnames(df2))){
+    setnames(df2, old = c("start", "end"), new = c("site_start", "site_end"))
   }
   
+  # get which columns to use for join
   same_cname <- intersect(colnames(df1),colnames(df2))
   same_cname <- same_cname[!same_cname %in% "chr"]
   cname1 <- paste(same_cname, "1", sep=".")
@@ -322,17 +323,18 @@ get.closest.site.in <- function(site_df1, site_df2){
   setnames(df1, old = same_cname, new = cname1)
   setnames(df2, old = same_cname, new = cname2)
   
+  # for this, assume that site position is in the middle
   df1 <- df1 %>% mutate(
-    pos = (bsite.start.1 + bsite.end.1) %/% 2,
-    pos.1 = pos
+    pos = (site_start_1 + site_end_1) %/% 2,
+    pos_1 = pos
   )
   df2 <- df2 %>% mutate(
-    pos = (bsite.start.2 + bsite.end.2) %/% 2,
-    pos.2 = pos
+    pos = (site_start_2 + site_end_2) %/% 2,
+    pos_2 = pos
   )
   
-  setDT(df1, key = c("chr", "bsite.start.1","bsite.end.1"))
-  setDT(df2, key = c("chr", "bsite.start.2","bsite.end.2"))
+  setDT(df1, key = c("chr", "site_start_1","site_end_1"))
+  setDT(df2, key = c("chr", "site.start_2","site_end_2"))
   
   # rolling merge will be done by matching chr and then do rolling join 
   # using st (i.e. "site") that's why the join is on chr,st
@@ -342,6 +344,65 @@ get.closest.site.in <- function(site_df1, site_df2){
   setDT(rolled)
   
   return(rolled)
+}
+
+#' Get sites with overlapping peaks from two tf tables
+#'
+#' @param peaklen_lists the list of peak length. The input MUST BE a list where
+#'        each element is a vector of peak length.
+#' @param upper_coord_limit can set to -1 if desired.
+#' @keywords 
+#' @export
+#' @examples
+#' get.sites.with.overlapping.peaks()
+get.heterotypic.sites <- function(peaks1, peaks2, sites1, sites2, dist_range){
+  peak_all_intersect <- foverlaps(peaks1, peaks2, nomatch=0)[, .(
+    chr, peak_start_1 = i.peak_start, peak_end_1 = i.peak_end,
+    peak_start_2 = peak_start, peak_end_2 = peak_end
+  )]
+  # get the list of peaks that overlap in both
+  peak1_intersect <- peak_all_intersect[, c("chr", "peak_start_1", "peak_end_1")]
+  setDT(peak1_intersect, key=c("chr", "peak_start_1", "peak_end_1"))
+  peak2_intersect <- peak_all_intersect[, c("chr", "peak_start_2", "peak_end_2")]
+  setDT(peak2_intersect, key=c("chr", "peak_start_2", "peak_end_2"))
+  
+  peak1_sites <- foverlaps(sites1, peak1_intersect, nomatch=0, type="within")[, .(
+    chr, peak_start_1, peak_end_1,
+    site_start_1 = start, site_end_1 = end
+  )]
+  peak1_sites <- peak1_sites %>% mutate(
+    # need to make mid column for rolling join and mid.1 for distance calculation
+    mid = (site_start_1 + site_end_1) %/% 2,
+    mid_1 = mid
+  )
+  setDT(peak1_sites, key=c("chr", "peak_start_1", "peak_end_1"))
+  
+  peak2_sites <- foverlaps(sites2, peak2_intersect, nomatch=0, type="within")[, .(
+    chr, peak_start_2, peak_end_2,
+    site_start_2 = start, site_end_2 = end
+  )]
+  peak2_sites <- peak2_sites %>% mutate(
+    mid = (site_start_2 + site_end_2) %/% 2,
+    mid_2 = mid
+  )
+  setDT(peak2_sites, key=c("chr", "peak_start_2", "peak_end_2"))
+  
+  # get sites close to tf1
+  sites_close_to_1 <- peak1_sites[peak2_sites, roll = "nearest", on = .(chr,mid)] %>% 
+    select(-c("mid")) %>%
+    mutate(distance = abs(mid_1-mid_2)) %>%
+    filter(distance > dist_range[1] & distance < dist_range[2])
+  sites_close_to_2 <- peak2_sites[peak1_sites, roll = "nearest", on = .(chr,mid)] %>% 
+    select(-c("mid")) %>%
+    mutate(distance = abs(mid_1-mid_2)) %>%
+    filter(distance > dist_range[1] & distance < dist_range[2])
+  
+  # merge both tables, take unique values
+  all_sites <- rbind(sites_close_to_1, sites_close_to_2) %>% unique()
+  
+  chr_order<-c(paste("chr",1:22,sep=""),"chrX","chrY","chrM")
+  all_sites$chr <- factor(all_sites$chr, levels=chr_order)
+  all_sites <- all_sites  %>% arrange(chr, peak_start_1, peak_end_1)
 }
 
 # ================= Plotting part =================
@@ -413,11 +474,11 @@ count.n <- function(x) {
 plot.pileup.distributions <- function(count_vec, pileup_vec, outpath, chip_name="", ylabel="log(pileup)"){
   # make boxplot, since we need pileup for the whole distribution, make a copy of the whole table
   # as group "all"
-  bsites_ctpile <- data.frame(count = count_vec, pileup = pileup_vec)
-  merged_copy <- bsites_ctpile
+  sites_ctpile <- data.frame(count = count_vec, pileup = pileup_vec)
+  merged_copy <- sites_ctpile
   merged_copy$count <- "all"
-  merged_duplicated <- rbind(bsites_ctpile,merged_copy)
-  countvec <- c("all",as.character(sort(unique(bsites_ctpile$count)))) # need this to order xlabel
+  merged_duplicated <- rbind(sites_ctpile,merged_copy)
+  countvec <- c("all",as.character(sort(unique(sites_ctpile$count)))) # need this to order xlabel
   merged_duplicated$count <- factor(merged_duplicated$count, levels = countvec)
   pudist_plot <- ggplot(merged_duplicated, aes(x=count, y=pileup, fill=count)) +
     geom_boxplot() +
