@@ -188,6 +188,7 @@ class Kompas(basemodel.BaseModel):
 
             prediction.append({"site_start": position - 7, "site_width": 2 * 7 + core_width,
                                "core_start": position, "core_width": core_width,
+                               "core_mid": int(row[1]),
                                "score": 0
                                })
         return prediction

@@ -139,12 +139,17 @@ class iMADS(basemodel.BaseModel):
                     continue
                 if transform_scores:
                     best_prediction = self.transform_score(best_prediction)
+                if len(model.core)%2 == 0:
+                    mid = core_pos + len(model.core) // 2 - 1
+                elif len(model.core)%2 == 1:
+                    mid = core_pos + len(model.core) // 2
                 prediction.append({"site_start": position,
                                    "site_width": model.width,
                                    "best_match": best_match,
                                    "score": best_prediction,
                                    "core_start": core_pos,
-                                   "core_width": len(model.core)
+                                   "core_width": len(model.core),
+                                   "core_mid": mid
                                    })
         return prediction
 
@@ -179,7 +184,7 @@ class iMADS(basemodel.BaseModel):
                    result['core_start'] + result['core_width'] > len(seqdict[key]) - 1:
                    # remove the prediction
                    prediction.remove(result)
-                #result['core_mid'] = result['core_mid'] - flank_len
+                result['core_mid'] = result['core_mid'] - flank_len
             predictions[key] = basepred.BasePrediction(sequence, prediction)
         return predictions
 

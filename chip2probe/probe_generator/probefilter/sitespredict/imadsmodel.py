@@ -16,6 +16,7 @@ Run make in libsvm-3.24/python directory
 
 import os
 import sys
+sys.path.append(os.path.realpath("sitespredict/libsvm/python"))
 sys.path.append(os.path.realpath("libsvm/python"))
 import svmutil
 
