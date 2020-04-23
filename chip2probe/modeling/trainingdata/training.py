@@ -5,6 +5,9 @@ Created on Oct 30, 2019
 @editedby: Farica Zhuang
 '''
 
+import sys
+sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe")
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -17,9 +20,9 @@ import trainingdata.seqextractor as seqextractor
 import math
 
 import statistics
-import util.stats as st
-import util.bio as bio
-import util.util as util
+from chip2probe.util import stats as st
+from chip2probe.util import util as util
+from chip2probe.util import bio as bio
 
 
 class Training(object):

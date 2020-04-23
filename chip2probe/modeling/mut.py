@@ -1,12 +1,16 @@
 
 import sys
 sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe")
+sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator/probefilter")
 
 import pandas as pd
 import random
 
 from trainingdata.training import Training
 from trainingdata.dnashape import DNAShape
+
+from sitespredict.imads import iMADS
+from sitespredict.imadsmodel import iMADSModel
 
 from main import *
 
@@ -101,10 +105,20 @@ def predict_all_ori(test,ds):
 if __name__ == '__main__':
     trainingpath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/191030_coop-PBM_Ets1_v1_2nd/training_data/training_p01_adjusted.tsv"
     pd.set_option('display.max_columns', None)
-    #df = pd.read_csv(trainingpath, sep="\t")
+    df = pd.read_csv(trainingpath, sep="\t")
+
+    modelpaths = ["/Users/vincentiusmartin/Research/chip2gcPBM/imads/model_name.model copy"]
+                          # "/Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_files/models/ets1/#ETS1_100nM_Bound_filtered_normalized_transformed_20bp_GGAT_1a2a3mer_format.model"]
+    modelcores = ["GGAA", "GGAT"]
+    imads_models = [iMADSModel(modelpath, modelcore, 20, [1, 2, 3])
+                    for modelpath, modelcore in
+                    zip(modelpaths, modelcores)]
+    imads = iMADS(imads_models, 0.2128)
+    print(imads.predict_sequence("CCTCAGGAAACAGGTGCTCCTGGAATGTTTCCTGCC"))
     #md = make_ets1_mutations(df)
 
     #pd.DataFrame(md).to_csv("mutlist.csv", index=False)
+    """
     df = pd.read_csv("mutlist.csv")
 
     test = Training(df,4)
@@ -122,6 +136,7 @@ if __name__ == '__main__':
     idx2 = df.index[df['sequence'] == "GTTTGATCCAGGAAACGGTGTCCTTCCTGTGGACCT"].tolist()[0]
     print(xt[idx1])
     print(xt[idx2])
+    """
 
     # p1label, p1prob = predict_all_ori(test,ds)
     # p2label, p2prob = predict_per_ori(test,ds)
