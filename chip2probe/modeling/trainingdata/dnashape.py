@@ -8,6 +8,7 @@ import seaborn as sns
 
 from chip2probe.util import bio as bio
 from chip2probe.util import stats as st
+from chip2probe.util import util
 
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 

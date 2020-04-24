@@ -1,6 +1,7 @@
 
 import sys
 sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe")
+sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/libsvm-3.24/python")
 sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator/probefilter")
 
 import pandas as pd
@@ -107,15 +108,17 @@ if __name__ == '__main__':
     pd.set_option('display.max_columns', None)
     df = pd.read_csv(trainingpath, sep="\t")
 
-    modelpaths = ["/Users/vincentiusmartin/Research/chip2gcPBM/imads/model_name.model copy"]
-                          # "/Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_files/models/ets1/#ETS1_100nM_Bound_filtered_normalized_transformed_20bp_GGAT_1a2a3mer_format.model"]
+    modelpaths = ["/Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_files/models/ets1/Ets1_w12_GGAA.model",
+    "/Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_files/models/ets1/Ets1_w12_GGAT.model"]
     modelcores = ["GGAA", "GGAT"]
-    imads_models = [iMADSModel(modelpath, modelcore, 20, [1, 2, 3])
+    imads_models = [iMADSModel(modelpath, modelcore, 12, [1, 2, 3])
                     for modelpath, modelcore in
                     zip(modelpaths, modelcores)]
     imads = iMADS(imads_models, 0.2128)
-    print(imads.predict_sequence("CCTCAGGAAACAGGTGCTCCTGGAATGTTTCCTGCC"))
+    print(imads.predict_sequence("GTTTGATCCAGGAAATGGTGTCCTTCCTGTGGACCT"))
     #md = make_ets1_mutations(df)
+
+    #[{'site_start': 2, 'site_width': 20, 'best_match': 'TTGATCCAGGAAATGGTGTC', 'score': 0.7298852497549108, 'core_start': 10, 'core_width': 4, 'core_mid': 11}, {'site_start': 15, 'site_width': 20, 'best_match': 'GGTCCACAGGAAGGACACCA', 'score': 0.7321779705276468, 'core_start': 23, 'core_width': 4, 'core_mid': 24}]
 
     #pd.DataFrame(md).to_csv("mutlist.csv", index=False)
     """
