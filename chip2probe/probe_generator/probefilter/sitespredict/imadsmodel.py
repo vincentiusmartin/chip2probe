@@ -16,6 +16,7 @@ Run make in libsvm-3.24/python directory
 
 import os
 import sys
+# sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/libsvm-3.24/python")
 sys.path.append(os.path.realpath("sitespredict/libsvm/python"))
 sys.path.append(os.path.realpath("libsvm/python"))
 import svmutil
@@ -26,26 +27,26 @@ class iMADSModel(object):
     classdocs
     '''
 
-    
+
     def __init__(self, model_path, core, width, kmers):
         '''
         Constructor
         '''
-        
+
         filename = os.path.basename(model_path)
         print("Loading imads model: %s" % filename)
         self.modeldict = self.load_model(model_path)
-        
+
         self.core = core
-        self.width = width 
+        self.width = width
         self.kmers = kmers
-        
+
         # TODO:
         # if either of these params is None then check from path
         # if core is None:
         #    self.core = int(re.search("transformed\_(.*)bp",fname).group(1))
-        
-        
+
+
     def load_model(self, model_file, check_size=True):
         """
         Taken from: https://github.com/Duke-GCB/Predict-TF-Binding
@@ -57,11 +58,11 @@ class iMADSModel(object):
         model_dict = {'model': model}
         if check_size:
             # with >= libsvm-3.24, use this
-            model_dict['size'] = len(model.get_SV()[0]) 
+            model_dict['size'] = len(model.get_SV()[0])
             # with < libsvm-3.24, use this
             # model_dict['size'] = len(model.get_SV()[0]) - 1 # sv includes a -1 term that is not present in the model file, so subtract 1
         return model_dict
-    
+
     def predict(self, features, const_intercept=False):
         """
         Run prediction using svm_predict.
@@ -71,12 +72,12 @@ class iMADSModel(object):
         :return: triple of predictions, accuracy, and values from svm_predict.
         """
         feature_size = len(features)
-        if const_intercept: 
+        if const_intercept:
             feature_size += 1 # If we are to use a const intercept term, we will have one more feature
-        if 'size' in self.modeldict and self.modeldict['size'] != feature_size:
-            # vm Exception: Model size 1536 does not match feature size 384.
-            raise Exception('Model size {} does not match feature size {}.\nPlease check parameters for width, '
-                            'kmers, and const_intercept'.format(self.modeldict['size'], feature_size))
+        #if 'size' in self.modeldict and self.modeldict['size'] != feature_size:
+        #    # vm Exception: Model size 1536 does not match feature size 384.
+        #    raise Exception('Model size {} does not match feature size {}.\nPlease check parameters for width, '
+        #                    'kmers, and const_intercept'.format(self.modeldict['size'], feature_size))
         svm_matrix = dict()
         # Build the dictionary that corresponds to the matrix file
         offset = 1 # svm_matrix is a dictionary of index to value, starting at 1
@@ -87,4 +88,3 @@ class iMADSModel(object):
             svm_matrix[i + offset] = feature['value']
         predictions = svmutil.svm_predict([1.0], [svm_matrix], self.modeldict['model'], '-q')
         return predictions
-    

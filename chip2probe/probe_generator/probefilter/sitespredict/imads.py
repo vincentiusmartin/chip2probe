@@ -154,9 +154,9 @@ class iMADS(basemodel.BaseModel):
         return prediction
 
     # or predict fasta?
-    def predict_sequences(self, sequence_df, const_intercept=False, 
+    def predict_sequences(self, sequence_df, const_intercept=False,
                           transform_scores=True, key_colname="",
-                          sequence_colname="sequence", flank_colname="flank", 
+                          sequence_colname="sequence", flank_colname="flank",
                           predict_flanks=False, flank_len=10):
         """
         Do not make this as generator, because we need to use it somewhere else.
@@ -190,7 +190,7 @@ class iMADS(basemodel.BaseModel):
 
     def make_plot_data(self, predictions_dict, color = "mediumspringgreen",
                        show_model_flanks=True):
-        #predictions = self.predict_sequences(sequence_df, const_intercept, 
+        #predictions = self.predict_sequences(sequence_df, const_intercept,
         #                                    transform_scores, sequence_colname, flank_colname)
         func_dict = {}
         for key in predictions_dict:
@@ -214,9 +214,9 @@ class iMADS(basemodel.BaseModel):
                 core_rect = patches.Rectangle((pred["core_start"],0),pred["core_width"] - 1,pred["score"],
                                  facecolor=color,alpha=0.9,edgecolor='black')
                 func_pred.append({"func": "add_patch",
-                                  "args": [core_rect], 
+                                  "args": [core_rect],
                                   "kwargs": {}})
-            func_pred.append({"func": "axhline", 
+            func_pred.append({"func": "axhline",
                               "args": [self.imads_threshold],
                               "kwargs": {"color": color,
                               "linestyle": "dashed",

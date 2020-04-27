@@ -219,37 +219,6 @@ if __name__ == "__main__":
 
     t = Training(df, corelen=4).flip_one_face_orientation(["GGAA","GGAT"])
 
-    # xtr = {
-    #         "all":
-    #             BestModel(clf="RF",
-    #                       param_dict=rf_param_dict,
-    #                       train_data=t.get_training_df({
-    #                               "distance":{"type":"numerical"},
-    #                               "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True},
-    #                               "sitepref": {},
-    #                               "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
-    #                                "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-    #                                "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-    #                                "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
-    #                           })
-    #             ).run_all(),
-
-    #         "top10":
-    #             BestModel(clf="RF",
-    #                       param_dict=rf_param_dict,
-    #                       train_data=t.get_training_df({
-    #                               "distance":{"type":"numerical"},
-    #                               "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True},
-    #                               "sitepref": {},
-    #                               "flankshape": {"ds":ds, "seqin":5, "smode":"strength"},
-    #                                "flankshape": {"ds":ds, "seqin":-3, "smode":"strength"},
-    #                                "flankseq": {"k":3, "seqin":4, "smode":"strength"},
-    #                                "flankseq": {"k":3, "seqin":-4, "smode":"strength"}
-    #                           }),
-    #                       topn=10
-    #             ).run_all()
-    # }
-
     xtr = {
 
             "distance":
