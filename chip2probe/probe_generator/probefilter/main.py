@@ -65,14 +65,14 @@ if __name__ == '__main__':
                 "generate_plots": False,
                 # indicate whether or not we require all m1,m2,m3 sequences for each wild type
                 "get_complete_mutated": True,
-                # 1: make weak sites
+                # 1: make weak sites, only for imads
                 # 2: bring b1 closer to b2, fixing b2, adding flank
                 # 3: bring b2 closer to b1, fixing b1, adding flank
                 # 4: bring b1 closer to b2, fixing b2, not adding flank
                 # 5: fix distance, move binding sites to the right, adding flank
                 # 6: fix distance, move binding sites to the left, adding flank
                 # 7: fix distance, move binding sites to the right, not adding flank
-                "customs": [1, 2, 3, 4, 5, 6, 7],
+                "customs": [2, 3, 4, 5, 6, 7],
                 "tf_source": "ets1_k562",
                 # number of custom sequences
                 "ncustom": 750,
