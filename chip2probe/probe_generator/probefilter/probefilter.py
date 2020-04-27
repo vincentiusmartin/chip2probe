@@ -60,7 +60,7 @@ class ProbeFilter:
                 models[protein] = iMADS(imads_models, self.imads_cutoff[protein])  
             elif self.method == 'kompas':
                 models[protein] = Kompas(protein=protein, threshold=self.mutate_cutoff,
-                                         kmer_align_path=kmer_align_paths[protein])
+                                         kmer_align_path=self.kmer_align_paths[protein])
             # raise exception if model is not supported
             else:
                 raise Exception("Supported methods are imads and kompas. Got {}".format(method))

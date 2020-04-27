@@ -193,17 +193,23 @@ class Kompas(basemodel.BaseModel):
                                })
         return prediction
         
-    def predict_sequences(self, sequence_df, key_colname="key",
+    def predict_sequences(self, sequence_df, key_colname="",
                           sequence_colname="sequence",
                           flank_colname="flank", predict_flanks=False,
                           flank_len=10):
         '''This is a temporary function that makes predictions dict
            using the dataframe'''
 
-        seqdict = self.pred_input_todict(sequence_df, sequence_colname=sequence_colname)
+        seqdict = self.pred_input_todict(sequence_df, 
+                                         sequence_colname=sequence_colname,
+                                         key_colname=key_colname)
         if predict_flanks:
-            flank_left = bio.get_seqdict(sequence_df,"%s_left" % flank_colname, ignore_missing_colname=True)
-            flank_right = bio.get_seqdict(sequence_df,"%s_right" % flank_colname, ignore_missing_colname=True)
+            flank_left = bio.get_seqdict(sequence_df,"%s_left" % flank_colname, 
+                                         ignore_missing_colname=True,
+                                         keycolname=key_colname)
+            flank_right = bio.get_seqdict(sequence_df,"%s_right" % flank_colname, 
+                                          ignore_missing_colname=True,
+                                          keycolname=key_colname)
         if self.protein == 'ets1':
             core = (11,15)
             centerPos = 12

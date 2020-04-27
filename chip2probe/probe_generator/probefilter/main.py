@@ -27,7 +27,7 @@ if __name__ == '__main__':
                                       'runx1': "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/escores/Runx1_8mers_11111111.txt"
                                       },
                 # set the model used, either kompas or imads
-                "method": "imads",
+                "method": "kompas",
                 "kmer_align_paths": {'ets1': "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/kompas/ets1/Ets1_kmer_alignment.txt",
                                      'runx1': "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/kompas/runx1/Runx1_kmer_alignment.txt"
                                      },
