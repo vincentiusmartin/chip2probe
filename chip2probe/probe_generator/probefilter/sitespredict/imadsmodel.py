@@ -74,10 +74,10 @@ class iMADSModel(object):
         feature_size = len(features)
         if const_intercept:
             feature_size += 1 # If we are to use a const intercept term, we will have one more feature
-        if 'size' in self.modeldict and self.modeldict['size'] != feature_size:
-            # vm Exception: Model size 1536 does not match feature size 384.
-            raise Exception('Model size {} does not match feature size {}.\nPlease check parameters for width, '
-                            'kmers, and const_intercept'.format(self.modeldict['size'], feature_size))
+        #if 'size' in self.modeldict and self.modeldict['size'] != feature_size:
+        #    # vm Exception: Model size 1536 does not match feature size 384.
+        #    raise Exception('Model size {} does not match feature size {}.\nPlease check parameters for width, '
+        #                    'kmers, and const_intercept'.format(self.modeldict['size'], feature_size))
         svm_matrix = dict()
         # Build the dictionary that corresponds to the matrix file
         offset = 1 # svm_matrix is a dictionary of index to value, starting at 1
