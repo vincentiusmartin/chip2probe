@@ -5,14 +5,17 @@ import subprocess
 import pandas as pd
 import itertools
 import argparse
+import yaml
 
 from tqdm import tqdm
 
 from dictinput import inlist
-from params import paramlist as param
 
-# default tagsize
-tagsize = 36
+#read the config file here
+with open("config.yml", "r") as ymlfile:
+    conf = yaml.load(ymlfile, Loader=yaml.FullLoader)['default']
+print(conf)
+sys.exit(0)
 
 class DownloadProgressBar(tqdm):
     def update_to(self, b=1, bsize=1, tsize=None):
@@ -45,6 +48,7 @@ def handle_encode_url(indict, outdir):
         #download_url(indict[key], saveto)
 
     # ===== Running MACS2 =====
+    tagsize = 36 # default tagsize
     macs_result_path = "%s/macs_result" % (outdir)
     if not os.path.exists(macs_result_path):
         os.makedirs(macs_result_path)
@@ -74,7 +78,7 @@ def handle_encode_url(indict, outdir):
     pu_both_path = "%s/%s%s" % (macs_result_path,indict["name"],"_bothreplicates_treat_pileup.bdg")
     nrwp_preidr_path = "%s/%s%s" % (macs_result_path,indict["name"],"_bothreplicates_peaks.narrowPeak")
     nrwp_postidr_path = "%s/%s" % (idr_result_path,"idr_001p_wlist.narrowPeak")
-    args_rscript = [pu1_path, pu2_path, pu_both_path, nrwp_preidr_path, nrwp_postidr_path, param["sitecall"], param["imads_bed_path"], analysis_result_path, indict["name"]]
+    args_rscript = [pu1_path, pu2_path, pu_both_path, nrwp_preidr_path, nrwp_postidr_path, analysis_result_path, indict["name"]]
     qc_cmdlist = ["Rscript","chip.quality/main.R",pwd] + args_rscript
     print(" ".join(qc_cmdlist))
     subprocess.call(qc_cmdlist,shell=False)
@@ -96,7 +100,6 @@ if __name__=="__main__":
     parser.add_argument('index', type=int, help="Input index from dictinput.py")
     parser.add_argument('-o','--outdir', type=str, help="directory to output the results", default=".")
     args = parser.parse_args()
-    print(args)
 
     findex = args.index
     outdir = "%s/%s" % (args.outdir,inlist[findex]["name"])
@@ -123,4 +126,5 @@ if __name__=="__main__":
     pfilter_cmd = ["python3", "probefilter/main.py", pwd, "%s/analysis_result" % outdir]
     print(" ".join(pfilter_cmd))
     subprocess.call(pfilter_cmd,shell=False)
+    #ProbeFilter(**input)._run_all()
     """

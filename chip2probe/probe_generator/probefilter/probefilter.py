@@ -8,7 +8,7 @@ Created: April 21, 2020
 import sys
 import pandas as pd
 import os
-sys.path.append(os.path.realpath("sitespredict/libsvm/python"))
+#sys.path.append(os.path.realpath("sitespredict/libsvm/python"))
 from chip2probe.probe_generator.probefilter import sitespredict
 from sitespredict.pbmescore import PBMEscore
 from sitespredict.imadsmodel import iMADSModel
@@ -57,7 +57,7 @@ class ProbeFilter:
                 imads_models = [iMADSModel(modelpath, modelcore, 20, [1, 2, 3])
                                 for modelpath, modelcore in
                                 zip(self.modelpaths[protein], self.modelcores[protein])]
-                models[protein] = iMADS(imads_models, self.imads_cutoff[protein])  
+                models[protein] = iMADS(imads_models, self.imads_cutoff[protein])
             elif self.method == 'kompas':
                 models[protein] = Kompas(protein=protein, threshold=self.mutate_cutoff,
                                          kmer_align_path=self.kmer_align_paths[protein])
@@ -78,7 +78,7 @@ class ProbeFilter:
         # for each combination, get filtered probes
         spcomb = [(3, 200)]
 
-        filtered_probes = coopfilter.get_filtered_probes(seqdf=seqdf, 
+        filtered_probes = coopfilter.get_filtered_probes(seqdf=seqdf,
                                                          escores=self.escores,
                                                          models=self.models,
                                                          mutate_cutoff=self.mutate_cutoff,
@@ -120,7 +120,7 @@ class ProbeFilter:
         df = df[:10]
         ret = []
         if 1 in self.customs:
-            weak_sites = customseq.make_weak_sites(df, self.escores, self.models, 
+            weak_sites = customseq.make_weak_sites(df, self.escores, self.models,
                                                    self.tf_source, self.ncustom)
             ret = ret + weak_sites
         if 2 in self.customs:
@@ -156,7 +156,7 @@ class ProbeFilter:
         df_comb = pd.DataFrame(ret)
 
         # filter the sequences and obtain m1,m2,m3
-        filtered_probes = coopfilter.get_filtered_probes(seqdf=df_comb, 
+        filtered_probes = coopfilter.get_filtered_probes(seqdf=df_comb,
                                                          escores=self.escores,
                                                          models=self.models,
                                                          mutate_cutoff=self.mutate_cutoff,

@@ -1,28 +1,30 @@
-# args <- commandArgs(trailingOnly=TRUE)
-# print(args)
-# setwd(args[1])
-# pu1_path <- args[2]
-# pu2_path <- args[3]
-# pu_both_path <- args[4]
-# nrwp_preidr_path <- args[5]
-# nrwp_postidr_path <- args[6]
-# sites_type <- args[7] # imads or kompas
-# sites_path <- args[8] # depend on #7
-# outpath <- args[9]
-# chip_name <- args[10]
+args <- commandArgs(trailingOnly=TRUE)
+print(args)
+setwd(args[1])
+pu1_path <- args[2]
+pu2_path <- args[3]
+pu_both_path <- args[4]
+nrwp_preidr_path <- args[5]
+nrwp_postidr_path <- args[6]
+outpath <- args[7]
+chip_name <- args[8]
 
-setwd("/Users/vincentiusmartin/Research/chip2gcPBM")
-pu1_path <- "result/ets1_k562/macs_result/ets1_k562_r1_treat_pileup.bdg"
-pu2_path <- "result/ets1_k562/macs_result/ets1_k562_r2_treat_pileup.bdg"
-pu_both_path <- "result/ets1_k562/macs_result/ets1_k562_bothreplicates_treat_pileup.bdg"
-nrwp_preidr_path <- "result/ets1_k562/macs_result/ets1_k562_bothreplicates_peaks.narrowPeak"
-nrwp_postidr_path <- "result/ets1_k562/idr_result/idr_001p_wlist.narrowPeak"
-sites_type <- "kompas"
-sites_path <- "resources/imads_files/predictions/hg19_0005_Ets1_filtered.bed" # change var to imads_path
-sites_path <- "/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas/runx1_kmer_alignment.txt"
-outpath <- "result/ets1_k562/analysis_result"
-chip_name <- "ets1_k562"
-tfname <- "ets1"
+setwd("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator")
+# The conf file is read from cwd
+config <- config::get()
+
+# setwd("/Users/vincentiusmartin/Research/chip2gcPBM")
+# pu1_path <- "result/ets1_k562/macs_result/ets1_k562_r1_treat_pileup.bdg"
+# pu2_path <- "result/ets1_k562/macs_result/ets1_k562_r2_treat_pileup.bdg"
+# pu_both_path <- "result/ets1_k562/macs_result/ets1_k562_bothreplicates_treat_pileup.bdg"
+# nrwp_preidr_path <- "result/ets1_k562/macs_result/ets1_k562_bothreplicates_peaks.narrowPeak"
+# nrwp_postidr_path <- "result/ets1_k562/idr_result/idr_001p_wlist.narrowPeak"
+# sites_type <- "kompas"
+# sites_path <- "resources/imads_files/predictions/hg19_0005_Ets1_filtered.bed" # change var to imads_path
+# sites_path <- "/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas/runx1_kmer_alignment.txt"
+# outpath <- "result/ets1_k562/analysis_result"
+# chip_name <- "ets1_k562"
+# tfname <- "ets1"
 
 source("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator/chip.quality/R/quality_check.R")
 source("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator/chip.quality/R/kompas.R")
@@ -40,13 +42,15 @@ max_site_dist <- 24
 # ===== END OF CONFIGURATION ===== 
 
 cat("Reading binding sites prediction...\n")
-if (sites_type == "imads") {
-  genome_sites <- read.sites.bed(sites_path)
+if (config$sitecall_mode == "imads") {
+  bedpath <- config$imads[[config$tf]]$bedpath
+  genome_sites <- read.sites.bed(bedpath)
 } else {
-  genome_sites <- run.kompas(sites_path, nrwp_postidr_path, c(4,9) ,0.4)
+  align_path <- config$kompas[[config$tf]]$alignpath
+  pwm_pos <- c(config$kompas[[config$tf]]$pwm_core_start, config$kompas[[config$tf]]$pwm_core_end)
+  genome_sites <- run.kompas(align_path, nrwp_postidr_path, pwm_pos ,0.4)
   setDT(genome_sites, key = c("chr", "start", "end"))
 }
-
 
 cat("Reading pileup files...\n")
 pu1 <- read.pileup(pu1_path)
