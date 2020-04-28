@@ -83,5 +83,3 @@ if __name__ == '__main__':
     }
 
     ProbeFilter(**input)._run_all()
-
-    

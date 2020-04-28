@@ -6,9 +6,10 @@
 # pu_both_path <- args[4]
 # nrwp_preidr_path <- args[5]
 # nrwp_postidr_path <- args[6]
-# bed_path <- args[7]
-# outpath <- args[8]
-# chip_name <- args[9]
+# sites_type <- args[7] # imads or kompas
+# sites_path <- args[8] # depend on #7
+# outpath <- args[9]
+# chip_name <- args[10]
 
 setwd("/Users/vincentiusmartin/Research/chip2gcPBM")
 pu1_path <- "result/ets1_k562/macs_result/ets1_k562_r1_treat_pileup.bdg"
@@ -16,12 +17,15 @@ pu2_path <- "result/ets1_k562/macs_result/ets1_k562_r2_treat_pileup.bdg"
 pu_both_path <- "result/ets1_k562/macs_result/ets1_k562_bothreplicates_treat_pileup.bdg"
 nrwp_preidr_path <- "result/ets1_k562/macs_result/ets1_k562_bothreplicates_peaks.narrowPeak"
 nrwp_postidr_path <- "result/ets1_k562/idr_result/idr_001p_wlist.narrowPeak"
-bed_path <- "resources/imads_files/predictions/hg19_0005_Ets1_filtered.bed" # change var to imads_path
+sites_type <- "kompas"
+sites_path <- "resources/imads_files/predictions/hg19_0005_Ets1_filtered.bed" # change var to imads_path
+sites_path <- "/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas/runx1_kmer_alignment.txt"
 outpath <- "result/ets1_k562/analysis_result"
 chip_name <- "ets1_k562"
 tfname <- "ets1"
 
-source("chip2probe/chip2probe/probe_generator/chip.quality/R/quality_check.R")
+source("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator/chip.quality/R/quality_check.R")
+source("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator/chip.quality/R/kompas.R")
 
 probe_size <- 36
 probeseq_flank <- 10 # n to the left and n to the right
@@ -30,10 +34,20 @@ count_sites_per_peak <- c(2,3,4)
 min_site_dist <- 1
 max_site_dist <- 24
 
+# sites <- run.kompas("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas/runx1_kmer_alignment.txt", 
+#"/Users/vincentiusmartin/Research/chip2gcPBM/resources/cistrome_files_runx1/44097.bed", c(4,9), 0.39)
+
 # ===== END OF CONFIGURATION ===== 
 
 cat("Reading binding sites prediction...\n")
-genome_sites <- read.sites.bed(bed_path)
+if (sites_type == "imads") {
+  genome_sites <- read.sites.bed(sites_path)
+} else {
+  genome_sites <- run.kompas(sites_path, nrwp_postidr_path, c(4,9) ,0.4)
+  setDT(genome_sites, key = c("chr", "start", "end"))
+}
+
+
 cat("Reading pileup files...\n")
 pu1 <- read.pileup(pu1_path)
 pu2 <- read.pileup(pu2_path)
@@ -44,7 +58,7 @@ nrwp_preidr <- read.narrow.peak(nrwp_preidr_path, peak_type="all", show_peaklen=
 nrwp_postidr <- read.narrow.peak(nrwp_postidr_path, peak_type="all", show_peaklen=TRUE)
 write.table(nrwp_preidr,file=paste(outpath,"/narrowpeak_preidr.tsv",sep=''),sep="\t",row.names = FALSE, quote = FALSE)
 write.table(nrwp_postidr,file=paste(outpath,"/narrowpeak_postidr.tsv",sep=''),sep="\t",row.names = FALSE, quote = FALSE)
-plot.peaklen.dist(list(nrwp_preidr$peaklen, nrwp_postidr$peaklen), c("before_idr", "after_idr"), paste(outpath,"/peaklen_dist.pdf",sep=''), chip_name)
+#plot.peaklen.dist(list(nrwp_preidr$peaklen, nrwp_postidr$peaklen), c("before_idr", "after_idr"), paste(outpath,"/peaklen_dist.pdf",sep=''), chip_name)
 
 # ---
 
@@ -61,11 +75,12 @@ for (len in peaklen){
   merged <- merge(x = agg1, y = agg2, by = c("chr", "peak_start", "peak_end"))
   ###write.table(merged,file=paste(outpath,"/pileup_scores_span",span,".tsv",sep=''),sep="\t",row.names = FALSE, quote = FALSE)
   corr_plot_path <- paste(outpath,"/corr_plot_",len,".pdf",sep='')
+  plot.corr(log(agg1$pileup_score), log(agg2$pileup_score), corr_plot_path, chip_name=chip_name)
   
-  sites_peak <- foverlaps(genome_sites,nrwp, nomatch=NULL)[, .(
-    chr, peak_start = start, peak_end = end
-    #pref
-  )]
+  # sites_peak <- foverlaps(genome_sites,nrwp, nomatch=NULL)[, .(
+  #   chr, peak_start = start, peak_end = end
+  #   #pref
+  # )]
   
   cat("  Generating pileups boxplot...\n")
   # make boxplot and select distance
@@ -91,10 +106,10 @@ for (len in peaklen){
   }
 }
 all_tbl <- rbindlist(datalist)  %>%
-        mutate(s1 = s1 - seqstart + 1, 
-               s2 = s2 - seqstart + 1,
-               tf1 = tfname,
-               tf2 = tfname)
+        mutate(mid_1 = mid_1 - seqstart + 1, 
+               mid_2 = mid_2 - seqstart + 1,
+               tf1 = chip_name,
+               tf2 = chip_name)
 all_tbl$key <- sprintf("sequence%s",seq.int(nrow(all_tbl)))
 tbl_path <- paste(outpath,"/sites_all.tsv",sep='')
 write.table(all_tbl,file=tbl_path,sep="\t",row.names = FALSE, quote = FALSE)

@@ -9,29 +9,10 @@ import argparse
 from tqdm import tqdm
 
 from dictinput import inlist
+from params import paramlist as param
 
 # default tagsize
 tagsize = 36
-
-#===============
-bedpath = "/Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_files/predictions/hg19_0005_Ets1_filtered.bed"
-
-# Analysis directory
-escore_short_path = "/Users/vincentiusmartin/Research/chip2gcPBM/resources/escores/ets1_escores.txt"
-escore_map_path = "/Users/vincentiusmartin/Research/chip2gcPBM/resources/escores/index_short_to_long.csv"
-
-# for iMADS, must specify cores and model files
-modelcores = ["GGAA",  "GGAT"]
-modelpaths = ["/Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_files/models/ets1/ETS1_100nM_Bound_filtered_normalized_transformed_20bp_GGAA_1a2a3mer_format.model",
-             "/Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_files/models/ets1/ETS1_100nM_Bound_filtered_normalized_transformed_20bp_GGAT_1a2a3mer_format.model"]
-
-modelwidth = 20 # TODO: confirm if we can get length without manually specifying it
-imads_cutoff = 0.2128
-model_kmers = [1,2,3]
-
-escore_cutoff = 0.4
-
-# ================
 
 class DownloadProgressBar(tqdm):
     def update_to(self, b=1, bsize=1, tsize=None):
@@ -61,7 +42,7 @@ def handle_encode_url(indict, outdir):
         chipdata[key] = saveto
         chip_info += "%s: %s\n" % (key,fname)
         print("Downloading %s to %s:" % (key,saveto))
-        download_url(indict[key], saveto)
+        #download_url(indict[key], saveto)
 
     # ===== Running MACS2 =====
     macs_result_path = "%s/macs_result" % (outdir)
@@ -71,7 +52,7 @@ def handle_encode_url(indict, outdir):
     chip_files = [chipdata[x] if x in indict.keys() else "-" for x in chip_list]
     macs_cmdlist = ["./macs2.sh"] + chip_files + ["%s/%s" % (macs_result_path,indict["name"]), str(tagsize)]
     print(" ".join(macs_cmdlist))
-    subprocess.call(macs_cmdlist,shell=False)
+    #subprocess.call(macs_cmdlist,shell=False)
     print("Finished running macs, results are saved in %s" % macs_result_path)
 
     idr_result_path = "%s/idr_result" % (outdir)
@@ -80,7 +61,7 @@ def handle_encode_url(indict, outdir):
     print("Running idr...")
     idr_cmdlist = ["./idr.sh","%s/%s" % (macs_result_path,indict["name"]),idr_result_path]
     print(" ".join(idr_cmdlist))
-    subprocess.call(idr_cmdlist,shell=False)
+    #subprocess.call(idr_cmdlist,shell=False)
     print("Finished running idr, results are saved in %s" % idr_result_path)
 
     analysis_result_path = "%s/analysis_result" % (outdir)
@@ -93,7 +74,7 @@ def handle_encode_url(indict, outdir):
     pu_both_path = "%s/%s%s" % (macs_result_path,indict["name"],"_bothreplicates_treat_pileup.bdg")
     nrwp_preidr_path = "%s/%s%s" % (macs_result_path,indict["name"],"_bothreplicates_peaks.narrowPeak")
     nrwp_postidr_path = "%s/%s" % (idr_result_path,"idr_001p_wlist.narrowPeak")
-    args_rscript = [pu1_path, pu2_path, pu_both_path, nrwp_preidr_path, nrwp_postidr_path, bedpath, analysis_result_path, indict["name"]]
+    args_rscript = [pu1_path, pu2_path, pu_both_path, nrwp_preidr_path, nrwp_postidr_path, param["sitecall"], param["imads_bed_path"], analysis_result_path, indict["name"]]
     qc_cmdlist = ["Rscript","chip.quality/main.R",pwd] + args_rscript
     print(" ".join(qc_cmdlist))
     subprocess.call(qc_cmdlist,shell=False)
@@ -120,7 +101,7 @@ if __name__=="__main__":
     findex = args.index
     outdir = "%s/%s" % (args.outdir,inlist[findex]["name"])
 
-    """
+
     if not os.path.exists(outdir):
         print("Make directory %s" % outdir)
         os.makedirs(outdir)
@@ -132,8 +113,9 @@ if __name__=="__main__":
         handle_cistrome(inlist[findex], outdir)
     else:
         raise Exception("Type is not supported")
-    """
 
+
+    """
     # We need sites_all.tsv from the previous part, in here, we should have the
     # file already.
     # TODO: we need to avoid hardcode appending path like this
@@ -141,3 +123,4 @@ if __name__=="__main__":
     pfilter_cmd = ["python3", "probefilter/main.py", pwd, "%s/analysis_result" % outdir]
     print(" ".join(pfilter_cmd))
     subprocess.call(pfilter_cmd,shell=False)
+    """
