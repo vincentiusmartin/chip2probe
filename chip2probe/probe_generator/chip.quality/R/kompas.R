@@ -1,10 +1,10 @@
 library(data.table)
-library(dplyr) 
 library(plyr) 
+library(dplyr) 
 library(tidyr)
 library(purrr)
-library("BSgenome.Hsapiens.UCSC.hg19") # or hg19
-setwd("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas")
+library("BSgenome.Hsapiens.UCSC.hg19")
+library("BSgenome.Hsapiens.UCSC.hg38")
 
 # kmer_alignment_file <- "runx1_kmer_alignment.txt"
 # peak_file = '/Users/vincentiusmartin/Research/chip2gcPBM/resources/cistrome_files_runx1/44097.bed'
@@ -17,7 +17,8 @@ setwd("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas"
 #' @export
 #' @examples
 #' run.kompas
-run.kompas <- function(kmer_alignment_file, peak_file, corepos_pwm, threshold, zerobased=FALSE){
+run.kompas <- function(kmer_alignment_file, peak_file, corepos_pwm, threshold, 
+                       zerobased=FALSE, genomever="hg19"){
   # table operation, we separate cells that have multiple values into different rows
   align_df <- fread(kmer_alignment_file, skip=7) %>%
     mutate(kposition = as.character(gsub("\\[|\\]", "",kposition))) %>%
@@ -65,8 +66,20 @@ run.kompas <- function(kmer_alignment_file, peak_file, corepos_pwm, threshold, z
   min_peaklen <- ifelse(motif_len > k + 1, motif_len, k + 1)
   peak_df <- unique(peak_df[peak_df$end - peak_df$start > min_peaklen,]) # filter for short sequences the caller would have trouble with
   
+  if (genomever == "hg19") {
+    hs_gene <- BSgenome.Hsapiens.UCSC.hg19
+  } else {
+    hs_gene <- BSgenome.Hsapiens.UCSC.hg38
+  }
+  # getSeq(
+  #   hs_gene,
+  #   "chr17",
+  #   start = 81285628,
+  #   end = 81285852
+  # )
+  
   peak_sequences <- getSeq(
-    BSgenome.Hsapiens.UCSC.hg19,
+    hs_gene,
     peak_df$chr,
     start = peak_df$start,
     end = peak_df$end
@@ -81,12 +94,12 @@ run.kompas <- function(kmer_alignment_file, peak_file, corepos_pwm, threshold, z
   
   match_fwd <- lapply(fwds, kmer.match, escore_df = align_df, k = k)
   center_fwd <- mapply(find.center, match_fwd, orient="fwd", seq_lens, center_pos=center_pos, threshold=threshold)
-  sites_fwd <- rbindlist(mapply(get.sites, center_fwd, peak_list, orient='fwd', zerobased=zerobased, SIMPLIFY=FALSE)) %>%
+  sites_fwd <- rbindlist(mapply(get.sites, center_fwd, peak_list, motif_len, orient='fwd', zerobased=zerobased, SIMPLIFY=FALSE)) %>%
     filter_all(all_vars(!is.na(.)))
   
   match_rc <- lapply(rev_comps, kmer.match, escore_df = align_df, k = k)
   center_rc <- mapply(find.center, match_rc, orient="rc", seq_lens, center_pos=center_pos, threshold=threshold)
-  sites_rc <- rbindlist(mapply(get.sites, center_rc, peak_list, orient='rc', zerobased=zerobased , SIMPLIFY=FALSE)) %>% 
+  sites_rc <- rbindlist(mapply(get.sites, center_rc, peak_list, motif_len, orient='rc', zerobased=zerobased , SIMPLIFY=FALSE)) %>% 
     filter_all(all_vars(!is.na(.)))
   
   
@@ -156,7 +169,7 @@ find.center <- function(match_df, orient, seqlen, center_pos, threshold=0.4){
   return(sort(md$center_site))
 }
 
-get.sites <- function(center_list, peak_coord, orient, zerobased=FALSE){
+get.sites <- function(center_list, peak_coord, motif_len, orient, zerobased=FALSE){
   #if(nrow) peak_coord
   seqlen <- peak_coord$end - peak_coord$start + 1
   centers <- unlist(center_list)

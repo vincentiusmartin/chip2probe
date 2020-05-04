@@ -1,9 +1,10 @@
 default:
   # ==== DEFINE PARAMETER FOR THE CURRENT RUN ====
-  sitecall_mode: imads # kompas
-  tf:
+  sitecall_mode: kompas # imads/kompas
+  tf: # this will determine homotypic / heterotypic
     - ets1
     - runx1
+  genomever: hg19
 
   # ==== ESCORE ====
   escore_map_paths: /Users/vincentiusmartin/Research/chip2gcPBM/resources/escores/index_short_to_long.csv
@@ -13,9 +14,9 @@ default:
     ets1: /Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/escores/Ets1_8mers_11111111.txt
     runx1: /Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/escores/Runx1_8mers_11111111.txt
 
-  imads_cutoff":
-    ets1': 0.2128
-    runx1': 0.3061
+  imads_cutoff:
+    ets1: 0.2128
+    runx1: 0.3061
 
   # IMADS
   imads:
@@ -41,7 +42,9 @@ default:
   # KOMPAS
   kompas:
     ets1:
-      alignpath: /Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/kompas/ets1/Ets1_kmer_alignment.txt
+      alignpath: /Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas/ets1_kmer_alignment.txt
+      pwm_core_start: 3
+      pwm_core_end: 7
     runx1:
       alignpath: /Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas/runx1_kmer_alignment.txt
       pwm_core_start: 4

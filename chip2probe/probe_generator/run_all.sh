@@ -10,7 +10,7 @@
 
 # TO RUN: sbatch run_all.sh
 
-index=0 #${input[SLURM_ARRAY_TASK_ID]}
+index=2 #${input[SLURM_ARRAY_TASK_ID]}
 outdir="/Users/vincentiusmartin/Research/chip2gcPBM/result" #"/Users/vincentiusmartin/Research/chip2gcPBM/result" "/data/gordanlab/vincentius/cooperative_probe/result"
 
 echo "python run_all.py $index -o $outdir"

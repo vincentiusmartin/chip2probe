@@ -9,10 +9,6 @@ nrwp_postidr_path <- args[6]
 outpath <- args[7]
 chip_name <- args[8]
 
-setwd("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator")
-# The conf file is read from cwd
-config <- config::get()
-
 # setwd("/Users/vincentiusmartin/Research/chip2gcPBM")
 # pu1_path <- "result/ets1_k562/macs_result/ets1_k562_r1_treat_pileup.bdg"
 # pu2_path <- "result/ets1_k562/macs_result/ets1_k562_r2_treat_pileup.bdg"
@@ -27,7 +23,6 @@ config <- config::get()
 # tfname <- "ets1"
 
 source("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator/chip.quality/R/quality_check.R")
-source("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator/chip.quality/R/kompas.R")
 
 probe_size <- 36
 probeseq_flank <- 10 # n to the left and n to the right
@@ -36,21 +31,16 @@ count_sites_per_peak <- c(2,3,4)
 min_site_dist <- 1
 max_site_dist <- 24
 
+#setwd("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator")
+# === READ CONFIG FILE ===
+# The conf file is read from cwd (i.e. args[1])
+config <- config::get()
+genome_sites <- get.genome.sites(config, nrwp_postidr_path, genomever=config$genomever)
+
 # sites <- run.kompas("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas/runx1_kmer_alignment.txt", 
 #"/Users/vincentiusmartin/Research/chip2gcPBM/resources/cistrome_files_runx1/44097.bed", c(4,9), 0.39)
 
 # ===== END OF CONFIGURATION ===== 
-
-cat("Reading binding sites prediction...\n")
-if (config$sitecall_mode == "imads") {
-  bedpath <- config$imads[[config$tf]]$bedpath
-  genome_sites <- read.sites.bed(bedpath)
-} else {
-  align_path <- config$kompas[[config$tf]]$alignpath
-  pwm_pos <- c(config$kompas[[config$tf]]$pwm_core_start, config$kompas[[config$tf]]$pwm_core_end)
-  genome_sites <- run.kompas(align_path, nrwp_postidr_path, pwm_pos ,0.4)
-  setDT(genome_sites, key = c("chr", "start", "end"))
-}
 
 cat("Reading pileup files...\n")
 pu1 <- read.pileup(pu1_path)
@@ -77,14 +67,9 @@ for (len in peaklen){
   agg1 <- calculate.peak.pileup(nrwp, pu1, logpileup=FALSE)
   agg2 <- calculate.peak.pileup(nrwp, pu2, logpileup=FALSE)
   merged <- merge(x = agg1, y = agg2, by = c("chr", "peak_start", "peak_end"))
-  ###write.table(merged,file=paste(outpath,"/pileup_scores_span",span,".tsv",sep=''),sep="\t",row.names = FALSE, quote = FALSE)
+  #write.table(merged,file=paste(outpath,"/pileup_scores_span",span,".tsv",sep=''),sep="\t",row.names = FALSE, quote = FALSE)
   corr_plot_path <- paste(outpath,"/corr_plot_",len,".pdf",sep='')
   plot.corr(log(agg1$pileup_score), log(agg2$pileup_score), corr_plot_path, chip_name=chip_name)
-  
-  # sites_peak <- foverlaps(genome_sites,nrwp, nomatch=NULL)[, .(
-  #   chr, peak_start = start, peak_end = end
-  #   #pref
-  # )]
   
   cat("  Generating pileups boxplot...\n")
   # make boxplot and select distance
@@ -102,7 +87,8 @@ for (len in peaklen){
   for (ct in count_sites_per_peak){
     peaks_selected <- peak_sites[peak_sites$site_count == ct,] %>% select(-site_count) # count is not needed after this
     sites_all_dist <- get.consecutive.sites.in.peak(peaks_selected, genome_sites)
-    sites_within_range <- get.probeseq.in.range(sites_all_dist, min_site_dist, max_site_dist, probe_len = probe_size, flank_size = probeseq_flank)
+    sites_within_range <- get.probeseq.in.range(sites_all_dist, min_site_dist, max_site_dist, probe_len = probe_size, flank_size = probeseq_flank, 
+                                                genomever=config$genomever)
     sites_within_range$sites_in_peak = ct
     sites_within_range$peaklen = len
     idx <- idx + 1 # index starts with 1 in R

@@ -1,7 +1,9 @@
 library(data.table)
-library(dplyr)
 library(ggplot2)
-library("BSgenome.Hsapiens.UCSC.hg19") 
+library(dplyr)
+library("BSgenome.Hsapiens.UCSC.hg19")
+library("BSgenome.Hsapiens.UCSC.hg38")
+source("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator/chip.quality/R/kompas.R")
 
 # ================= ChIP-seq part ================= 
 
@@ -139,6 +141,30 @@ read.sites.bed <- function(bed_path){
   return(genome_sites)
 }
 
+# ================= Read sites bed using configuration ================= 
+#' peak file is only needed when kompas is used
+get.genome.sites <- function(config, peak_file="", genomever="hg19"){
+  sites_type <- config$sitecall_mode
+  tfname <- config$tf[1] # if homotypic, always take the first one
+  
+  cat("Reading binding sites prediction...\n")
+  if(sites_type == "imads"){
+    cat("Using iMADS bed file...\n")
+    bedpath <- config$imads[[tfname]]$bedpath
+    genome_sites <- read.sites.bed(bedpath)
+  }else{
+    align_path <- config$kompas[[tfname]]$alignpath
+    pwm_start <- config$kompas[[tfname]]$pwm_core_start
+    pwm_end <- config$kompas[[tfname]]$pwm_core_end
+    pwm_pos <- c(pwm_start, pwm_end)
+    cat("Running Kompas for ", chip_name,"...\n",sep="")
+    genome_sites <- run.kompas(align_path, peak_file, pwm_pos ,0.4, genomever=genomever)
+    setDT(genome_sites, key = c("chr", "start", "end"))
+  }
+  
+  return(genome_sites)
+}
+
 # ================= Analysis with genome sites and macs file =================
 
 #' Get binding site count
@@ -233,7 +259,8 @@ get.consecutive.sites.in.peak <- function(peak_df, sites_df, score_colname = "pi
 #' @export
 #' @examples
 #' get.probeseq.in.range 
-get.probeseq.in.range <- function(sites_in_peak_df, min_dist, max_dist, probe_len = 36, flank_size = 0){
+get.probeseq.in.range <- function(sites_in_peak_df, min_dist, max_dist, 
+                                  probe_len = 36, flank_size = 0, genomever="hg19"){
   # TODO: filter chrM?
   # Get binding sites in min_dist .. max_dist
   # if no sites are within distance, a warning message would show up:
@@ -248,22 +275,27 @@ get.probeseq.in.range <- function(sites_in_peak_df, min_dist, max_dist, probe_le
       seqend =  mid_2 + floor((probe_len - distance) / 2)
     )
   
+  if (genomever == "hg19") {
+    hs_gene <- BSgenome.Hsapiens.UCSC.hg19
+  }else{
+    hs_gene <- BSgenome.Hsapiens.UCSC.hg38
+  }
   # don't add +1 on everything to conform with one index
   sequences <- getSeq(
-    BSgenome.Hsapiens.UCSC.hg19,
+    hs_gene,
     sites_within_range$chr,
     start = sites_within_range$seqstart,
     end = sites_within_range$seqend
   )
   
   flank_left <- getSeq(
-    BSgenome.Hsapiens.UCSC.hg19,
+    hs_gene,
     sites_within_range$chr,
     start = sites_within_range$seqstart - flank_size,
     end = sites_within_range$seqstart - 1
   )
   flank_right <- getSeq(
-    BSgenome.Hsapiens.UCSC.hg19,
+    hs_gene,
     sites_within_range$chr,
     start = sites_within_range$seqend,
     end = sites_within_range$seqend + flank_size - 1

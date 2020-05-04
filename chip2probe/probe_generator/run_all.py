@@ -14,8 +14,6 @@ from dictinput import inlist
 #read the config file here
 with open("config.yml", "r") as ymlfile:
     conf = yaml.load(ymlfile, Loader=yaml.FullLoader)['default']
-print(conf)
-sys.exit(0)
 
 class DownloadProgressBar(tqdm):
     def update_to(self, b=1, bsize=1, tsize=None):
@@ -89,7 +87,7 @@ def handle_cistrome(indict, outdir):
         os.makedirs(analysis_result_path)
     print("Running analysis...")
     pwd = os.path.dirname(os.path.realpath(__file__))
-    args_rscript = [indict["path"], bedpath, analysis_result_path, indict["name"]]
+    args_rscript = [indict["path"], analysis_result_path, indict["name"]]
     qc_cmdlist = ["Rscript","chip.quality/main_cistrome.R",pwd] + args_rscript
     print(" ".join(qc_cmdlist))
     subprocess.call(qc_cmdlist,shell=False)
