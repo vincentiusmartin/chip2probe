@@ -9,7 +9,7 @@ import yaml
 
 from tqdm import tqdm
 
-from dictinput import inlist
+from homotypic_dictinput import inlist
 
 #read the config file here
 with open("config.yml", "r") as ymlfile:

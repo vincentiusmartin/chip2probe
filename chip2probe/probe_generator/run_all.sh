@@ -10,8 +10,9 @@
 
 # TO RUN: sbatch run_all.sh
 
-index=2 #${input[SLURM_ARRAY_TASK_ID]}
+index=0 #${input[SLURM_ARRAY_TASK_ID]}
 outdir="/Users/vincentiusmartin/Research/chip2gcPBM/result" #"/Users/vincentiusmartin/Research/chip2gcPBM/result" "/data/gordanlab/vincentius/cooperative_probe/result"
+clustertype="heterotypic" # homotypic/heterotpic
 
-echo "python run_all.py $index -o $outdir"
-python3 run_all.py $index -o $outdir
+echo "python ${clustertype}_run_all.py $index -o $outdir"
+python3 ${clustertype}_run_all.py $index -o $outdir

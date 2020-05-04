@@ -4,8 +4,10 @@ default:
   tf: # this will determine homotypic / heterotypic
     - ets1
     - runx1
-  genomever: hg19
+  genomever: hg38
 
+  # Below is the general part, it is okay to put any information since run specific
+  # information is provided above.
   # ==== ESCORE ====
   escore_map_paths: /Users/vincentiusmartin/Research/chip2gcPBM/resources/escores/index_short_to_long.csv
   escore_short_paths:

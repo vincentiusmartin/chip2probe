@@ -1,3 +1,11 @@
+args <- commandArgs(trailingOnly=TRUE)
+print(args)
+setwd(args[1])
+pu_tf1_path <- args[2]
+nrwp_tf1_path <- args[3]
+pu_tf2_path <- args[4]
+nrwp_tf2_path <- args[5]
+
 pu1_path <- "../../result/ets1_k562/macs_result/ets1_k562_bothreplicates_treat_pileup.bdg"
 pu2_path <- "../../result/runx1_k562/macs_result/runx1_k562_bothrs_treat_pileup.bdg"
 
@@ -16,8 +24,8 @@ allowed_distance <- c(4,24)
 genome_sites1 <- read.sites.bed(bed_tf1_path)
 genome_sites2 <- read.sites.bed(bed_tf2_path)
 
-pu1 <- read.pileup(pu1_path)
-pu2 <- read.pileup(pu2_path)
+pu1 <- read.pileup(pu_tf1_path)
+pu2 <- read.pileup(pu_tf2_path)
 
 nrwp1 <- read.narrow.peak(nrwp1_path, peak_length=peaklen, peak_type="summit")
 nrwp2 <- read.narrow.peak(nrwp2_path, peak_length=peaklen, peak_type="summit")

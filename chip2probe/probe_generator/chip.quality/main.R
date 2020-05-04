@@ -74,8 +74,8 @@ for (len in peaklen){
   cat("  Generating pileups boxplot...\n")
   # make boxplot and select distance
   agg_both <- calculate.peak.pileup(nrwp, pu_both, logpileup=TRUE) 
-  site_count <- get.site.count(nrwp,genome_sites)
-  peak_sites <- merge(x = site_count, y = agg_both, by = c("chr", "peak_start", "peak_end"))
+  scount <- get.site.count(nrwp,genome_sites)
+  peak_sites <- merge(x = scount, y = agg_both, by = c("chr", "peak_start", "peak_end"))
   sites_ctpile <- data.frame(count = merged$site.count, pileup = merged$pileup_score)
   box_plot_path <- paste(outpath,"/groupedbox_",len,".pdf",sep='')
   #plot.pileup.distributions(peak_sites$site.count, peak_sites$pileup.score,box_plot_path,chip_name=chip_name)
