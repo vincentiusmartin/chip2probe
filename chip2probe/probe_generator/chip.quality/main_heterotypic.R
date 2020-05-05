@@ -5,38 +5,56 @@ pu_tf1_path <- args[2]
 nrwp_tf1_path <- args[3]
 pu_tf2_path <- args[4]
 nrwp_tf2_path <- args[5]
+outpath <- args[6]
 
-pu1_path <- "../../result/ets1_k562/macs_result/ets1_k562_bothreplicates_treat_pileup.bdg"
-pu2_path <- "../../result/runx1_k562/macs_result/runx1_k562_bothrs_treat_pileup.bdg"
+setwd("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator" )
+pu_tf1_path <- "/Users/vincentiusmartin/Research/chip2gcPBM/result/ets1_k562/macs_result/ets1_k562_bothreplicates_treat_pileup.bdg"
+nrwp_tf1_path <- "/Users/vincentiusmartin/Research/chip2gcPBM/result/ets1_k562/idr_result/idr_001p_wlist.narrowPeak"
+pu_tf2_path <- "/Users/vincentiusmartin/Research/chip2gcPBM/result/runx1_k562/macs_result/runx1_k562_bothreplicates_treat_pileup.bdg"
+nrwp_tf2_path <- "/Users/vincentiusmartin/Research/chip2gcPBM/result/runx1_k562/idr_result/idr_001p_wlist.narrowPeak"
 
-nrwp1_path <- "../../result/ets1_k562/idr_result/idr_001p_wlist.narrowPeak"
-nrwp2_path <- "../../result/runx1_k562/idr_result/idr_001p_wlist.005i"
-
-bed1_path <- "../../resources/imads_files/predictions/hg19_0005_Ets1_filtered.bed"
-bed2_path <- "../../resources/imads_files/predictions/hg19_0010_Runx1_filtered.bed"
-
-setwd("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/probe_generator")
 source("chip.quality/R/quality_check.R")
 
 peaklen <- 300
 allowed_distance <- c(4,24)
 
-genome_sites1 <- read.sites.bed(bed_tf1_path)
-genome_sites2 <- read.sites.bed(bed_tf2_path)
+# TODO: put peak pileup in the result
+config <- config::get()
+genome_sites1 <- get.genome.sites(config, config$tf[1], nrwp_tf1_path, genomever=config$genomever)
+genome_sites2 <- get.genome.sites(config, config$tf[2], nrwp_tf2_path, genomever=config$genomever)
 
-pu1 <- read.pileup(pu_tf1_path)
-pu2 <- read.pileup(pu_tf2_path)
+nrwp1 <- read.narrow.peak(nrwp_tf1_path, peak_length=peaklen, peak_type="summit")
+if (pu_tf1_path != "-"){
+  pu1 <- read.pileup(pu_tf1_path)
+  agg1 <- calculate.peak.pileup(nrwp1, pu1, logpileup=TRUE) 
+}else{ # if pileup is not available, just use the narrow peak file
+  agg1 <- nrwp1 %>% dplyr::rename(
+    peak_start = start,
+    peak_end = end
+  )
+  setDT(agg1, key=c("chr", "peak_start", "peak_end"))
+}
 
-nrwp1 <- read.narrow.peak(nrwp1_path, peak_length=peaklen, peak_type="summit")
-nrwp2 <- read.narrow.peak(nrwp2_path, peak_length=peaklen, peak_type="summit")
+nrwp2 <- read.narrow.peak(nrwp_tf2_path, peak_length=peaklen, peak_type="summit")
+if (pu_tf2_path != "-"){
+  pu2 <- read.pileup(pu_tf2_path)
+  agg2 <- calculate.peak.pileup(nrwp2, pu2, logpileup=TRUE) 
+}else{
+  agg2 <- nrwp2 %>% dplyr::rename(
+    peak_start = start,
+    peak_end = end
+  )
+  setDT(agg2, key=c("chr", "peak_start", "peak_end"))
+}
 
-agg1 <- calculate.peak.pileup(nrwp1, pu1, logpileup=TRUE) 
-agg2 <- calculate.peak.pileup(nrwp2, pu2, logpileup=TRUE) 
 
 # get overlap between peak files
 all_sites <- get.heterotypic.sites(agg1, agg2, genome_sites1, genome_sites2, allowed_distance)
 all_seqs <- get.probeseq.in.range(all_sites, allowed_distance[1], allowed_distance[2], flank_size = 10)
-all_seqs$s1 <- all_seqs$s1 - all_seqs$seqstart
-all_seqs$s2 <- all_seqs$s2 - all_seqs$seqstart
+all_seqs$s1 <- all_seqs$mid_1 - all_seqs$seqstart - 1
+all_seqs$s2 <- all_seqs$mid_2 - all_seqs$seqstart - 1
 
-write.csv(all_seqs, "test.csv", row.names = FALSE, quote = FALSE)
+all_seqs$key <- sprintf("sequence%s",seq.int(nrow(all_seqs)))
+tbl_path <- paste(outpath,"/sites_all.tsv",sep='')
+cat("Write result to",tbl_path)
+write.table(all_seqs,file=tbl_path,sep="\t",row.names = FALSE, quote = FALSE)

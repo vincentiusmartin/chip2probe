@@ -12,5 +12,12 @@ inlist = [
         "tf2_r2":"https://www.encodeproject.org/files/ENCFF892CVA/@@download/ENCFF892CVA.bam",
         "tf2_c1":"https://www.encodeproject.org/files/ENCFF023YMB/@@download/ENCFF023YMB.bam",
         "tf2_c2":"https://www.encodeproject.org/files/ENCFF092ACZ/@@download/ENCFF092ACZ.bam",
+    },
+    {
+        "type" : "cistrome",
+        "tf1_name" : "ets1_cid",
+        "tf1_path" : "/Users/vincentiusmartin/Research/chip2gcPBM/resources/cistrome_files_ets1/46068.bed",
+        "tf2_name" : "runx1_cid",
+        "tf2_path" : "/Users/vincentiusmartin/Research/chip2gcPBM/resources/cistrome_files_runx1/44097.bed"
     }
 ]

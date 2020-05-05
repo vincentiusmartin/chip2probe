@@ -143,13 +143,11 @@ read.sites.bed <- function(bed_path){
 
 # ================= Read sites bed using configuration ================= 
 #' peak file is only needed when kompas is used
-get.genome.sites <- function(config, peak_file="", genomever="hg19"){
+get.genome.sites <- function(config, tfname, peak_file="", genomever="hg19"){
   sites_type <- config$sitecall_mode
-  tfname <- config$tf[1] # if homotypic, always take the first one
   
-  cat("Reading binding sites prediction...\n")
   if(sites_type == "imads"){
-    cat("Using iMADS bed file...\n")
+    cat("Using iMADS bed file", tfname ,"...\n")
     bedpath <- config$imads[[tfname]]$bedpath
     genome_sites <- read.sites.bed(bedpath)
   }else{
@@ -157,7 +155,7 @@ get.genome.sites <- function(config, peak_file="", genomever="hg19"){
     pwm_start <- config$kompas[[tfname]]$pwm_core_start
     pwm_end <- config$kompas[[tfname]]$pwm_core_end
     pwm_pos <- c(pwm_start, pwm_end)
-    cat("Running Kompas for ", chip_name,"...\n",sep="")
+    cat("Running Kompas for ", tfname,"...\n",sep="")
     genome_sites <- run.kompas(align_path, peak_file, pwm_pos ,0.4, genomever=genomever)
     setDT(genome_sites, key = c("chr", "start", "end"))
   }
@@ -269,8 +267,8 @@ get.probeseq.in.range <- function(sites_in_peak_df, min_dist, max_dist,
     filter(distance >= min_dist & distance <= max_dist)  %>%
     # rowwise() %>% # need to calculate each row separately <- DON'T USE THIS
     mutate(
-      mid_1 = ifelse(site_start_1 < site_start_2, ((site_start_1 + site_end_1) / 2), ((site_start_2 + site_end_2) / 2)),
-      mid_2 = ifelse(site_start_1 > site_start_2, ((site_start_1 + site_end_1) / 2), ((site_start_2 + site_end_2) / 2)),
+      mid_1 = ifelse(site_start_1 < site_start_2, ((site_start_1 + site_end_1) %/% 2), ((site_start_2 + site_end_2) %/% 2)),
+      mid_2 = ifelse(site_start_1 > site_start_2, ((site_start_1 + site_end_1) %/% 2), ((site_start_2 + site_end_2) %/% 2)),
       seqstart = mid_1 - ceiling((probe_len - distance) / 2) + 1,
       seqend =  mid_2 + floor((probe_len - distance) / 2)
     )

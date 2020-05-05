@@ -115,7 +115,6 @@ if __name__=="__main__":
     else:
         raise Exception("Type is not supported")
 
-
     """
     # We need sites_all.tsv from the previous part, in here, we should have the
     # file already.

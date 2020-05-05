@@ -5,10 +5,10 @@ cistrome_path <- args[2]
 outpath <- args[3]
 chip_name <- args[4]
 
-setwd("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator")
-cistrome_path <- "/Users/vincentiusmartin/Research/chip2gcPBM/resources/cistrome_files_ets1/44093.bed"
-outpath <- "/Users/vincentiusmartin/Research/chip2gcPBM/result/cistrome_ets1_44092/analysis_result"
-chip_name <- "cistrome_ets1_44093"
+# setwd("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator")
+# cistrome_path <- "/Users/vincentiusmartin/Research/chip2gcPBM/resources/cistrome_files_ets1/44093.bed"
+# outpath <- "/Users/vincentiusmartin/Research/chip2gcPBM/result/cistrome_ets1_44092/analysis_result"
+# chip_name <- "cistrome_ets1_44093"
 
 source("chip.quality/R/quality_check.R")
 
@@ -22,7 +22,7 @@ max_bsite_dist <- 24
 config <- config::get()
 
 cat("Reading binding sites prediction and input peaks...\n")
-genome_sites <- get.genome.sites(config, cistrome_path, genomever=config$genomever)#config$genomever)
+genome_sites <- get.genome.sites(config, config$tf[1], cistrome_path, genomever=config$genomever)#config$genomever)
 nrwp_cistrome_all <- read.narrow.peak(cistrome_path, peak_type="all", show_peaklen=TRUE)
 plot.peaklen.dist(list(nrwp_cistrome_all$peaklen), c("peaklen distribution"), paste(outpath,"/peaklen_dist.pdf",sep=''), chip_name)
 

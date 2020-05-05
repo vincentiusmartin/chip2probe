@@ -4,7 +4,7 @@ default:
   tf: # this will determine homotypic / heterotypic
     - ets1
     - runx1
-  genomever: hg38
+  genomever: hg19
 
   # Below is the general part, it is okay to put any information since run specific
   # information is provided above.

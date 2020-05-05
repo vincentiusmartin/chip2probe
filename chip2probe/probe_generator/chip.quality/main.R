@@ -35,7 +35,8 @@ max_site_dist <- 24
 # === READ CONFIG FILE ===
 # The conf file is read from cwd (i.e. args[1])
 config <- config::get()
-genome_sites <- get.genome.sites(config, nrwp_postidr_path, genomever=config$genomever)
+# if homotypic, always take the first one -> config$tf[1]
+genome_sites <- get.genome.sites(config, config$tf[1], nrwp_postidr_path, genomever=config$genomever)
 
 # sites <- run.kompas("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas/runx1_kmer_alignment.txt", 
 #"/Users/vincentiusmartin/Research/chip2gcPBM/resources/cistrome_files_runx1/44097.bed", c(4,9), 0.39)
