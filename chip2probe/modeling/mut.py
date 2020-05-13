@@ -6,6 +6,7 @@ sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2pro
 
 import pandas as pd
 import random
+import math
 
 from trainingdata.training import Training
 from trainingdata.dnashape import DNAShape
@@ -15,12 +16,62 @@ from sitespredict.imadsmodel import iMADSModel
 
 from main import *
 
+"""
+Selection criteria:
+    1. change the core ( 2 mutants )
+    2. different mutation, similar preference
+    3.
+"""
 
-def make_ets1_mutations(df, flen=2):
+def get_similar_score(mutlist, idx, rel_tol=1e-2):
+    sim = []
+    srt = sorted(mutlist, key=lambda k: k[idx]['score'])
+    justadded = False
+    for i in range(1, len(srt)):
+        if math.isclose(srt[i-1][idx]["score"], srt[i][idx]["score"], rel_tol=rel_tol):
+            if not justadded:
+                sim.append(srt[i-1])
+            sim.append(srt[i])
+            justadded = True
+        else:
+            justadded = False
+    return sim
+
+# math.isclose(a, b, rel_tol=1e-5)
+def pick_mutants(wt, muts, imads, rndcount = 2):
+    wtpred = imads.predict_sequence(wt, threshold=0.2128)
+    mlist =  [imads.predict_sequence(mt, threshold=0.2128) for mt in muts]
+    # filter to those that have 2 sites
+    mlist = [mp for mp in muts if len(mp) == 2]
+    s1_muts, s2_muts = [], []
+    for i in range(len(mlist)):
+        sc1, sc2 = mlist[i][0]["score"], mlist[i][1]["score"]
+        wtsite = 0 if math.isclose(sc1, wtpred[0]["score"], rel_tol=1e-2) else 1
+        mutsite = 0 if math.isclose(sc2, wtpred[1]["score"], rel_tol=1e-2) else 1
+        if wtsite == mutsite:
+            continue
+        if mutsite == 0:
+            s1_muts.append(mlist[i])
+        else:
+            s2_muts.append(mlist[i])
+    # get s1 mutants that are close
+    s1_muts =  get_similar_score(s1_muts, 0, rel_tol=0.025)
+    s2_muts =  get_similar_score(s2_muts, 1, rel_tol=0.025)
+    for elm in s1_muts + s2_muts:
+        mlist.remove(elm)
+    picked = s1_muts + s2_muts
+    if len(mlist) > rndcount:
+        picked.extend(random.sample(mlist,rndcount))
+    return picked
+
+
+def make_ets1_mutations(df, imads, flanklen=2):
     #mutdict = {}
     allmut = []
     atgc = {'A','T','G','C'}
     for idx,row in df.iterrows():
+        if idx % 10 == 0:
+            print("Processed %d/%d rows" % (idx, len(df)))
         if row["distance"] < 6: # we don't have enough flank
             continue
         mutlist = []
@@ -30,7 +81,7 @@ def make_ets1_mutations(df, flen=2):
         s1 = seq[s1pos-2:s1pos+2]
         s2 = seq[s2pos-2:s2pos+2]
         for s in [s1,s2]:
-            # first do it for the core
+            # FIRST: change the core
             if s == "GGAA":
                 mutlist.append(seq[:s1pos-2] + "GGAT" + seq[s1pos+2:])
             elif s == "GGAT":
@@ -41,17 +92,21 @@ def make_ets1_mutations(df, flen=2):
                 mutlist.append(seq[:s1pos-2] + "TTCC" + seq[s1pos+2:])
             else:
                 print("undefined core: %s" % s)
+        mutflank = []
         for sp in [s1pos,s2pos]:
-            # then do it for the flanks
-            pos = list(range(sp-2-flen,sp-2)) + list(range(sp+2,sp+2+flen))
+            # SECOND: change the flank
+            pos = list(range(sp-2-flanklen,sp-2)) + list(range(sp+2,sp+2+flanklen))
             for p in pos:
                 for nuc in atgc - set(seq[p]):
-                    mutlist.append(seq[:p] + nuc + seq[p+1:])
+                    mutflank.append(seq[:p] + nuc + seq[p+1:])
+        # get mutants from flanks
+        mutflank = pick_mutants(row["sequence"], mutflank, imads)
+        mutlist.extend(mutflank)
         wt_tbl = [{"sequence":row["sequence"], "site_wk_pos":row["site_wk_pos"], "site_str_pos":row["site_str_pos"], "distance":row["distance"], "wtlabel":row['label']}]
         mut_tbl = [{"sequence":m, "site_wk_pos":row["site_wk_pos"], "site_str_pos":row["site_str_pos"], "distance":row["distance"], "wtlabel":row['label']} for m in mutlist]
-        allmut += wt_tbl + random.sample(mut_tbl,2)
-        if idx > 300:
-            break
+        #print(idx, wt_tbl + random.sample(mut_tbl,2))
+        allmut += wt_tbl + mut_tbl
+    print(len(allmut))
     return allmut
 
 def predict_per_ori(test,ds):
@@ -108,46 +163,43 @@ if __name__ == '__main__':
     pd.set_option('display.max_columns', None)
     df = pd.read_csv(trainingpath, sep="\t")
 
-    modelpaths = ["/Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_files/models/ets1/Ets1_w12_GGAA.model",
-    "/Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_files/models/ets1/Ets1_w12_GGAT.model"]
+    modelpaths = ["/Users/vincentiusmartin/Research/chip2gcPBM/imads/model/w12/core_centered/Ets1_w12_GGAA.model",
+    "/Users/vincentiusmartin/Research/chip2gcPBM/imads/model/w12/core_centered/Ets1_w12_GGAT.model"]
     modelcores = ["GGAA", "GGAT"]
     imads_models = [iMADSModel(modelpath, modelcore, 12, [1, 2, 3])
                     for modelpath, modelcore in
                     zip(modelpaths, modelcores)]
     imads = iMADS(imads_models, 0.2128)
-    print(imads.predict_sequence("GTTTGATCCAGGAAATGGTGTCCTTCCTGTGGACCT"))
-    #md = make_ets1_mutations(df)
-
-    #[{'site_start': 2, 'site_width': 20, 'best_match': 'TTGATCCAGGAAATGGTGTC', 'score': 0.7298852497549108, 'core_start': 10, 'core_width': 4, 'core_mid': 11}, {'site_start': 15, 'site_width': 20, 'best_match': 'GGTCCACAGGAAGGACACCA', 'score': 0.7321779705276468, 'core_start': 23, 'core_width': 4, 'core_mid': 24}]
-
+    #print(imads.predict_sequence("GTTTGATCCAGGAAATGGTGTCCTTCCTGTGGACCT"))
+    #md = make_ets1_mutations(df, imads)
     #pd.DataFrame(md).to_csv("mutlist.csv", index=False)
-    """
+
+    # we have 6732 rows
     df = pd.read_csv("mutlist.csv")
 
-    test = Training(df,4)
-    #test = Training(pd.DataFrame(md),4)
-    ds = DNAShape("all_model_files/dnashape/0")
-
-    xt = test.get_feature_all({
+    t = Training(df,corelen=4)
+    # #test = Training(pd.DataFrame(md),4)
+    # ds = DNAShape("all_model_files/dnashape/0")
+    #
+    xt = t.get_feature_all({
         "distance":{"type":"numerical"},
-        "flankshape": {"ds":ds, "seqin":5, "smode":"positional"},
-        "flankshape": {"ds":ds, "seqin":-3, "smode":"positional"},
+        "sitepref": {"imadsmodel": imads, "modelwidth":12}, # use custom imads
         "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
     })
+    xt = pd.DataFrame(xt).values.tolist()
+    #print(xt)
 
-    idx1 = df.index[df['sequence'] == "GTTTGATCCAGGAAATGGTGTCCTTCCTGTGGACCT"].tolist()[0]
-    idx2 = df.index[df['sequence'] == "GTTTGATCCAGGAAACGGTGTCCTTCCTGTGGACCT"].tolist()[0]
-    print(xt[idx1])
-    print(xt[idx2])
-    """
-
+    model = pickle.load(open("all_model_files/dist_ori_12merimads.sav", "rb"))
+    ypred = model.predict(xt)
+    yprob = model.predict_proba(xt)
+    yprob = [yprob[i][0] if ypred[i] == 0 else yprob[i][1] for i in range(len(ypred))]
     # p1label, p1prob = predict_all_ori(test,ds)
     # p2label, p2prob = predict_per_ori(test,ds)
-    # seqlist = df['sequence'].values.tolist()
-    # wtlabel = df['wtlabel'].map({'cooperative': 1, 'additive': 0}).values.tolist()
-    # labels = ["sequence", "y_wt", "ypred_all", "yprob_all", "ypred_ori", "ypred_ori"]
-    # res = list(zip(seqlist, wtlabel, p1label, p1prob, p2label, p2prob))
-    # pd.DataFrame(res,columns=labels).to_csv("mutpred.csv")
+    seqlist = df['sequence'].values.tolist()
+    wtlabel = df['wtlabel'].map({'cooperative': 1, 'additive': 0}).values.tolist()
+    labels = ["sequence", "y_wt", "ypred_all", "yprob_all"] #,  "ypred_ori", "ypred_ori"]
+    res = list(zip(seqlist, wtlabel, ypred, yprob)) #p1label, p1prob, p2label, p2prob))
+    pd.DataFrame(res,columns=labels).to_csv("mutpred.csv")
 
     # p2 = model2.predict(x_test2)
     # pl2 = list(zip(seqlist,p2))

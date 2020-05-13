@@ -311,7 +311,7 @@ if __name__ == '__main__':
     # make_model
     rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=10,random_state=0)
     dt = tree.DecisionTreeClassifier(min_samples_split=27, min_samples_leaf=25, criterion="entropy")
-    print(pd.DataFrame(xtr).columns)
+    
     xt = [[d[k] for k in d] for d in xtr]
     yt = get_numeric_label(t.df).values
     dt.fit(xt,yt)
