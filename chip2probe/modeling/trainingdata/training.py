@@ -5,9 +5,6 @@ Created on Oct 30, 2019
 @editedby: Farica Zhuang
 '''
 
-import sys
-sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe")
-
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -20,9 +17,9 @@ import trainingdata.seqextractor as seqextractor
 import math
 
 import statistics
-from chip2probe.util import stats as st
-from chip2probe.util import util as util
-from chip2probe.util import bio as bio
+import util.stats as st
+import util.bio as bio
+import util.util as util
 
 
 class Training(object):
@@ -355,9 +352,15 @@ class Training(object):
         list of key:
         1. distance: {type:"numeric/categorical"}
         2. orientation: {"positive_cores:[]", relative:Bool, one_hot:Bool}
+<<<<<<< HEAD
         3. sitepref: {imadsmodel:imadsmodel, modelwidth:width} if empty then use sitepref column
         4. flankseq: {"k":int, seqin=int, smode="positional/strength"}
         5. flankshape: (ds:DNAShape, seqin=int, site_mode="positional/strength", direction="inout/ori") # change t ht
+=======
+        3. sitepref: {} #no param
+        4. flankseq: {"k":int, seqin=int, smode="positional/strength"}
+        5. flankshape: (ds:DNAShape, seqin=int, site_mode="positional/strength")
+>>>>>>> 03c9f3cc078971d381a42f9af68fa8c845c7e12c
         """
         ldict = []
         for key in feature_dict:
@@ -372,42 +375,31 @@ class Training(object):
                 oh = ftr["one_hot"] if "one_hot" in ftr else True
                 rfeature = self.get_feature_orientation(pc,rel,oh)
             elif key == "sitepref":
-                if "imadsmodel" in ftr:
-                    rfeature = self.get_feature_site_pref(ftr["imadsmodel"])
-                else:
-                    rfeature = self.get_feature_site_pref()
+                rfeature = self.get_feature_site_pref()
             elif key == "flankseq-io":
-                smode = ftr["site_mode"] if "site_mode" in ftr else "strength"
+                smode = ftr["smode"] if "smode" in ftr else "strength"
                 rfeature = self.get_feature_flank_core(ftr["k"], seqin = ftr["seqin"], site_mode=smode)
             elif key == "flankseq-ht":
-                smode = ftr["site_mode"] if "site_mode" in ftr else "strength"
+                smode = ftr["smode"] if "smode" in ftr else "strength"
                 rfeature = self.get_feature_flank_core_orientation(ftr["k"], seqin = ftr["seqin"], site_mode=smode)
-            elif key == "flankshape":
-                smode = ftr["site_mode"] if "site_mode" in ftr else "strength"
-                rfeature = self.get_feature_flank_shapes(ftr["ds"], seqin = ftr["seqin"], site_mode=smode, direction=ftr["direction"])
+            elif key == "flankshape-io":
+                smode = ftr["smode"] if "smode" in ftr else "strength"
+                rfeature = self.get_feature_flank_shapes(ftr["ds"], seqin = ftr["seqin"], site_mode=smode)
+            elif key == "flankshape-ht":
+                smode = ftr["smode"] if "smode" in ftr else "strength"
+                rfeature = self.get_feature_flank_shapes_orientation(ftr["ds"], seqin = ftr["seqin"], site_mode=smode)
             else:
                 raise Exception("Feature %s is not available" % key)
             ldict = util.merge_listdict(rfeature,ldict)
         return ldict
 
 
-    def get_feature_site_pref(self, imads=""):
+    def get_feature_site_pref(self):
         """Get a dictionary of binding site preference scores."""
         rfeature = []
         for idx, row in self.df.iterrows():
-            if imads:
-                sites = imads.predict_sequence(row["sequence"])
-                f = {}
-                for s in sites:
-                    if s["core_start"] < row["site_wk_pos"] and s["core_start"] + s["core_width"] > row["site_wk_pos"]:
-                        f["site_wk_score"] = s['score']
-                    elif s["core_start"] < row["site_str_pos"] and s["core_start"] + s["core_width"] > row["site_str_pos"]:
-                        f["site_str_score"] = s['score']
-                if not ("site_wk_score" in f or "site_str_score" in f):
-                    raise Exception("Couldn't find prediction for sequence %s" % row["sequence"])
-            else:
-                f = {"site_wk_score": row["site_wk_score"],
-                     "site_str_score": row["site_str_score"]}
+            f = {"site_wk_score": row["site_wk_score"],
+                 "site_str_score": row["site_str_score"]}
             rfeature.append(f)
         return rfeature
 
@@ -539,21 +531,11 @@ class Training(object):
         return rfeature
 
 
-    # vm flag
-    def get_feature_flank_shapes(self, dnashape, seqin, site_mode="strength", direction="inout"):
-        """
-        direction: inout, ori
-        """
+    def get_feature_flank_shapes(self, dnashape, seqin, site_mode="strength"):
         if site_mode!="strength" and site_mode!="positional":
             raise Exception("Site mode can only be 'strength' or 'positional'")
-        if direction == "ori":
-            if "orientation" not in self.df:
-                ori_list = [x["ori"] for x in self.get_feature_orientation(["GGAA","GGAT"])]
-            else:
-                ori_list = self.df["orientation"].values.tolist()
         shapes = {"prot":dnashape.prot, "mgw":dnashape.mgw, "roll":dnashape.roll, "helt":dnashape.helt}
         rfeature = []
-        iter = 0
         for idx,row in self.df.iterrows():
             if row["site_wk_pos"] > row["site_str_pos"]:
                 site1, site2 = row["site_str_pos"], row["site_wk_pos"]
@@ -567,53 +549,70 @@ class Training(object):
                 s1type, s2type = "s1", "s2"
             dfeature = {}
             for s in shapes:
-                if direction == "inout":
-                    if seqin > 0:
-                        flank1 = shapes[s][str(idx + 1)][site1:site1+seqin]
-                        flank2 = shapes[s][str(idx + 1)][site2-seqin:site2][::-1]
-                        type = "in"
-                    else:
-                        flank1 = shapes[s][str(idx + 1)][site1+seqin:site1][::-1]
-                        flank2 = shapes[s][str(idx + 1)][site2:site2-seqin]
-                        type = "out"
-                # elif direction == "ori" and ori_list[iter] == "HT/TH":
-                #     seqin = abs(seqin) if direction == "ori" else seqin
-                #     flank1 = shapes[s][str(idx + 1)][site1:site1+seqin]
-                #     flank2 = shapes[s][str(idx + 1)][site2:site2+seqin]
-                #     type = "HT/TH"
-                else: # direction == ori
-                    seqin = abs(seqin)
-                    if ori_list[iter] == 'HH':
-                        if seqin >= 0:
-                            flank1 = shapes[s][str(idx + 1)][site1:site1 + seqin]
-                            flank2 = shapes[s][str(idx + 1)][site2 - seqin:site2][::-1]
-                            type = "head"
-                        if seqin < 0:
-                            flank1 = shapes[s][str(idx + 1)][site1 + seqin:site1][::-1]
-                            flank2 = shapes[s][str(idx + 1)][site2:site2 - seqin]
-                            type = "tail"
-                    elif ori_list[iter] == 'TT':
-                        if seqin < 0:
-                            flank1 = shapes[s][str(idx + 1)][site1:site1 - seqin]
-                            flank2 = shapes[s][str(idx + 1)][site2 + seqin:site2][::-1]
-                            type = "tail"
-                        if seqin >= 0:
-                            flank1 = shapes[s][str(idx + 1)][site1 - seqin:site1][::-1]
-                            flank2 = shapes[s][str(idx + 1)][site2:site2 + seqin]
-                            type = "head"
-                    elif ori_list[iter] == 'HT/TH':
-                        if seqin >= 0:
-                            flank1 = shapes[s][str(idx + 1)][site1:site1 + seqin]
-                            flank2 = shapes[s][str(idx + 1)][site2:site2 + seqin]
-                            type = "head"
-                        if seqin < 0:
-                            flank1 = shapes[s][str(idx + 1)][site1 + seqin:site1][::-1]
-                            flank2 = shapes[s][str(idx + 1)][site2 + seqin:site2][::-1]
-                            type = "tail"
+                if seqin > 0: # inner
+                    flank1 = shapes[s][str(idx + 1)][site1:site1+seqin]
+                    flank2 = shapes[s][str(idx + 1)][site2-seqin:site2][::-1]
+                    type = "inner"
+                else: # outer
+                    flank1 = shapes[s][str(idx + 1)][site1+seqin:site1][::-1]
+                    flank2 = shapes[s][str(idx + 1)][site2:site2-seqin]
+                    type = "outer"
                 for i in range(abs(seqin)):
                     dfeature["%s_%s_%s_pos_%d" % (s,type,s1type,i)] = flank1[i]
                     dfeature["%s_%s_%s_pos_%d" % (s,type,s2type,i)] = flank2[i]
-            iter += 1
+            rfeature.append(dfeature)
+        return rfeature
+
+    def get_feature_flank_shapes_orientation(self, dnashape, seqin, site_mode="strength"):
+        if site_mode!="strength" and site_mode!="positional":
+            raise Exception("Site mode can only be 'strength' or 'positional'")
+        shapes = {"prot":dnashape.prot, "mgw":dnashape.mgw, "roll":dnashape.roll, "helt":dnashape.helt}
+        rfeature = []
+        for idx,row in self.df.iterrows():
+            orientation = row["orientation"]
+            if row["site_wk_pos"] > row["site_str_pos"]:
+                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+                if site_mode == "strength":
+                    s1type, s2type = "str", "wk"
+            else:
+                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+                if site_mode == "strength":
+                    s1type, s2type = "wk", "str"
+            if site_mode == "positional":
+                s1type, s2type = "s1", "s2"
+            dfeature = {}
+            for s in shapes:
+                # get the inner flanking region
+                if orientation == 'HH':
+                    if seqin >= 0:
+                        flank1 = shapes[s][str(idx + 1)][site1:site1 + seqin]
+                        flank2 = shapes[s][str(idx + 1)][site2 - seqin:site2][::-1]
+                        type = "head"
+                    if seqin < 0:
+                        flank1 = shapes[s][str(idx + 1)][site1 + seqin:site1][::-1]
+                        flank2 = shapes[s][str(idx + 1)][site2:site2 - seqin]
+                        type = "tail"
+                elif orientation == 'TT':
+                    if seqin < 0:
+                        flank1 = shapes[s][str(idx + 1)][site1:site1 - seqin]
+                        flank2 = shapes[s][str(idx + 1)][site2 + seqin:site2][::-1]
+                        type = "tail"
+                    if seqin >= 0:
+                        flank1 = shapes[s][str(idx + 1)][site1 - seqin:site1][::-1]
+                        flank2 = shapes[s][str(idx + 1)][site2:site2 + seqin]
+                        type = "head"
+                elif orientation == 'HT/TH':
+                    if seqin >= 0:
+                        flank1 = shapes[s][str(idx + 1)][site1:site1 + seqin]
+                        flank2 = shapes[s][str(idx + 1)][site2:site2 + seqin]
+                        type = "head"
+                    if seqin < 0:
+                        flank1 = shapes[s][str(idx + 1)][site1 + seqin:site1][::-1]
+                        flank2 = shapes[s][str(idx + 1)][site2 + seqin:site2][::-1]
+                        type = "tail"
+                for i in range(abs(seqin)):
+                    dfeature["%s_%s_%s_pos_%d" % (s,type,s1type,i)] = flank1[i]
+                    dfeature["%s_%s_%s_pos_%d" % (s,type,s2type,i)] = flank2[i]
             rfeature.append(dfeature)
         return rfeature
 
@@ -703,10 +702,8 @@ class Training(object):
         Get flanking regions of the cores as features.
 
         params: k -- max k-mer to consider
-                seqin -- max distance to go towards the other core
-                         (inner flank), negative seqin indicates
-                         that we are going in the opposite direction
-                         of the other core (outer flank)
+                seqin -- max distance from midpoint to get flankseq head
+                         if positive and get tail if negative
         """
         if site_mode != "strength" and site_mode != "positional":
             raise Exception("Site mode can only be 'strength' or 'positional'")
