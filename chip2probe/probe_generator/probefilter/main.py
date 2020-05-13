@@ -79,7 +79,17 @@ if __name__ == '__main__':
                 # primer sequence to be used
                 "primer": "GTCTTGATTCGCTTGACGCTGCTG",
                 # max number of nucelotides to be mutated at the junctions for cleaning
-                "max_mutate_count": 2
+                "max_mutate_count": 2,
+                # number of negative controls
+                "num_neg_ctrl": 400,
+                # set escore cutoff to 0.3 for non-significant sites
+                "neg_ctrl_thres": 0.3,
+                # negative control files to look at 
+                "neg_ctrl_files": ["/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/neg_ctrls/ets1_negative_controls.csv",
+                                   "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/neg_ctrls/runx1_negative_controls.csv"]
+                "dnase_paths": {"k562": "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/k562/dnase_peaks_k562.narrowPeak"},
+                "chip_paths": {"k562": ["/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/k562/ets1_k562_peaks.bed",
+                                        "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/k562/runx1_k562_peaks.bed"]}
     }
 
     ProbeFilter(**input)._run_all()

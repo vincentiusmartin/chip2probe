@@ -16,6 +16,7 @@ from sitespredict.imads import iMADS
 from sitespredict.kompas import Kompas
 from cooperative import coopfilter
 from customseq import customseq
+from functools import reduce
 
 
 class ProbeFilter:
@@ -37,13 +38,21 @@ class ProbeFilter:
                          "coordinate", "tf1", "tf2"]
 
     def _run_all(self):
-        # initialize escore and model objects
+        # # initialize escore and model objects
         self.initialize_objects()
 
-        self.filter_probes()
+        # # get filtered probes
+        # self.filter_probes()
 
-        if len(self.customs) > 0:
-            self.customize_probes()
+        # # get custom probes
+        # if len(self.customs) > 0:
+        #     self.customize_probes()
+
+        # get negative controls
+        if self.num_neg_ctrl > 0:
+            self.add_neg_ctrls()
+
+        print("Done!!!!!")
 
     def initialize_objects(self):
         """Initialize escore and model objects."""
@@ -117,7 +126,6 @@ class ProbeFilter:
         """Customize clean probes."""
         infile = "%smutated_probes.tsv" % self.analysis_path
         df = pd.read_csv(infile, sep="\t")
-        df = df[:10]
         ret = []
         if 1 in self.customs:
             weak_sites = customseq.make_weak_sites(df, self.escores, self.models,
@@ -182,3 +190,110 @@ class ProbeFilter:
             fp_df.to_csv("custom_probes_dist_and_weak.tsv", sep="\t", index=False)
         else:
             print("Failed to save custom probe file")
+
+    def add_neg_ctrls(self):
+        """Get negative controls"""
+        ret = []
+        # loop through the files provided
+        for path in self.neg_ctrl_files:
+            # get escore for runx for runx negative controls
+            df = pd.read_csv(path)
+            lst = self.get_neg_ctrls(df, self.num_neg_ctrl-len(ret))
+            ret = ret + lst
+            if len(ret) == self.num_neg_ctrl:
+                break
+
+        if len(ret) < self.num_neg_ctrl:
+            for cell_line in self.dnase_paths:
+                self.process_dnase(cell_line)
+
+        ret_df = pd.DataFrame.from_records(list(ret))
+        ret_df.to_csv("negative_controls.csv", index=None)
+        
+        print("Number of neg ctrls required:", self.num_neg_ctrl)
+        print("Number of neg ctrls found:", len(ret_df))
+    
+    def get_neg_ctrls(self, df, num_seqs):
+        """Get negative control seqs from given df."""
+        es_preds = {}
+        # get the escore prediction for each protein
+        for protein in self.proteins:
+            es_preds[protein] = self.escores[protein].predict_sequences(df, 
+                                                                        predict_flanks=False,
+                                                                        sequence_colname="Sequence")
+        # initialize lst to strong neg control sequences
+        negs = set()
+        # check each sequence in the df
+        for key in es_preds[self.proteins[0]]:
+            # check each escore in the sequence
+            passed = True
+            for protein in self.proteins:
+                for pos in es_preds[protein][key].predictions:
+                    # if any escore is at least cutoff or above, 
+                    # stop looping and indicated False
+                    if pos["score"] >= self.neg_ctrl_thres:
+                        passed = False
+                        break
+            # if the sequence passed the check, add to the list
+            if passed:
+                negs.add(es_preds[self.proteins[0]][key].sequence)
+            # create a dataframe for runx negative controls 
+            # with no significant ets escore
+            if len(negs) == num_seqs:
+                break
+
+        return list(negs)
+
+    def process_dnase(self, cell_line):
+        """Get negative control sequences from dnase seq."""
+        # get dnase peaks
+        dnase_peaks = self.get_peaks(self.dnase_paths[cell_line])
+        # get all the chip peaks for this cell line
+        chip_peaks = []
+        for chip in self.chip_paths[cell_line]:
+            chip_peaks = chip_peaks + self.get_peaks(chip)
+        # sort the chip peaks by start point then end point
+        chip_peaks.sort(key=lambda x: (x[0], x[1]))
+
+        ret = []
+        for peak in dnase_peaks:
+            ret = ret + self.find_ints(chip_peaks, peak[0], peak[1])
+
+
+class RangeSet:
+    def __init__(self, elements):
+        self.ranges = list(elements)
+
+    def __iter__(self):
+        return iter(self.ranges)
+
+    def __repr__(self):
+        return 'RangeSet: %r' % self.ranges
+
+    def has(self, tup):
+        for pos, i in enumerate(self.ranges):
+            if i[0] <= tup[0] and i[1] >= tup[1]:
+                return pos, i
+        raise ValueError('Invalid range or overlapping range')
+
+    def minus(self, tup):
+        pos, (x,y) = self.has(tup)
+        out = []
+        if x < tup[0]:
+            out.append((x, tup[0]-1))
+        if y > tup[1]:
+            out.append((tup[1]+1, y))
+        self.ranges[pos:pos+1] = out
+
+    def __sub__(self, r):
+        r1 = RangeSet(self)
+        for i in r: r1.minus(i)
+        return r1
+
+    def sub(self, r): #inplace subtraction
+        for i in r:
+            self.minus(i)
+r1 = RangeSet(((1, 5), (15, 25)))
+r2 = RangeSet([(3, 7), (8,9), (24,30)])
+print(r1 - r2)
+
