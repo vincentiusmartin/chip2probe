@@ -23,7 +23,6 @@ class ProbeFilter:
     """This class generate clean noncustom and custom probes."""
 
     def __init__(self, seqdata , **kwargs):
-        print(seqdata)
         """Initialize class variables."""
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -39,7 +38,7 @@ class ProbeFilter:
                          "coordinate", "tf1", "tf2"]
 
     def _run_all(self):
-        # # initialize escore and model objects
+        # initialize escore and model objects
         self.initialize_objects()
 
         # get filtered probes
@@ -59,18 +58,18 @@ class ProbeFilter:
         """Initialize escore and model objects."""
         escores = {}
         models = {}
-        for protein in self.proteins:
-            escores[protein] = PBMEscore(self.escore_long_paths[protein])
+        for tf in self.tf:
+            escores[tf] = PBMEscore(self.escore_long_paths[tf])
             # initialize binding site prediction model used based on method
-            if self.method == 'imads':
+            if self.sitecall_mode == 'imads':
                 # read imads prediction
                 imads_models = [iMADSModel(modelpath, modelcore, 20, [1, 2, 3])
                                 for modelpath, modelcore in
-                                zip(self.modelpaths[protein], self.modelcores[protein])]
-                models[protein] = iMADS(imads_models, self.imads_cutoff[protein])
-            elif self.method == 'kompas':
-                models[protein] = Kompas(protein=protein, threshold=self.mutate_cutoff,
-                                         kmer_align_path=self.kmer_align_paths[protein])
+                                zip(self.imads[tf]["model_paths"], self.imads[tf]["cores"])]
+                models[tf] = iMADS(imads_models, self.imads[tf]["cutoff"])
+            elif self.sitecall_mode == 'kompas':
+                models[tf] = Kompas(protein=tf, threshold=self.mutate_cutoff,
+                                         kmer_align_path=self.kompas[tf]["align_path"])
             # raise exception if model is not supported
             else:
                 raise Exception("Supported methods are imads and kompas. Got {}".format(method))
