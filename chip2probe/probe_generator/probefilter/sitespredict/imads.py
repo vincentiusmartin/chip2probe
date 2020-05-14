@@ -119,7 +119,7 @@ class iMADS(basemodel.BaseModel):
         # f(x) = 1 / ( 1 + exp(-x) )  to obtain only values between 0 and 1.
         return 1.0 / (1.0 + math.exp(0.0 - score))
 
-    def predict_sequence(self, sequence, const_intercept=False, transform_scores=True):
+    def predict_sequence(self, sequence, const_intercept=False, transform_scores=True, threshold = 0):
         prediction = []
         for model in self.models:
             for position, core_pos, matching_sequences in self.generate_matching_sequence(sequence, model.core, model.width):
@@ -143,14 +143,16 @@ class iMADS(basemodel.BaseModel):
                     mid = core_pos + len(model.core) // 2 - 1
                 elif len(model.core)%2 == 1:
                     mid = core_pos + len(model.core) // 2
-                prediction.append({"site_start": position,
-                                   "site_width": model.width,
-                                   "best_match": best_match,
-                                   "score": best_prediction,
-                                   "core_start": core_pos,
-                                   "core_width": len(model.core),
-                                   "core_mid": mid
-                                   })
+                # if threshold is defined, only return if score > threshold
+                if best_prediction > threshold:
+                    prediction.append({"site_start": position,
+                                       "site_width": model.width,
+                                       "best_match": best_match,
+                                       "score": best_prediction,
+                                       "core_start": core_pos,
+                                       "core_width": len(model.core),
+                                       "core_mid": mid
+                                       })
         return prediction
 
     # or predict fasta?

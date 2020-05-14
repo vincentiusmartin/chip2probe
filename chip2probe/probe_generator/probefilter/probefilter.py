@@ -22,7 +22,8 @@ from functools import reduce
 class ProbeFilter:
     """This class generate clean noncustom and custom probes."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, seqdata , **kwargs):
+        print(seqdata)
         """Initialize class variables."""
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -41,16 +42,16 @@ class ProbeFilter:
         # # initialize escore and model objects
         self.initialize_objects()
 
-        # # get filtered probes
-        # self.filter_probes()
+        # get filtered probes
+        #self.filter_probes()
 
         # # get custom probes
         # if len(self.customs) > 0:
         #     self.customize_probes()
 
-        # get negative controls
-        if self.num_neg_ctrl > 0:
-            self.add_neg_ctrls()
+        # # get negative controls
+        # if self.num_neg_ctrl > 0:
+        #     self.add_neg_ctrls()
 
         print("Done!!!!!")
 
@@ -209,16 +210,16 @@ class ProbeFilter:
 
         ret_df = pd.DataFrame.from_records(list(ret))
         ret_df.to_csv("negative_controls.csv", index=None)
-        
+
         print("Number of neg ctrls required:", self.num_neg_ctrl)
         print("Number of neg ctrls found:", len(ret_df))
-    
+
     def get_neg_ctrls(self, df, num_seqs):
         """Get negative control seqs from given df."""
         es_preds = {}
         # get the escore prediction for each protein
         for protein in self.proteins:
-            es_preds[protein] = self.escores[protein].predict_sequences(df, 
+            es_preds[protein] = self.escores[protein].predict_sequences(df,
                                                                         predict_flanks=False,
                                                                         sequence_colname="Sequence")
         # initialize lst to strong neg control sequences
@@ -229,7 +230,7 @@ class ProbeFilter:
             passed = True
             for protein in self.proteins:
                 for pos in es_preds[protein][key].predictions:
-                    # if any escore is at least cutoff or above, 
+                    # if any escore is at least cutoff or above,
                     # stop looping and indicated False
                     if pos["score"] >= self.neg_ctrl_thres:
                         passed = False
@@ -237,7 +238,7 @@ class ProbeFilter:
             # if the sequence passed the check, add to the list
             if passed:
                 negs.add(es_preds[self.proteins[0]][key].sequence)
-            # create a dataframe for runx negative controls 
+            # create a dataframe for runx negative controls
             # with no significant ets escore
             if len(negs) == num_seqs:
                 break
@@ -258,4 +259,3 @@ class ProbeFilter:
         ret = []
         for peak in dnase_peaks:
             ret = ret + self.find_ints(chip_peaks, peak[0], peak[1])
-
