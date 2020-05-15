@@ -83,7 +83,7 @@ def clean_junction_seq(ori_seq, proteins, mutate_cutoff,
                        escores, max_mutate_count=2):
     """
     Mutate sequence at junction.
-    
+
     count: max number of nucleotides to mutate
     Return: New sequence mutated at junction, new sequence+primer
     """
@@ -137,7 +137,7 @@ def clean_junctions(seqlst, proteins, escores, models, mutate_cutoff=0.38,
             es_preds_primer[protein] = escores[protein].predict_sequences(df_primer)["sequence1"]
             model_preds_primer[protein] = models[protein].predict_sequences(df_primer)["sequence1"]
         seq_bs = Sequence(es_preds, model_preds, proteins, escores, mutate_cutoff, mutate_gap)
-        seq_primer_bs = Sequence(es_preds_primer, model_preds_primer, proteins, 
+        seq_primer_bs = Sequence(es_preds_primer, model_preds_primer, proteins,
                                  escores, mutate_cutoff, mutate_gap)
         # theres a sequence with less bsites with primer. why?
         if seq_bs.site_count_all() > seq_primer_bs.site_count_all():
@@ -182,7 +182,7 @@ def clean_junctions(seqlst, proteins, escores, models, mutate_cutoff=0.38,
             es_preds_primer[protein] = escores[protein].predict_sequences(df_primer)["sequence1"]
             model_preds_primer[protein] = models[protein].predict_sequences(df_primer)["sequence1"]
         seq_bs = Sequence(es_preds, model_preds, proteins, escores, mutate_cutoff, mutate_gap)
-        seq_primer_bs = Sequence(es_preds_primer, model_preds_primer, proteins, 
+        seq_primer_bs = Sequence(es_preds_primer, model_preds_primer, proteins,
                                  escores, mutate_cutoff, mutate_gap)
         if seq_bs.site_count_all() > seq_primer_bs.site_count_all():
             print("Number of bsites with primer should not be less than without")
@@ -202,7 +202,7 @@ def clean_junctions(seqlst, proteins, escores, models, mutate_cutoff=0.38,
 
     # otherwise, return the new seqlist
     return seqlst, True
- 
+
 
 def check_sequence(seq, sites_list, pbmescores,
                    escore_cutoff=0.4, escore_gap=0,
@@ -287,10 +287,11 @@ def check_all_seqs(wt, m1, m2, m3, sites_dict, pbmescores, escore_cutoff=0.4,
     return (wt_cond and m1_cond and m2_cond and m3_cond)
 
 
-def get_filtered_probes(seqdf, escores, models, mutate_cutoff, mutate_gap, 
+def get_filtered_probes(seqdf, escores, models, mutate_cutoff, mutate_gap,
                         egaps, thresholds, proteins, colors,
                         generate_plots=False, spcomb=[(0, 0)], analysis_path="",
-                        mode="custom", predict_flanks=True, key_colname="key",
+                        mode="custom", predict_flanks=True, flank_len=0,
+                        key_colname="key",
                         show_model_flanks=False, get_complete_mutated=True,
                         primer="", max_mutate_count=2):
     """Get the filtered probes with m1,m2,m3 for each sequence in the given df."""
@@ -317,9 +318,10 @@ def get_filtered_probes(seqdf, escores, models, mutate_cutoff, mutate_gap,
             es_preds[protein] = escores[protein].predict_sequences(df, key_colname=key_colname)
             esplots[protein] = escores[protein].make_plot_data(es_preds[protein], color=colors[protein_num][0])
 
-            model_preds[protein] = models[protein].predict_sequences(df, 
-                                                                     key_colname=key_colname, 
-                                                                     predict_flanks=predict_flanks)
+            model_preds[protein] = models[protein].predict_sequences(df,
+                                                                     key_colname=key_colname,
+                                                                     predict_flanks=predict_flanks,
+                                                                     flank_len=flank_len)
             model_plots[protein] = models[protein].make_plot_data(model_preds[protein],
                                                                   color=colors[protein_num][1],
                                                                   show_model_flanks=show_model_flanks)
@@ -329,7 +331,7 @@ def get_filtered_probes(seqdf, escores, models, mutate_cutoff, mutate_gap,
             sp = SitesPlotter()
             # if need to plot, uncomment this
             sp.plot_seq_combine([esplots, model_plots],
-                                filepath="%ssitesplot_d%d_p%d.pdf" %
+                                filepath="%s/sitesplot_d%d_p%d.pdf" %
                                 (analysis_path, sitenum, peaklen))
 
         # get filtered sequences
@@ -348,12 +350,13 @@ def get_filtered_probes(seqdf, escores, models, mutate_cutoff, mutate_gap,
             for protein in proteins:
                 curr_es_preds[protein] = es_preds[protein][key]
                 curr_model_preds[protein] = model_preds[protein][key]
+            #print(key,"asd",curr_model_preds["ets1"])
             bs = Sequence(curr_es_preds, curr_model_preds, proteins=proteins,
                           escore_cutoff=mutate_cutoff, escore_gap=mutate_gap,
                           pbmescores=escores)
+            ### print(key, bs.is_valid())
             if bs.is_valid():
                 filtered_seqs[key] = bs
-
         # TODO: move all print statements to a log file
         # print("Number of sites mutated:", sites_mutated)
         # print("Number of failed mutations:", failed_mutations)
@@ -374,7 +377,7 @@ def get_filtered_probes(seqdf, escores, models, mutate_cutoff, mutate_gap,
                 # here we mutate on the first, second, and both sites
                 # mut is the index of the site to abolish
                 to_remove = bs.remove_pos(mut)
-                mutseq = bs.abolish_sites(to_remove, mode="to_eliminate", 
+                mutseq = bs.abolish_sites(to_remove, mode="to_eliminate",
                                           escore_threshold=mutate_cutoff)
                 seqdict["%s-m%d" % (key, idx + 1)] = mutseq.sequence
                 funcdict["%s-m%d" % (key, idx + 1)] = mutseq.plot_functions
@@ -397,7 +400,7 @@ def get_filtered_probes(seqdf, escores, models, mutate_cutoff, mutate_gap,
                     bsites_dict = filtered_seqs[key].get_sites_dict()
                     lst = [seqdict["%s-wt" % key], seqdict["%s-m1" % key], seqdict["%s-m2" % key],
                            seqdict["%s-m3" % key]]
-                    lst, successful = clean_junctions(seqlst=lst, 
+                    lst, successful = clean_junctions(seqlst=lst,
                                                       proteins=proteins,
                                                       escores=escores,
                                                       models=models,
@@ -417,7 +420,7 @@ def get_filtered_probes(seqdf, escores, models, mutate_cutoff, mutate_gap,
                                                 "m2": seqdict["%s-m2" % key],
                                                 "m3": seqdict["%s-m3" % key],
                                                 "tf1": bsites_dict["protein_1"],
-                                                "tf2": bsites_dict["protein_2"], 
+                                                "tf2": bsites_dict["protein_2"],
                                                 "core1_start": bsites_dict["core_start_1"],
                                                 "core1_mid": bsites_dict["core_mid_1"],
                                                 "core1_end": bsites_dict["core_end_1"],
@@ -433,7 +436,7 @@ def get_filtered_probes(seqdf, escores, models, mutate_cutoff, mutate_gap,
                                                 "peak_length": peaklen
                                                 })
                         break # the sequence passes the filtering check, so stop
-          
+
         # generate plots of wt, m1, m2, m3
         if generate_plots:
             filtered_es_preds = {}
@@ -445,13 +448,13 @@ def get_filtered_probes(seqdf, escores, models, mutate_cutoff, mutate_gap,
                 filtered_es_preds[protein] = escores[protein].predict_sequences(seqdict, key_colname="key")
                 filtered_esplots[protein] = escores[protein].make_plot_data(filtered_es_preds[protein], color=colors[protein_num][0])
 
-                filtered_model_preds[protein] = models[protein].predict_sequences(seqdict, 
-                                                                                  key_colname="key", 
+                filtered_model_preds[protein] = models[protein].predict_sequences(seqdict,
+                                                                                  key_colname="key",
                                                                                   predict_flanks=predict_flanks)
-                filtered_model_plots[protein] = models[protein].make_plot_data(filtered_model_preds[protein], 
+                filtered_model_plots[protein] = models[protein].make_plot_data(filtered_model_preds[protein],
                                                                                color=colors[protein_num][1],
-                                                                               show_model_flanks=show_model_flanks) 
-                sp.plot_seq_combine([filtered_esplots, filtered_model_plots], 
+                                                                               show_model_flanks=show_model_flanks)
+                sp.plot_seq_combine([filtered_esplots, filtered_model_plots],
                                    filepath="%splot_%s_d%d_p%d.pdf" % (analysis_path, mode, sitenum, peaklen))
 
     return filtered_probes

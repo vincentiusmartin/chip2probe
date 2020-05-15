@@ -22,4 +22,5 @@ if __name__ == '__main__':
         raise Exception("Please input sequence list")
     input_data = sys.argv[1]
 
-    ProbeFilter(input_data, **conf)._run_all()
+    # python3 main.py ../../modeling/mutlist.csv 
+    ProbeFilter(input_data,  **conf)._run_all()

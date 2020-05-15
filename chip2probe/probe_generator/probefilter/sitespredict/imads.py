@@ -119,7 +119,7 @@ class iMADS(basemodel.BaseModel):
         # f(x) = 1 / ( 1 + exp(-x) )  to obtain only values between 0 and 1.
         return 1.0 / (1.0 + math.exp(0.0 - score))
 
-    def predict_sequence(self, sequence, const_intercept=False, transform_scores=True, threshold = 0):
+    def predict_sequence(self, sequence, const_intercept=False, transform_scores=True):
         prediction = []
         for model in self.models:
             for position, core_pos, matching_sequences in self.generate_matching_sequence(sequence, model.core, model.width):
@@ -143,8 +143,8 @@ class iMADS(basemodel.BaseModel):
                     mid = core_pos + len(model.core) // 2 - 1
                 elif len(model.core)%2 == 1:
                     mid = core_pos + len(model.core) // 2
-                # if threshold is defined, only return if score > threshold
-                if best_prediction > threshold:
+                # only return if score > threshold
+                if best_prediction > self.imads_threshold:
                     prediction.append({"site_start": position,
                                        "site_width": model.width,
                                        "best_match": best_match,
@@ -159,9 +159,10 @@ class iMADS(basemodel.BaseModel):
     def predict_sequences(self, sequence_df, const_intercept=False,
                           transform_scores=True, key_colname="",
                           sequence_colname="sequence", flank_colname="flank",
-                          predict_flanks=False, flank_len=10):
+                          predict_flanks=False, flank_len=0):
         """
         Do not make this as generator, because we need to use it somewhere else.
+        TODO: handle flank_len
         """
         seqdict = self.pred_input_todict(sequence_df,
                                          sequence_colname=sequence_colname,

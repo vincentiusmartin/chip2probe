@@ -22,13 +22,14 @@ from functools import reduce
 class ProbeFilter:
     """This class generate clean noncustom and custom probes."""
 
-    def __init__(self, seqdata , **kwargs):
+    def __init__(self, inseq_path, outpath="", **kwargs):
         """Initialize class variables."""
         for k, v in kwargs.items():
             setattr(self, k, v)
-        if len(self.colors) == 0:
+        if len(self.colors) == 0 or not self.colors[0]:
             self.colors = [('crimson', 'plum'), ('steelblue', 'lightblue')]
-
+        self.inpath = inseq_path # "sites_all.tsv"
+        self.analysis_path = outpath if outpath else os.getcwd()
         self.req_cols = ["key", "wt", "m1", "m2", "m3", "flank_left",
                          "flank_right", "core1_start", "core1_end",
                          "core1_mid", "core1_pref", "core2_start",
@@ -42,7 +43,7 @@ class ProbeFilter:
         self.initialize_objects()
 
         # get filtered probes
-        #self.filter_probes()
+        self.filter_probes()
 
         # # get custom probes
         # if len(self.customs) > 0:
@@ -63,7 +64,7 @@ class ProbeFilter:
             # initialize binding site prediction model used based on method
             if self.sitecall_mode == 'imads':
                 # read imads prediction
-                imads_models = [iMADSModel(modelpath, modelcore, 20, [1, 2, 3])
+                imads_models = [iMADSModel(modelpath, modelcore, self.imads[tf]["width"], [1, 2, 3])
                                 for modelpath, modelcore in
                                 zip(self.imads[tf]["model_paths"], self.imads[tf]["cores"])]
                 models[tf] = iMADS(imads_models, self.imads[tf]["cutoff"])
@@ -78,30 +79,36 @@ class ProbeFilter:
 
     def filter_probes(self):
         """Filter and clean up probes so each sequence has only 2 significant sites."""
-        sitepath = "%ssites_all.tsv" % self.analysis_path
-        seqdf = pd.read_csv(sitepath, sep='\t')
+        ext = os.path.splitext(self.inpath)[1]
+        sep = "\t" if ext == "tsv" else ","
+        seqdf = pd.read_csv(self.inpath, sep=sep)
 
         # get all combinations of number of sites in peak and peak length as a list of tuples
-        spcomb = sorted(list(set(zip(seqdf["sites_in_peak"], seqdf["peaklen"]))), key=lambda x: (x[0],x[1]))
+        if "sites_in_peak" in seqdf:
+            spcomb = sorted(list(set(zip(seqdf["sites_in_peak"], seqdf["peaklen"]))), key=lambda x: (x[0],x[1]))
+        else:
+            spcomb = [(0,0)] # default
 
+        keycolname = "key" if "key" in seqdf else ""
+
+        # python3 main.py /Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/modeling/mutlist.csv
         # for each combination, get filtered probes
-        spcomb = [(3, 200)]
-
         filtered_probes = coopfilter.get_filtered_probes(seqdf=seqdf,
                                                          escores=self.escores,
                                                          models=self.models,
                                                          mutate_cutoff=self.mutate_cutoff,
                                                          mutate_gap=self.mutate_gap,
-                                                         egaps=self.egaps,
-                                                         thresholds=self.thresholds,
-                                                         proteins=self.proteins,
+                                                         egaps=self.escore_gaps,
+                                                         thresholds=self.escore_thresholds,
+                                                         proteins=self.tf,
                                                          colors=self.colors,
                                                          generate_plots=self.generate_plots,
                                                          spcomb=spcomb,
                                                          analysis_path=self.analysis_path,
                                                          mode="noncustom",
                                                          predict_flanks=True,
-                                                         key_colname="key",
+                                                         flank_len=self.flank_len,
+                                                         key_colname=keycolname,
                                                          show_model_flanks=self.show_model_flanks,
                                                          get_complete_mutated=self.get_complete_mutated,
                                                          primer=self.primer,
@@ -117,8 +124,8 @@ class ProbeFilter:
 
         # check if we have the required columns
         if df_out.columns.isin(self.req_cols).all():
-            print("Saving result in %smutated_probes.tsv" % self.analysis_path)
-            df_out.to_csv("%smutated_probes.tsv" % (self.analysis_path), sep="\t", index=False)
+            print("Saving result in %s/mutated_probes.tsv" % self.analysis_path)
+            df_out.to_csv("%s/mutated_probes.tsv" % (self.analysis_path), sep="\t", index=False)
         else:
             print("No mutation rows found in %s" % sitepath)
 

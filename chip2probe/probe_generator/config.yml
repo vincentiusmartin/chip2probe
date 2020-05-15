@@ -4,6 +4,7 @@ default:
   tf: # this will determine homotypic / heterotypic
     - ets1
   genomever: hg19
+  flank_len: 0
 
   # ==== SPECIFIC RUN PARAMETER ====
   escore_gaps: # how many gaps are permitable
