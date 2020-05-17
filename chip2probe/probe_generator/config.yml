@@ -51,3 +51,6 @@ default:
       alignpath: /Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas/runx1_kmer_alignment.txt
       pwm_core_start: 4
       pwm_core_end: 9
+
+  # Negative controls
+  
