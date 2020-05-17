@@ -116,6 +116,7 @@ class ProbeFilter:
 
         # initialize a dataframe of filtered probes with wt, m1, m2, m3
         fp_df = pd.DataFrame(filtered_probes)
+        #fp_df.to_csv("mutmutmut.tsv", sep="\t", index=False)
 
         df_init = seqdf[["key", "flank_left", "flank_right", "chr", "seqstart", "seqend"]] # will produce warning but it is fine
         df_init["coordinate"] = df_init.apply(lambda row: "%s:%d-%d" % (row["chr"],row["seqstart"],row["seqend"]), axis=1)
