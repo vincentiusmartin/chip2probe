@@ -41,7 +41,7 @@ class BindingSite(object):
                        self.site_end, self.core_start, self.core_end,
                        self.site_sequence, self.protein)
 
-MutatedSequence = collections.namedtuple('MutatedSequence', 
+MutatedSequence = collections.namedtuple('MutatedSequence',
                                          'sequence, \
                                           escore_preds, \
                                           model_preds, \
@@ -61,7 +61,7 @@ class Sequence(object):
 
         :param escore_preds: prediction from the Escore class, the sequence string will
                be obtained from this object.
-        :param model_preds: give the position of the core predicted by a model (kompas or imads). 
+        :param model_preds: give the position of the core predicted by a model (kompas or imads).
                             The quality of the prediction will be assessed by using 'escore_preds'.
         :param proteins: list of proteins with length 1 if homotypic and 2 if heterotypic
         :param escore_cutoff: we determine that the site is specific when there are 2
@@ -159,7 +159,7 @@ class Sequence(object):
                     # skip if checking against itself
                     if i == site_index and curr_protein == protein:
                         continue
-                    # get region of this other core that the 
+                    # get region of this other core that the
                     unmutated_start = self.bsites[curr_protein][i].core_start - self.bsites[curr_protein][i].barrier
                     unmutated_end = self.bsites[curr_protein][i].core_end + self.bsites[curr_protein][i].barrier
                     # if this max escore intersects with another core, remove
@@ -170,7 +170,7 @@ class Sequence(object):
                         max_escore = copy.copy(max_val)
         return max_escore
 
-    def eliminate_site(self, protein, sequence, site_index, 
+    def eliminate_site(self, protein, sequence, site_index,
                        escore_threshold=0.3):
         """
         Eliminate the given site from the sequence.
@@ -188,12 +188,12 @@ class Sequence(object):
         flag = True
         while flag and prevmax != maxescore:
             prevmax = float(maxescore)
-            maxepreds = self.get_max_non_intersecting_escore(protein=protein, 
-                                                             full_seq=full_sequence, 
+            maxepreds = self.get_max_non_intersecting_escore(protein=protein,
+                                                             full_seq=full_sequence,
                                                              site_index=site_index)
             maxescore = maxepreds['score']
             # if the max non intersecting escore is below the threshold, nothing to mutate
-            if maxescore < escore_threshold: 
+            if maxescore < escore_threshold:
                 flag = False
             else:
                 # return immediately if the site can't be mutated
@@ -216,7 +216,7 @@ class Sequence(object):
         # return the new mutated sequence and the positions mutated
         return full_sequence, site_mutpos
 
-    def abolish_sites(self, sites, mode="to_eliminate", 
+    def abolish_sites(self, sites, mode="to_eliminate",
                       escore_threshold=0.3):
         """
         proteins: list of proteins whose core to be abolished.
@@ -254,7 +254,7 @@ class Sequence(object):
                                self.escore_gap, mutpos, functions)
 
     # TODO: change to pbmescore.get_escores_specific
-    def get_bsite(self, escore_preds, model_preds, protein, 
+    def get_bsite(self, escore_preds, model_preds, protein,
                   escore_cutoff=0.4, escore_gap=0):
         """
         Get binding site objects.
@@ -285,7 +285,7 @@ class Sequence(object):
                     # if we have found sufficient e-scores above the cutoff then get the binding sites
                     if signifcount >= 2:
                         # startpos: the start of binding
-                        escore_bind = {"startpos": escores[startidx]['position'],  
+                        escore_bind = {"startpos": escores[startidx]['position'],
                                        "escorelength": signifcount + gapcount,
                                        "escore_startidx": escores[startidx]['start_idx']}
                         # we get e-scores now we look for its imads binding site
@@ -433,7 +433,6 @@ class Sequence(object):
 
         # find left hand binding site
         if pos == [0]:
-            print(self.bsites)
             if self.bsites[self.proteins[0]][0]['core_start']\
                < self.bsites[self.proteins[1]][0]['core_start']:
                 return {self.proteins[0]: [0], self.proteins[1]: []}

@@ -12,7 +12,7 @@ import numpy as np
 from Bio import SeqIO
 from Bio.Seq import reverse_complement, Seq
 import os
-from itertools import groupby 
+from itertools import groupby
 from operator import itemgetter
 from pybedtools import BedTool
 
@@ -25,6 +25,7 @@ class Kompas(basemodel.BaseModel):
         self.clean = clean
         self.kmer_align_path = kmer_align_path
         #pass
+        
     def predict_sequence(self, sequence, kmerFile, core, centerPos, threshold, protein):
         '''This function uses kompas to predict the position of a
            tf binding site on a given sequence'''
@@ -66,7 +67,7 @@ class Kompas(basemodel.BaseModel):
         k = len(kmer['kmer'][0])
         coreLen = core[1] - core[0]
         # Find the kPositions required, any would be sufficient to call
-        if k > coreLen: 
+        if k > coreLen:
             searchEnd = core[1]
             checkK = 0
             ReqKpos = set() #
@@ -87,7 +88,7 @@ class Kompas(basemodel.BaseModel):
         ScoredKpos = ReqKpos.copy()
         if k >= coreLen:
             ScoredKpos.add(min(ReqKpos) - 1)
-            ScoredKpos.add(max(ReqKpos) + 1)        
+            ScoredKpos.add(max(ReqKpos) + 1)
 
         # Generate dictionary for quick retreaval of relevant kmers
         thrKmers = kmer[(kmer['Escore'] > threshold) & (kmer['kposition'].isin(ScoredKpos))]
@@ -147,7 +148,7 @@ class Kompas(basemodel.BaseModel):
                 elif k < coreLen:
                     siteScores.append(min(kScore))
             return(pd.Series([centerSites, siteScores]))
-        
+
         #-----------------------start prediction-------------------------------
         isPalindrome = False
         chromosome = ""
@@ -160,11 +161,11 @@ class Kompas(basemodel.BaseModel):
         lst = [[chromosome, start, fwd, seq_len, rev_comp]]
         df = pd.DataFrame.from_records(lst, columns = col_names)
         if isPalindrome == True:
-            df[["centerPlus","scorePlus"]] = df.apply(lambda df: findCenter(kmerMatch(df['fwd']), 'fwd', len(df['fwd'])), axis = 1) 
+            df[["centerPlus","scorePlus"]] = df.apply(lambda df: findCenter(kmerMatch(df['fwd']), 'fwd', len(df['fwd'])), axis = 1)
             df = df[~df['centerPlus'].isna()]
         else:
             # search forward strand
-            df[["centerPlus","scorePlus"]] = df.apply(lambda df: findCenter(kmerMatch(df['fwd']), 'fwd',len(df['fwd'])), axis = 1) 
+            df[["centerPlus","scorePlus"]] = df.apply(lambda df: findCenter(kmerMatch(df['fwd']), 'fwd',len(df['fwd'])), axis = 1)
             # search reverse compliment
             df[["centerMinus","scoreMinus"]] = df.apply(lambda df: findCenter(kmerMatch(df['rev_comp']), 'rc',len(df['rev_comp'])), axis = 1)
             df = df[~df['centerPlus'].isna() | ~df['centerMinus'].isna()]
@@ -192,7 +193,7 @@ class Kompas(basemodel.BaseModel):
                                "score": 0
                                })
         return prediction
-        
+
     def predict_sequences(self, sequence_df, key_colname="",
                           sequence_colname="sequence",
                           flank_colname="flank", predict_flanks=False,
@@ -200,14 +201,14 @@ class Kompas(basemodel.BaseModel):
         '''This is a temporary function that makes predictions dict
            using the dataframe'''
 
-        seqdict = self.pred_input_todict(sequence_df, 
+        seqdict = self.pred_input_todict(sequence_df,
                                          sequence_colname=sequence_colname,
                                          key_colname=key_colname)
         if predict_flanks:
-            flank_left = bio.get_seqdict(sequence_df,"%s_left" % flank_colname, 
+            flank_left = bio.get_seqdict(sequence_df,"%s_left" % flank_colname,
                                          ignore_missing_colname=True,
                                          keycolname=key_colname)
-            flank_right = bio.get_seqdict(sequence_df,"%s_right" % flank_colname, 
+            flank_right = bio.get_seqdict(sequence_df,"%s_right" % flank_colname,
                                           ignore_missing_colname=True,
                                           keycolname=key_colname)
         if self.protein == 'ets1':
@@ -236,7 +237,7 @@ class Kompas(basemodel.BaseModel):
             predictions[key] = basepred.BasePrediction(sequence, prediction)
         return predictions
 
-    def make_plot_data(self, predictions_dict, color = "mediumspringgreen", 
+    def make_plot_data(self, predictions_dict, color = "mediumspringgreen",
                        show_model_flanks=False):
         func_dict = {}
         for key in predictions_dict:

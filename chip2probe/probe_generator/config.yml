@@ -1,10 +1,49 @@
 default:
   # ==== DEFINE PARAMETER FOR THE CURRENT RUN ====
-  sitecall_mode: kompas # imads/kompas
+  sitecall_mode: imads # imads/kompas
   tf: # this will determine homotypic / heterotypic
     - ets1
-    - runx1
   genomever: hg19
+  flank_len: 0
+
+  # ==== SPECIFIC RUN PARAMETER ====
+  escore_gaps: # how many gaps are permitable
+    - 0
+  escore_thresholds: #list of escore thresholds
+    - 0.4
+  # cutoff for significant escore. If mutate is True, any non-centered sites
+  # below this cutoff are mutated and removed
+  mutate_cutoff: 0.38
+  # gap used in determining what to mutate
+  mutate_gap: 0
+  # imads would usually use flanks to predict
+  predict_flanks: True
+  # boolean whether to show flanks used by the model. Kompas has no flanks, only imads does
+  show_model_flanks: False
+  # user can determine colors for the proteins as a list of tuples (escore color, model color)
+  colors:
+    - ~
+  generate_plots: False
+  # indicate whether or not we require all m1,m2,m3 sequences for each wild type
+  get_complete_mutated: True
+  customs:
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+  tf_source: ets1_k562
+  # number of custom sequences
+  ncustom: 750
+  # primer sequence to be used
+  primer: GTCTTGATTCGCTTGACGCTGCTG
+  # max number of nucelotides to be mutated at the junctions for cleaning
+  max_mutate_count: 2
+  # number of negative controls
+  num_neg_ctrl: 400
+  # set escore cutoff to 0.3 for non-significant sites
+  neg_ctrl_thres: 0.3
 
   # Below is the general part, it is okay to put any information since run specific
   # information is provided above.
@@ -13,12 +52,8 @@ default:
   escore_short_paths:
     ets1: /Users/vincentiusmartin/Research/chip2gcPBM/resources/escores/ets1_escores.txt
   escore_long_paths:
-    ets1: /Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/escores/Ets1_8mers_11111111.txt
-    runx1: /Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/escores/Runx1_8mers_11111111.txt
-
-  imads_cutoff:
-    ets1: 0.2128
-    runx1: 0.3061
+    ets1: /Users/vincentiusmartin/Research/chip2gcPBM/resources/escores/Ets1_8mers_11111111.txt
+    runx1: /Users/vincentiusmartin/Research/chip2gcPBM/resources/escores/Runx1_8mers_11111111.txt
 
   # IMADS
   imads:
@@ -26,10 +61,11 @@ default:
       cores:
         - GGAA
         - GGAT
-      modelpaths:
-        - /Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_files/models/ets1/ETS1_100nM_Bound_filtered_normalized_transformed_20bp_GGAA_1a2a3mer_format.model
-        - /Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_files/models/ets1/ETS1_100nM_Bound_filtered_normalized_transformed_20bp_GGAT_1a2a3mer_format.model
-      bedpath: /Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_files/predictions/hg19_0005_Ets1_filtered.bed
+      model_paths:
+        - /Users/vincentiusmartin/Research/chip2gcPBM/imads/model/w12/Ets1_w12_GGAA.model
+        - /Users/vincentiusmartin/Research/chip2gcPBM/imads/model/w12/Ets1_w12_GGAT.model
+      width: 12
+      bed_path: /Users/vincentiusmartin/Research/chip2gcPBM/resources/imads_files/predictions/hg19_0005_Ets1_filtered.bed
       cutoff: 0.2128
     runx1:
       cores:
@@ -44,11 +80,11 @@ default:
   # KOMPAS
   kompas:
     ets1:
-      alignpath: /Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas/ets1_kmer_alignment.txt
+      align_path: /Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas/ets1_kmer_alignment.txt
       pwm_core_start: 3
       pwm_core_end: 7
     runx1:
-      alignpath: /Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas/runx1_kmer_alignment.txt
+      align_path: /Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/kompas/runx1_kmer_alignment.txt
       pwm_core_start: 4
       pwm_core_end: 9
 

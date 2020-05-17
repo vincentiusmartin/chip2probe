@@ -143,23 +143,26 @@ class iMADS(basemodel.BaseModel):
                     mid = core_pos + len(model.core) // 2 - 1
                 elif len(model.core)%2 == 1:
                     mid = core_pos + len(model.core) // 2
-                prediction.append({"site_start": position,
-                                   "site_width": model.width,
-                                   "best_match": best_match,
-                                   "score": best_prediction,
-                                   "core_start": core_pos,
-                                   "core_width": len(model.core),
-                                   "core_mid": mid
-                                   })
+                # only return if score > threshold
+                if best_prediction > self.imads_threshold:
+                    prediction.append({"site_start": position,
+                                       "site_width": model.width,
+                                       "best_match": best_match,
+                                       "score": best_prediction,
+                                       "core_start": core_pos,
+                                       "core_width": len(model.core),
+                                       "core_mid": mid
+                                       })
         return prediction
 
     # or predict fasta?
     def predict_sequences(self, sequence_df, const_intercept=False,
                           transform_scores=True, key_colname="",
                           sequence_colname="sequence", flank_colname="flank",
-                          predict_flanks=False, flank_len=10):
+                          predict_flanks=False, flank_len=0):
         """
         Do not make this as generator, because we need to use it somewhere else.
+        TODO: handle flank_len
         """
         seqdict = self.pred_input_todict(sequence_df,
                                          sequence_colname=sequence_colname,
