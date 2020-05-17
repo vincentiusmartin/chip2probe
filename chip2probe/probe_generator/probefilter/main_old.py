@@ -27,7 +27,7 @@ if __name__ == '__main__':
                                       'runx1': "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/escores/Runx1_8mers_11111111.txt"
                                       },
                 # set the model used, either kompas or imads
-                "method": "kompas",
+                "sitecall_mode": "kompas",
                 "kmer_align_paths": {'ets1': "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/kompas/ets1/Ets1_kmer_alignment.txt",
                                      'runx1': "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/kompas/runx1/Runx1_kmer_alignment.txt"
                                      },
@@ -46,7 +46,7 @@ if __name__ == '__main__':
                                },
                 "imads_cutoff": {'ets1': 0.2128,
                                  'runx1': 0.3061},
-                "proteins": ['ets1'],
+                "tf": ['ets1'],
                 # list of escore gaps
                 "egaps": [0],
                 # list of escore thresholds
@@ -86,10 +86,10 @@ if __name__ == '__main__':
                 "neg_ctrl_thres": 0.3,
                 # negative control files to look at
                 "neg_ctrl_files": ["/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/neg_ctrls/ets1_negative_controls.csv",
-                                   "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/neg_ctrls/runx1_negative_controls.csv"]
+                                   "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/neg_ctrls/runx1_negative_controls.csv"],
                 "dnase_paths": {"k562": "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/k562/dnase_peaks_k562.narrowPeak"},
                 "chip_paths": {"k562": ["/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/k562/ets1_k562_peaks.bed",
                                         "/Users/faricazjj/Box/homotf/chip2probe/chip2probe/data/k562/runx1_k562_peaks.bed"]}
     }
 
-    #ProbeFilter(**input)._run_all()
+    ProbeFilter("sites_all.tsv", **input)._run_all()

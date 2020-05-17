@@ -196,6 +196,9 @@ def clean_junctions(seqlst, proteins, escores, models, mutate_cutoff=0.38,
             if new_seq == seq:
                 seqlst[i] = ""
 
+            else:
+                seqlst[i] = seqlst[i] + primer
+
     # if wild type is empty, return false
     if seqlst[0] == "":
         return [], False

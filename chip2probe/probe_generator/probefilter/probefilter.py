@@ -45,9 +45,9 @@ class ProbeFilter:
         # get filtered probes
         self.filter_probes()
 
-        # # get custom probes
-        # if len(self.customs) > 0:
-        #     self.customize_probes()
+        # get custom probes
+        if len(self.customs) > 0:
+            self.customize_probes()
 
         # # get negative controls
         # if self.num_neg_ctrl > 0:
