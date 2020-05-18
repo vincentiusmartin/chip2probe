@@ -352,15 +352,9 @@ class Training(object):
         list of key:
         1. distance: {type:"numeric/categorical"}
         2. orientation: {"positive_cores:[]", relative:Bool, one_hot:Bool}
-<<<<<<< HEAD
         3. sitepref: {imadsmodel:imadsmodel, modelwidth:width} if empty then use sitepref column
         4. flankseq: {"k":int, seqin=int, smode="positional/strength"}
         5. flankshape: (ds:DNAShape, seqin=int, site_mode="positional/strength", direction="inout/ori") # change t ht
-=======
-        3. sitepref: {} #no param
-        4. flankseq: {"k":int, seqin=int, smode="positional/strength"}
-        5. flankshape: (ds:DNAShape, seqin=int, site_mode="positional/strength")
->>>>>>> 03c9f3cc078971d381a42f9af68fa8c845c7e12c
         """
         ldict = []
         for key in feature_dict:
