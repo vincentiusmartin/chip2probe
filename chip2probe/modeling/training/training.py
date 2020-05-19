@@ -12,7 +12,7 @@ import itertools
 from matplotlib.backends.backend_pdf import PdfPages
 from decimal import Decimal
 
-import trainingdata.seqextractor as seqextractor
+import training.seqextractor as seqextractor
 
 import math
 
