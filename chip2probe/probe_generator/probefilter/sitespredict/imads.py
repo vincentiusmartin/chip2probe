@@ -27,8 +27,11 @@ class iMADS(basemodel.BaseModel):
         """
         if not isinstance(imads_models, list) or not isinstance(imads_models[0], imadsmodel.iMADSModel):
             raise Exception('imads_models must be a list of iMADSModel')
+        if not all(im.width == imads_models[0].width for im in imads_models):
+            raise Exception('all imads models must have the same core width')
         self.models = imads_models #temporary use 0
         self.imads_threshold = imads_threshold
+        self.sitewidth = imads_models[0].width
 
     #def generate_matching_sequence(self, sequence, core, width):
 
