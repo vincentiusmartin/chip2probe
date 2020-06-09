@@ -10,7 +10,7 @@ import pandas as pd
 import os
 os.chdir("../..")
 
-import chip2probe.modeler.plotmodule as pm
+import chip2probe.modeler.plotlib as pl
 from chip2probe.modeler.cooptrain import CoopTrain
 
 if __name__ == "__main__":
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     train = CoopTrain(df, corelen=4)
 
     # make distace stacked bar
-    pm.stacked_bar_categories(train.df, "distance", path="dist_stackedbar.png")
+    pl.stacked_bar_categories(train.df, "distance", path="dist_stackedbar.png")
 
     # get stacked bar of ratio between different distance
-    pm.stacked_bar_categories(train.df, "distance", path="dist_stackedbar_avg.png", avg=True)
+    pl.stacked_bar_categories(train.df, "distance", path="dist_stackedbar_avg.png", avg=True)

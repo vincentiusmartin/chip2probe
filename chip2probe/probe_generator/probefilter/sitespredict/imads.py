@@ -142,10 +142,10 @@ class iMADS(basemodel.BaseModel):
                     continue
                 if transform_scores:
                     best_prediction = self.transform_score(best_prediction)
-                if len(model.core)%2 == 0:
-                    mid = core_pos + len(model.core) // 2 - 1
-                elif len(model.core)%2 == 1:
+                if len(model.core) % 2 == 0:
                     mid = core_pos + len(model.core) // 2
+                elif len(model.core) % 2 == 1:
+                    mid = core_pos + len(model.core) // 2 + 1
                 # only return if score > threshold
                 if best_prediction > self.imads_threshold:
                     prediction.append({"site_start": position,
@@ -162,10 +162,16 @@ class iMADS(basemodel.BaseModel):
     def predict_sequences(self, sequence_df, const_intercept=False,
                           transform_scores=True, key_colname="",
                           sequence_colname="sequence", flank_colname="flank",
-                          predict_flanks=False, flank_len=0):
+                          predict_flanks=False, flank_len=0,
+                          only_pred = False
+                          ):
         """
         Do not make this as generator, because we need to use it somewhere else.
         TODO: handle flank_len
+
+        Args:
+            only_pred: return only prediction dictionary, if False, return BasePrediction
+                       object which contains the sequence.
         """
         seqdict = self.pred_input_todict(sequence_df,
                                          sequence_colname=sequence_colname,
@@ -191,7 +197,10 @@ class iMADS(basemodel.BaseModel):
                    # remove the prediction
                    prediction.remove(result)
                 result['core_mid'] = result['core_mid'] - flank_len
-            predictions[key] = basepred.BasePrediction(sequence, prediction)
+            if only_pred:
+                predictions[key] = prediction
+            else:
+                predictions[key] = basepred.BasePrediction(sequence, prediction)
         return predictions
 
     def make_plot_data(self, predictions_dict, color = "mediumspringgreen",

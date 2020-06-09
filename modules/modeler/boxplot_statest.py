@@ -10,7 +10,7 @@ import pandas as pd
 import os
 os.chdir("../..")
 
-import chip2probe.modeler.plotmodule as pm
+import chip2probe.modeler.plotmodule as pl
 from chip2probe.modeler.cooptrain import CoopTrain
 
 if __name__ == "__main__":
@@ -20,6 +20,6 @@ if __name__ == "__main__":
     train = CoopTrain(df, corelen=4)
 
     # make distace stacked bar
-    pm.plot_box_categories(train.df, incols=["distance", "site_str_score", "site_wk_score"])
+    pl.plot_box_categories(train.df, incols=["distance", "site_str_score", "site_wk_score"])
 
-    pm.plot_grouped_label(train.df, incols=["distance", "site_str_score", "site_wk_score"], by=["label"])
+    pl.plot_grouped_label(train.df, incols=["distance", "site_str_score", "site_wk_score"], by=["label"])
