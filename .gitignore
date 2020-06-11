@@ -12,7 +12,6 @@
 __pycache__
 libsvm*
 result
-input
 output
 test.py
 
