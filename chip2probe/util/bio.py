@@ -11,7 +11,7 @@ def revcompstr(seq):
     return "".join([rev[base] for base in reversed(seq)])
 
 
-def get_seqdict(sequence_tbl, sequence_colname="sequence", keycolname="", keyname="sequence", 
+def get_seqdict(sequence_tbl, sequence_colname="sequence", keycolname="", keyname="sequence",
                 ignore_missing_colname=False):
     """
     Generate dictionary representation from sequence table or list.
@@ -79,3 +79,26 @@ def seqtoi(seq):
         binrep |= nucleotides[seq[i]]
     # return the integer representation of the sequence
     return binrep
+
+def makefasta(sequences, path):
+    """
+    Make fasta file from a list of sequences or dictionary
+
+    Args:
+        sequences: list of sequences or dictionary, if list then key will be generated
+            automatically
+        path: where to create the fasta file
+     Returns:
+        NA
+    """
+    if isinstance(sequences, list):
+        seqdict = {"seq-%d"%(i+1):s for i in range(len(sequences))}
+    elif isinstance(sequences, dict):
+        seqdict =  dict(sequences)
+    else:
+        raise ValueError("sequences must be a list or dictionary")
+    fastastr = ""
+    for k,v in seqdict.items():
+        fastastr += ">%s\n%s\n" % (k,v)
+    with open(path, 'w') as f:
+        f.write(fastastr[:-1]) # ignore last new line

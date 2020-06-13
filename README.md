@@ -1,5 +1,13 @@
 # chip2probe
 
+## Major Changes
+1. Refactor features, each feature has its own class
+2. Using DNAShapeR for DNAShape prediction
+
+## Required packages:
+1. https://www.bioconductor.org/packages/release/bioc/html/DNAshapeR.html for DNAShape prediction
+
+
 ## chip2probe available modules
 1. probe_generator
 2. training_gen

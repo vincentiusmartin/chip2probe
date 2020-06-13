@@ -1,5 +1,9 @@
-
 from chip2probe.modeler.features import basefeature
+import chip2probe.util.bio as bio
+import string, random
+
+import rpy2.robjects as robjects
+from rpy2.robjects.packages import importr
 
 class Shape(basefeature.BaseFeature):
     def __init__(self, traindf, params):
@@ -7,7 +11,7 @@ class Shape(basefeature.BaseFeature):
         DNA Shape feature prediction class
 
         Args:
-            traindf: dataframe containing the "sequence" column
+            traindf: dataframe containing the "name", "sequence" column
             params:
                 - c: trainingdata.dnashape.DNAShape object
                 - seqin: if positive, get shape with direction to the inside;
@@ -21,15 +25,21 @@ class Shape(basefeature.BaseFeature):
             NA
         """
         default_args = {
-            "dnashape" : None,
             "seqin": 0,
             "smode": "positional",
             "direction": "inout"
         }
         self.df = traindf
         self.set_attrs(params, default_args)
-        print(self.df.shape)
-        print(len(self.dnashape.prot))
+
+        fastadict = dict(zip(self.df["name"], self.df["sequence"]))
+        tmpfasta = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        dnashape_r = importr('DNAshapeR')
+        ds = dnashape_r.getShape("test.fasta")
+        print(ds)
+        #bio.makefasta(fastadict,"%s.fasta" % tmpfasta)
+        import sys
+        sys.exit(0)
 
     def get_feature(self):
         self.get_feature_flank_shapes()

@@ -23,7 +23,6 @@ if __name__ == "__main__":
     cooptr = CoopTrain(df, corelen=4)
 
     shapepath = "input/modeler/dnashape/0"
-    ds = DNAShape(shapepath)
 
     rf_param_grid = {
         'n_estimators': [500, 1000, 1500],
@@ -37,10 +36,10 @@ if __name__ == "__main__":
                           param_dict=rf_param_grid,
                           train_data=cooptr.get_training_df({
                                   #"distance":{"type":"numerical"},
-                                  "shape": {"dnashape":ds, "seqin":5, "smode":"strength"}
+                                  "shape": {"seqin":5, "smode":"strength"}
                                   #"shape": {"ds":ds, "seqin":-3, "smode":"strength"}
                                   #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
                               }),
                            topn=10
-                ).run_all()
+                ) #.run_all()
     }
