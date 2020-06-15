@@ -19,9 +19,10 @@ from sklearn.model_selection import StratifiedKFold
 import itertools
 import concurrent.futures as cc
 import timeit
-import os
+import os, sys
 import functools
 import importlib
+import six
 
 class BestModel:
     def __init__(self, clf, param_grid, train_data, topn = -1, cv_fold=10, cv_num=1):

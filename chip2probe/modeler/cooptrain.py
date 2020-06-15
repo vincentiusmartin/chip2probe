@@ -10,6 +10,7 @@ import sys
 import importlib
 
 from chip2probe.util import util
+from chip2probe.util import bio
 from chip2probe.modeler.features import *
 
 class CoopTrain:
@@ -24,7 +25,7 @@ class CoopTrain:
             sep: Separator for the csv/tsv file if the trainingdata is string
             flip_th: Flip all TH orientation to HT (important whe we want to treat TH == HT)
             positive_cores: Required if flip_th is true, contain all the positive cores that define
-            HT orientatio.
+            HT orientation.
 
          Returns:
             NA
@@ -35,12 +36,12 @@ class CoopTrain:
             self.df = pd.read_csv(trainingpath, sep=sep)
         else:
             raise Exception("input must be string path or data frame")
+        self.validate_cols()
+        self.corelen = corelen
         if flip_th:
             if not positive_cores:
                 raise Exception("Positive cores must be defined when flip_th is True")
             self.df = self.flip_th2ht(positive_cores)
-        self.validate_cols()
-        self.corelen = corelen
 
     def validate_cols(self):
         """
@@ -52,12 +53,12 @@ class CoopTrain:
 
     def flip_th2ht(self,positive_cores):
         # flip if orientation one
-        ori = self.get_feature_orientation(positive_cores)
+        ori = self.get_feature("orientation", {"positive_cores":positive_cores, "relative":True, "one_hot":False})
         records = self.df.to_dict(orient='records')
         for i in range(0,len(records)):
             if ori[i]["ori"] == "HT/TH":
-                site_str = records[i]["sequence"][records[i]["site_str_pos"] - self.motiflen//2:records[i]["site_str_pos"] + self.motiflen//2]
-                site_wk = records[i]["sequence"][records[i]["site_wk_pos"] - self.motiflen//2:records[i]["site_wk_pos"] + self.motiflen//2]
+                site_str = records[i]["sequence"][records[i]["site_str_pos"] - self.corelen//2:records[i]["site_str_pos"] + self.corelen//2]
+                site_wk = records[i]["sequence"][records[i]["site_wk_pos"] - self.corelen//2:records[i]["site_wk_pos"] + self.corelen//2]
                 if site_str not in positive_cores and site_wk not in positive_cores:
                     records[i]["sequence"] = bio.revcompstr(records[i]["sequence"])
                     # flip the position as well
@@ -65,9 +66,23 @@ class CoopTrain:
                     wk_pos = records[i]["site_wk_pos"]
                     records[i]["site_str_pos"] = len(records[i]["sequence"]) - wk_pos
                     records[i]["site_wk_pos"] = len(records[i]["sequence"]) - str_pos
-        return Training(pd.DataFrame(records), corelen=self.motiflen)
+        return pd.DataFrame(records)
 
     # ---------- GETTING FEATURE ----------
+    def get_feature(self, feature, params):
+        """
+        Get a feature
+
+        Args:
+            feature: a string, the name of the feature (e.g. "orientation")
+         Returns:
+            feature_dict
+        """
+
+        module = importlib.import_module("chip2probe.modeler.features.%s" % feature)
+        class_ = getattr(module, feature.capitalize())
+        instance = class_(self.df, params)
+        return instance.get_feature()
 
     def get_feature_all(self, feature_dict):
         """
@@ -86,10 +101,7 @@ class CoopTrain:
         """
         ldict = []
         for class_name, params in feature_dict.items():
-            module = importlib.import_module("chip2probe.modeler.features.%s" % class_name)
-            class_ = getattr(module, class_name.capitalize())
-            instance = class_(self.df, params)
-            ldict = util.merge_listdict(instance.get_feature(),ldict)
+            ldict = util.merge_listdict(self.get_feature(class_name,params),ldict)
         #print(ldict)
         return ldict
 
