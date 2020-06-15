@@ -20,26 +20,23 @@ if __name__ == "__main__":
     df = pd.read_csv(trainingpath, sep="\t")
     # select only genomic (i.e. non-custom) sequences
     df = df[~df['name'].str.contains("dist|weak")]
-    cooptr = CoopTrain(df, corelen=4)
-
-    shapepath = "input/modeler/dnashape/0"
+    cooptr = CoopTrain(df, corelen=4, flip_th=True, positive_cores=["GGAA","GGAT"])
 
     rf_param_grid = {
-        'n_estimators': [500, 1000, 1500],
-        'max_depth':[5, 10, 15],
-        "min_samples_leaf" : [10, 15, 20],
-        "min_samples_split" :[10, 15 ,20]
+        'n_estimators': [500],
+        'max_depth':[5],
+        "min_samples_leaf" : [10],
+        "min_samples_split" :[10]
     }
 
     best_models = {"top10":
-              BestModel(clf="RF",
-                          param_dict=rf_param_grid,
+              BestModel(clf="sklearn.ensemble.RandomForestClassifier",
+                          param_grid=rf_param_grid,
                           train_data=cooptr.get_training_df({
                                   #"distance":{"type":"numerical"},
-                                  "shape": {"seqin":5, "smode":"strength"}
+                                  "shape": {"seqin":2, "smode":"positional", "direction":"orientation" , "positive_cores":["GGAA","GGAT"]}
                                   #"shape": {"ds":ds, "seqin":-3, "smode":"strength"}
                                   #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
-                              }),
-                           topn=10
-                ) #.run_all()
+                              })
+                )#.run_all()
     }
