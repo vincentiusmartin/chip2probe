@@ -84,7 +84,7 @@ class CoopTrain:
         instance = class_(self.df, params)
         return instance.get_feature()
 
-    def get_feature_all(self, feature_dict):
+    def get_feature_all(self, feature_dict, aslist=False):
         """
         Get all feature based on feature dict
 
@@ -97,13 +97,16 @@ class CoopTrain:
                 2. orientation: {"positive_cores:[]", relative:Bool, one_hot:Bool}
                 3. affinity: {imads: sitespredict.imads instance}
          Returns:
-            ldict: list of dictionary of features
+            ldict: list of dictionary of features or list of list if 'aslist' is True
         """
         ldict = []
         for class_name, params in feature_dict.items():
             ldict = util.merge_listdict(self.get_feature(class_name,params),ldict)
-        #print(ldict)
-        return ldict
+        if aslist:
+            # return as list of list
+            return [[d[k] for k in d] for d in ldict]
+        else:
+            return ldict
 
     def get_numeric_label(self, label_map):
         ytrain = self.df['label'].map(label_map)

@@ -81,6 +81,8 @@ class Shape(basefeature.BaseFeature):
                 rfeature.append(self.get_shape_inout(idx, site1, site2, type))
             else:
                 rfeature.append(self.get_shape_orientation(idx, site1, site2, s1type, s2type , row["orientation"]))
+            print(rfeature)
+            break
         return rfeature
 
     def get_shape_inout(self, idx, site1, site2,  s1type, s2type):
