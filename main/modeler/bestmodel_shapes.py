@@ -34,7 +34,7 @@ if __name__ == "__main__":
                           param_grid=rf_param_grid,
                           train_data=cooptr.get_training_df({
                                   #"distance":{"type":"numerical"},
-                                  "shape": {"seqin":2, "smode":"positional", "direction":"orientation" , "positive_cores":["GGAA","GGAT"]}
+                                  "shape": {"seqin":2, "smode":"positional", "direction":"inout"}
                                   #"shape": {"ds":ds, "seqin":-3, "smode":"strength"}
                                   #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
                               })

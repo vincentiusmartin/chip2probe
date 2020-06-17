@@ -78,9 +78,10 @@ class Shape(basefeature.BaseFeature):
                 s1type, s2type = "s1", "s2"
             # get flanking shape based on direction
             if self.direction == "inout":
-                rfeature.append(self.get_shape_inout(idx, site1, site2, type))
+                rfeature.append(self.get_shape_inout(idx, site1, site2, s1type, s2type))
             else:
                 rfeature.append(self.get_shape_orientation(idx, site1, site2, s1type, s2type , row["orientation"]))
+            print(row)
             print(rfeature)
             break
         return rfeature
@@ -89,17 +90,19 @@ class Shape(basefeature.BaseFeature):
         dfeature = {}
         for s in self.shapes:
             # orientation
+            print(s, self.shapes[s][idx])
             if self.seqin > 0: # inner
                 flank1 = self.shapes[s][idx][site1:site1+self.seqin]
-                flank2 = self.shapes[s][idx][site2-self.seqin:site2][::-1]
+                flank2 = self.shapes[s][idx][site2-self.seqin+1:site2+1][::-1]
                 type = "inner"
             else: # outer
                 flank1 = self.shapes[s][idx][site1+self.seqin:site1][::-1]
                 flank2 = self.shapes[s][idx][site2:site2-self.seqin]
                 type = "outer"
-            for i in range(abs(self.seqin)):
-                dfeature["%s_%s_%s_pos_%d" % (s,type,s1type,i)] = flank1[i]
-                dfeature["%s_%s_%s_pos_%d" % (s,type,s2type,i)] = flank2[i]
+            start = 1 if self.seqin < 0 else 0 # if outer, we start from 1
+            for i in range(start, abs(self.seqin) + start):
+                dfeature["%s_%s_%s_pos_%d" % (s,type,s1type,i)] = flank1[i-start]
+                dfeature["%s_%s_%s_pos_%d" % (s,type,s2type,i)] = flank2[i-start]
         return dfeature
 
     def get_shape_orientation(self, idx, site1, site2, s1type, s2type, orientation):
