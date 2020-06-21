@@ -17,7 +17,8 @@ class Shape(basefeature.BaseFeature):
             params:
                 - c: trainingdata.dnashape.DNAShape object
                 - self.seqin: if positive, get shape with direction to the inside;
-                        if negative, get shape with direction to the outside
+                        if negative, get shape with direction to the outside. If
+                        direction is "orientation", seqin becomes head orientation.
                 - smode: "positional" or "strength" get direction anchored on the
                         position or strength of the site
                 - direction= "inout" or "orientation" using in-out direction or based on
@@ -81,16 +82,12 @@ class Shape(basefeature.BaseFeature):
                 rfeature.append(self.get_shape_inout(idx, site1, site2, s1type, s2type))
             else:
                 rfeature.append(self.get_shape_orientation(idx, site1, site2, s1type, s2type , row["orientation"]))
-            print(row)
-            print(rfeature)
-            break
         return rfeature
 
     def get_shape_inout(self, idx, site1, site2,  s1type, s2type):
         dfeature = {}
         for s in self.shapes:
             # orientation
-            print(s, self.shapes[s][idx])
             if self.seqin > 0: # inner
                 flank1 = self.shapes[s][idx][site1:site1+self.seqin]
                 flank2 = self.shapes[s][idx][site2-self.seqin+1:site2+1][::-1]
@@ -106,35 +103,36 @@ class Shape(basefeature.BaseFeature):
         return dfeature
 
     def get_shape_orientation(self, idx, site1, site2, s1type, s2type, orientation):
+        # for this, seqin becomes "head" orientation
         dfeature = {}
         for s in self.shapes:
             # get the inner flanking region
             if orientation == 'HH':
                 if self.seqin >= 0:
                     flank1 = self.shapes[s][idx][site1:site1 + self.seqin]
-                    flank2 = self.shapes[s][idx][site2 - self.seqin:site2][::-1]
+                    flank2 = self.shapes[s][idx][site2-self.seqin+1:site2+1][::-1]
                     type = "head"
                 if self.seqin < 0:
-                    flank1 = self.shapes[s][idx][site1 + self.seqin:site1][::-1]
-                    flank2 = self.shapes[s][idx][site2:site2 - self.seqin]
+                    flank1 = self.shapes[s][idx][site1+self.seqin:site1][::-1]
+                    flank2 = self.shapes[s][idx][site2:site2-self.seqin]
                     type = "tail"
             elif orientation == 'TT':
                 if self.seqin < 0:
-                    flank1 = self.shapes[s][idx][site1:site1 - self.seqin]
-                    flank2 = self.shapes[s][idx][site2 + self.seqin:site2][::-1]
+                    flank1 = self.shapes[s][idx][site1+1:site1-self.seqin+1]
+                    flank2 = self.shapes[s][idx][site2+self.seqin:site2][::-1]
                     type = "tail"
                 if self.seqin >= 0:
-                    flank1 = self.shapes[s][idx][site1 - self.seqin:site1][::-1]
-                    flank2 = self.shapes[s][idx][site2:site2 + self.seqin]
+                    flank1 = self.shapes[s][idx][site1-self.seqin+1:site1+1][::-1]
+                    flank2 = self.shapes[s][idx][site2:site2+self.seqin]
                     type = "head"
-            elif orientation == 'HT/TH':
+            elif orientation == 'HT/TH': # right now assume it faces right / glass
                 if self.seqin >= 0:
-                    flank1 = self.shapes[s][idx][site1:site1 + self.seqin]
-                    flank2 = self.shapes[s][idx][site2:site2 + self.seqin]
+                    flank1 = self.shapes[s][idx][site1:site1+self.seqin]
+                    flank2 = self.shapes[s][idx][site2:site2+self.seqin]
                     type = "head"
                 if self.seqin < 0:
-                    flank1 = self.shapes[s][idx][site1 + self.seqin:site1][::-1]
-                    flank2 = self.shapes[s][idx][site2 + self.seqin:site2][::-1]
+                    flank1 = self.shapes[s][idx][site1+self.seqin:site1][::-1]
+                    flank2 = self.shapes[s][idx][site2+self.seqin:site2][::-1]
                     type = "tail"
             for i in range(abs(self.seqin)):
                 dfeature["%s_%s_%s_pos_%d" % (s,type,s1type,i)] = flank1[i]
