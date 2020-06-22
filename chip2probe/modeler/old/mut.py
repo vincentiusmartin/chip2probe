@@ -2,10 +2,12 @@
 import sys
 
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 import random
 import math
 import logging
-
+import pickle
 
 from chip2probe.probe_generator.probefilter.sitespredict.imads import iMADS
 from chip2probe.probe_generator.probefilter.sitespredict.imadsmodel import iMADSModel
@@ -211,7 +213,7 @@ def mutate_flanks(seq, spos, flanklen):
         elif spos[1] - 2 - flanklen <= p < spos[1] - 2:
             comment = "2_left_" + str(spos[1] - 2 - p)
         else:
-            comment = "2_right_" + str(p - (spos[1] + 2) + 2)
+            comment = "2_right_" + str(p - (spos[1] + 2) + 1)
         for nuc in atgc - set(seq[p]):
             mutflank.append({"sequence":seq[:p] + nuc + seq[p + 1:], 
                             "comment": comment})
@@ -267,14 +269,73 @@ def predict_all_ori(test,ds):
     return ypred,yprob
 
 def populate_wt_pred(df):
-    pass
+    """Populate the dataframe with column indicating the wt pred."""
+    df["wt_pred"] = 0
+    for idx, row in df.iterrows():
+        if row["comment"] == "wt":
+            wt_pred = row["y_pred"]
+        df.at[idx, "wt_pred"] = wt_pred
+
+    return df
+
+def filter_changed_pred_label(df):
+    """Get rows in the df where wt pred and y pred are different."""
+    df = df.loc[(df['wt_pred'] != df['y_pred']) | (df['comment']=='wt')]
+    return df
+
+def filter_high_pred_prob(df, cutoff=0.7):
+    """Get rows in the df where y proba is at least cutoff."""
+    df = df.loc[df['y_proba'] >= cutoff]
+    return df
+
+def filter_same_pred_label(df):
+    """Get rows in the df where wt pred and y pred are the same."""
+    df = df.loc[(df['wt_pred'] == df['y_pred'])]
+    return df
+
+def filter_similar_score(df, imads):
+    """Get rows in the df where the imads scores for both sites are the same after mutation."""
+    rows = []
+    for idx, row in df.iterrows():
+        # get the scores of the wild type sequence
+        if row["comment"] == "wt":
+            wt_seq = row["sequence"]
+            wtpred = imads.predict_sequence(wt_seq)
+        else:
+            mut_seq = row["sequence"]
+            seqpred = imads.predict_sequence(mut_seq)
+            score1, score2 = seqpred[0]["score"], seqpred[1]["score"]
+            if not (math.isclose(score1, wtpred[0]["score"], rel_tol=1e-2) and \
+                math.isclose(score2, wtpred[1]["score"], rel_tol=1e-2)):
+                rows.append(idx)
+
+    # drop the rows where scores of corresponding sites are not similar
+    df = df.drop(rows)
+    return df
+                
+def clean_df(df):
+    """Remove wild types with no eligible mutated sequences after filtering."""
+    rows = []
+    # number of mutated sequences for a particular wild type
+    mut_count = 0
+    wt_idx = 0
+    for idx, row in df.iterrows():
+        # get the scores of the wild type sequence
+        if row["comment"] == "wt":
+            # remove wild types with no eligible mutated sequence
+            if idx > 0 and mut_count == 0:
+                rows.append(wt_idx)
+            wt_idx = idx
+            mut_count = 0
+        else:
+            mut_count += 1
+
+    df = df.drop(rows)
+    return df
 
 if __name__ == '__main__':
-    #-----------------generate list of mutated sequences------------------
-    # trainingpath = "../../../input/modeler/training_data/training_p01_adjusted.tsv"
-    # pd.set_option('display.max_columns', None)
-    # df = pd.read_csv(trainingpath, sep="\t")
-
+    
+    trainingpath = "../../../input/modeler/training_data/training_p01_adjusted.tsv"
     modelpaths = ["../../../input/modeler/imads_model/Ets1_w12_GGAA.model",
                   "../../../input/modeler/imads_model/Ets1_w12_GGAT.model"]
     modelcores = ["GGAA", "GGAT"]
@@ -282,40 +343,59 @@ if __name__ == '__main__':
                     for modelpath, modelcore in
                     zip(modelpaths, modelcores)]
     imads = iMADS(imads_models, imads_threshold=IMADS_THRESHOLD)
-    # #print(imads.predict_sequence("GTTTGATCCAGGAAATGGTGTCCTTCCTGTGGACCT"))
-    # md = make_ets1_mutations(df, imads, flanklen=4)
-    # pd.DataFrame(md).to_csv("mutlist.csv", index=False)
+
+    #-----------------generate list of mutated sequences------------------
+    pd.set_option('display.max_columns', None)
+    df = pd.read_csv(trainingpath, sep="\t")
+
+    md = make_ets1_mutations(df, imads, flanklen=4)
+    pd.DataFrame(md).to_csv("mutlist.csv", index=False)
 
     # --------------predict labels of new mutated sequences-----------------
-    # we have 72833 rows, including wild types
+    #we have 72833 rows, including wild types
     df = pd.read_csv("mutlist.csv")
-    df = df[:100]
+    
     t = Training(df,corelen=4)
-    # #test = Training(pd.DataFrame(md),4)
-    # ds = DNAShape("all_model_files/dnashape/0")
-    #
+
     xt = t.get_feature_all({
         "distance":{"type":"numerical"},
         "sitepref": {"imadsmodel": imads, "modelwidth":12}, # use custom imads
         "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
     })
     xt = pd.DataFrame(xt).values.tolist()
-    #print(xt)
     
     model = pickle.load(open("dist_ori_12merimads.sav", "rb"))
+    
     ypred = model.predict(xt)
     yprob = model.predict_proba(xt)
     yprob = [yprob[i][0] if ypred[i] == 0 else yprob[i][1] for i in range(len(ypred))]
-    print(ypred)
-    # p1label, p1prob = predict_all_ori(test,ds)
-    # p2label, p2prob = predict_per_ori(test,ds)
-    seqlist = df['sequence'].values.tolist()
-    wtlabel = df['wtlabel'].map({'cooperative': 1, 'additive': 0}).values.tolist()
-    labels = ["sequence", "y_wt", "ypred_all", "yprob_all"] #,  "ypred_ori", "ypred_ori"]
-    res = list(zip(seqlist, wtlabel, ypred, yprob)) #p1label, p1prob, p2label, p2prob))
-    pd.DataFrame(res,columns=labels).to_csv("mutpred.csv")
+    df["y_pred"] = ypred
+    df["y_proba"] = yprob
+    df = populate_wt_pred(df)
+    df.to_csv("mutpred.csv", index=None)
 
-    # p2 = model2.predict(x_test2)
-    # pl2 = list(zip(seqlist,p2))
-    # for i in range(len(pl2)):
-    #     print(i,pl2[i])
+    # --------Filter to get mutated sequences with changed label and high pred prob--------
+    df = pd.read_csv("mutpred.csv")
+    plt.hist(df["y_proba"], density=False, bins=10)
+    plt.ylabel('Count')
+    plt.xlabel('Probability')
+    plt.title("Predicted Probability Distribution")
+    plt.savefig("pred_prob_distribution.png")
+    df = filter_changed_pred_label(df)
+    df = filter_high_pred_prob(df, cutoff=np.percentile(df["y_proba"], 75))
+    df.to_csv("mut_changed_label_high_pred_prob.csv", index=None)
+
+    # ---------Filter to get mutated sequences where predicted labels don't change-------
+    df = pd.read_csv("mutpred.csv")
+    df = filter_same_pred_label(df)
+    df.to_csv("mut_same_label.csv", index=None)
+
+    #---------Filter to get sequences that have different predictions -------------
+    #---------but have similar imads score for each corresponding site-------------
+    df = pd.read_csv("mutpred.csv")
+    df = filter_changed_pred_label(df)
+    df = filter_similar_score(df, imads)
+    df = clean_df(df)
+    df.to_csv("mut_changed_label_similar_score.csv", index=None)
+
+
