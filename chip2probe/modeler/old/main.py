@@ -6,7 +6,7 @@ Created on Oct 30, 2019
 import sys
 sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe") # PATH TO UTIL
 
-from trainingdata.training import Training
+//from chip2probe.modeler.oldtraining_gen.training import Training
 from sklearn import ensemble, model_selection, metrics, tree
 import scipy
 import numpy as np

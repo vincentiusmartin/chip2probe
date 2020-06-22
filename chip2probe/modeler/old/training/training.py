@@ -17,9 +17,9 @@ import training.seqextractor as seqextractor
 import math
 
 import statistics
-import util.stats as st
-import util.bio as bio
-import util.util as util
+from chip2probe.util import stats as st
+from chip2probe.util import bio as bio
+from chip2probe.util import util as util
 
 
 class Training(object):
