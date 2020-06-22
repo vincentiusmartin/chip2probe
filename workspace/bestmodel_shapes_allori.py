@@ -44,8 +44,8 @@ if __name__ == "__main__":
                               param_grid=rf_param_grid,
                               train_data=cooptr.get_training_df({
                                       "distance":{"type":"numerical"},
-                                      "shape": {"seqin":4, "smode":"strength", "direction":"inout"},
-                                      "shape": {"seqin":-4, "smode":"strength", "direction":"inout"},
+                                      "shape_in": {"seqin":4, "smode":"strength", "direction":"inout"},
+                                      "shape_out": {"seqin":-4, "smode":"strength", "direction":"inout"},
                                   }),
                             topn=10
                 ).run_all(),
@@ -54,8 +54,8 @@ if __name__ == "__main__":
                               param_grid=rf_param_grid,
                               train_data=cooptr.get_training_df({
                                       "distance":{"type":"numerical"},
-                                      "shape": {"seqin":4, "smode":"strength", "direction":"orientation", "positive_cores":["GGAA","GGAT"]},
-                                      "shape": {"seqin":-4, "smode":"strength", "direction":"orientation", "positive_cores":["GGAA","GGAT"]}
+                                      "shape_in": {"seqin":4, "smode":"strength", "direction":"orientation", "positive_cores":["GGAA","GGAT"]},
+                                      "shape_out": {"seqin":-4, "smode":"strength", "direction":"orientation", "positive_cores":["GGAA","GGAT"]}
                                   }),
                             topn=10
                 ).run_all(),
@@ -64,8 +64,8 @@ if __name__ == "__main__":
                               param_grid=rf_param_grid,
                               train_data=cooptr.get_training_df({
                                       "distance":{"type":"numerical"},
-                                      "shape": {"seqin":4, "smode":"strength", "direction":"inout"},
-                                      "shape": {"seqin":-4, "smode":"strength", "direction":"inout"},
+                                      "shape_in": {"seqin":4, "smode":"strength", "direction":"inout"},
+                                      "shape_out": {"seqin":-4, "smode":"strength", "direction":"inout"},
                                       "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
                                   }),
                             topn=10
@@ -75,8 +75,8 @@ if __name__ == "__main__":
                               param_grid=rf_param_grid,
                               train_data=cooptr.get_training_df({
                                       "distance":{"type":"numerical"},
-                                      "shape": {"seqin":4, "smode":"strength", "direction":"orientation", "positive_cores":["GGAA","GGAT"]},
-                                      "shape": {"seqin":-4, "smode":"strength", "direction":"orientation", "positive_cores":["GGAA","GGAT"]},
+                                      "shape_in": {"seqin":4, "smode":"strength", "direction":"orientation", "positive_cores":["GGAA","GGAT"]},
+                                      "shape_out": {"seqin":-4, "smode":"strength", "direction":"orientation", "positive_cores":["GGAA","GGAT"]},
                                       "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
                                   }),
                             topn=10

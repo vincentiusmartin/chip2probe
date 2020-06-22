@@ -26,32 +26,52 @@ if __name__ == "__main__":
     df["orientation"] = pd.DataFrame(x_ori)["ori"]
 
     rf_param_grid = {
-        'n_estimators': [500],
-        'max_depth':[5],
-        "min_samples_leaf" : [10],
-        "min_samples_split" :[10]
+        'n_estimators': [500, 1000, 1500],
+        'max_depth':[5, 10, 15],
+        "min_samples_leaf" : [5, 10, 15],
+        "min_samples_split" :[5, 10, 15]
     }
 
     orientations = ["HH", "TT", "HT/TH"]
-    ori = "HH"
-
-
-    df_ht = dftrain #[dftrain["orientation"] == "HT/TH"] #[dftrain["distance"] % 2 == 0] #[dftrain["orientation"] == "HT/TH"]
-    dftr.to_csv("train1.tsv",sep="\t")
-
     for ori in orientations:
-        print(ori)
-
-    # # TODO: choose per orientation
-    # best_models = {"top10":
-    #           BestModel(clf="sklearn.ensemble.RandomForestClassifier",
-    #                       param_grid=rf_param_grid,
-    #                       train_data=cooptr.get_training_df({
-    #                               "distance":{"type":"numerical"},
-    #                               "shape": {"seqin":2, "smode":"positional", "direction":"inout"},
-    #                               "shape": {"ds":ds, "seqin":-3, "smode":"strength"},
-    #                               #"orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
-    #                           })
-    #             )#.run_all()
-    # }
-    # pl.plot_model_metrics(best_models, cvfold=10, score_type="auc")
+        curdf = df[df["orientation"] == ori]
+        curct = CoopTrain(curdf, corelen=4, positive_cores=["GGAA","GGAT"])
+        best_models = {
+                "distance":
+                  BestModel(clf="sklearn.ensemble.RandomForestClassifier",
+                              param_grid=rf_param_grid,
+                              train_data=curct.get_training_df({
+                                      "distance":{"type":"numerical"}
+                                  }),
+                    ).run_all(),
+                "shape":
+                  BestModel(clf="sklearn.ensemble.RandomForestClassifier",
+                              param_grid=rf_param_grid,
+                              train_data=curct.get_training_df({
+                                      "shape_in": {"seqin":4, "smode":"positional", "direction":"inout"}, # maximum seqin is 4
+                                      "shape_out": {"seqin":-4, "smode":"positional", "direction":"inout"}
+                                  }),
+                    ).run_all(),
+                "dist,shape":
+                  BestModel(clf="sklearn.ensemble.RandomForestClassifier",
+                              param_grid=rf_param_grid,
+                              train_data=curct.get_training_df({
+                                      "distance":{"type":"numerical"},
+                                      "shape_in": {"seqin":4, "smode":"positional", "direction":"inout"}, # maximum seqin is 4
+                                      "shape_out": {"seqin":-4, "smode":"positional", "direction":"inout"}
+                                  }),
+                    ).run_all(),
+                "dist,shape-top10":
+                  BestModel(clf="sklearn.ensemble.RandomForestClassifier",
+                              param_grid=rf_param_grid,
+                              train_data=curct.get_training_df({
+                                      "distance":{"type":"numerical"},
+                                      "shape_in": {"seqin":4, "smode":"positional", "direction":"inout"}, # maximum seqin is 4
+                                      "shape_out": {"seqin":-4, "smode":"positional", "direction":"inout"}
+                                  }),
+                              topn=10
+                    ).run_all(),
+        }
+        oriname = ori.replace("/","")
+        pl.plot_model_metrics(best_models, cvfold=10, score_type="auc", plotname="auc_%s.png" % oriname)
+        break

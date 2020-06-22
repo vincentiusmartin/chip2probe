@@ -89,19 +89,24 @@ class CoopTrain:
         Get all feature based on feature dict
 
         Accepts a dictionary of feature name and parameters relative to the feature.
-        All features are from the ``chip2probe.modeler.features`` package.
+        All features are from the ``chip2probe.modeler.features`` package. If more
+        than one of the same feature are needed, then add description to the name
+        separated by underscore (e.g. shape_in, shape_out)
 
         Args:
             feature_dict: the following is the list of currently available feature:
                 1. distance: {type:"numeric/categorical"}
                 2. orientation: {"positive_cores:[]", relative:Bool, one_hot:Bool}
                 3. affinity: {imads: sitespredict.imads instance}
+                4. shape: {"seqin": int, "smode": "positional/strength", "direction": "inout/orientation", "positive_cores" : []}
          Returns:
             ldict: list of dictionary of features or list of list if 'aslist' is True
         """
         ldict = []
         for class_name, params in feature_dict.items():
-            ldict = util.merge_listdict(self.get_feature(class_name,params),ldict)
+            # separate class by underscore, the first entry should always be the feature name
+            cname = class_name.split("_")[0]
+            ldict = util.merge_listdict(self.get_feature(cname,params),ldict)
         if aslist:
             # return as list of list
             return [[d[k] for k in d] for d in ldict]
