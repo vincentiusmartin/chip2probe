@@ -13,7 +13,7 @@ class Orientation(basefeature.BaseFeature):
             params:
                 - positive_cores: list of string of positive cores
                 - relative: use site orientation relative to each other (HH, HT/TH, TT)
-                - one_hot: use onee_hot representation
+                - one_hot: use one_hot representation
 
          Returns:
             NA
@@ -26,7 +26,7 @@ class Orientation(basefeature.BaseFeature):
         default_args = {
             "positive_cores":[],
             "relative": True,
-            "one_hot": True
+            "one_hot": False
         }
         self.df = traindf
         self.set_attrs(params, default_args)

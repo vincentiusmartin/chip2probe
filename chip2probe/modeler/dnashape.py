@@ -2,34 +2,55 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
+import string, random
+import pathlib
 
 from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 
-from chip2probe.util import bio as bio
+import rpy2.robjects as robjects
+from rpy2.robjects.packages import importr
+
+from chip2probe.util import bio
 from chip2probe.util import stats as st
 from chip2probe.util import util
 
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
+dnashape_r = importr('DNAshapeR')
+
 class DNAShape:
 
-    def __init__(self, path): #bpos1_list, bpos2_list
-        # TODO: Checking in here
-        if not os.path.isdir(path):
-            raise Exception("Shape path %s is not valid" % path)
-        for root, dirs, files in os.walk(path):
-            for filename in files:
-                path = "%s/%s" % (root,filename)
-                filename, file_extension = os.path.splitext(path)
-                if file_extension == ".ProT":
-                    self.prot = util.read_dictlist_file(path)
-                elif file_extension == ".MGW":
-                    self.mgw = util.read_dictlist_file(path)
-                elif file_extension == ".Roll":
-                    self.roll = util.read_dictlist_file(path)
-                elif file_extension == ".HelT":
-                    self.helt = util.read_dictlist_file(path)
+    def __init__(self, fasta): #bpos1_list, bpos2_list
+        """
+        DNA Shape object
+
+        Args:
+            fasta: a dictionary of sequence label to sequence or a filepath to a
+                fasta file
+
+         Returns:
+            NA
+        """
+        self.shapetypes = ["ProT" , "MGW", "Roll", "HelT"]
+        if isinstance(fasta, dict):
+            # need to make fasta file first because DNAShapeR only accepts filepath
+            tmpstr = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+            path = "%s.fasta" % tmpstr
+            bio.makefasta(fasta, path)
+            ds = dnashape_r.getShape(path)
+        elif isinstance(fasta, str):
+            path = str(fasta)
+        else:
+            raise TypeError("fasta must be a dictionary or path to a fasta file")
+        for st in self.shapetypes:
+            shpath = "%s.%s"%(path,st)
+            setattr(self, st.lower(), util.read_dictlist_file(shpath))
+
+        if isinstance(fasta, dict):
+            # remove the tmp files from DNAShapeR
+            for p in pathlib.Path(".").glob("%s*" % tmpstr):
+                p.unlink()
 
     def get_shape_names():
         return ["ProT","MGW","Roll","HelT"]

@@ -19,10 +19,14 @@ from sklearn.model_selection import StratifiedKFold
 import itertools
 import concurrent.futures as cc
 import timeit
-import os
+import os, sys
 import functools
 import importlib
+import six
 
+## TODO:
+# 1. refactor code: no self assignment on the loop outside constructor
+# 2. write log to file
 class BestModel:
     def __init__(self, clf, param_grid, train_data, topn = -1, cv_fold=10, cv_num=1):
         """
@@ -94,9 +98,9 @@ class BestModel:
         # get best hyperparam combination
         clf = self.get_best_param(num_workers=num_workers,score=score_type)
         new_x = self.train_data
-        # get best top n
+        # get best top n, can only get topn if we have more features than 'n'
         if self.topn < len(self.train_data.columns) - 1:
-            new_x = self.set_topn(clf)
+            new_x = self.get_topn(clf)
             # get best hyperparam for top n
             clf = self.get_best_param(num_workers=num_workers,score=score_type)
         # return the best model for top n
@@ -178,7 +182,7 @@ class BestModel:
         print("Total running time: %d seconds" % (timeit.default_timer() - start_time))
         return self.classifier(**best["params"])
 
-    def set_topn(self, clf):
+    def get_topn(self, clf):
         model = clf.fit(self.x_train,self.y_train)
         feat_impt = model.feature_importances_
         print("Top %d features"%self.topn,sorted(zip(map(lambda x: round(x, 4), feat_impt), self.x_train.columns),

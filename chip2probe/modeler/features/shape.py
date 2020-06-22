@@ -1,9 +1,11 @@
 from chip2probe.modeler.features import basefeature
 import chip2probe.util.bio as bio
+import chip2probe.modeler.dnashape as ds
 import string, random
 
-import rpy2.robjects as robjects
-from rpy2.robjects.packages import importr
+from chip2probe.modeler.features.orientation import Orientation
+
+import numpy as np
 
 class Shape(basefeature.BaseFeature):
     def __init__(self, traindf, params):
@@ -14,118 +16,125 @@ class Shape(basefeature.BaseFeature):
             traindf: dataframe containing the "name", "sequence" column
             params:
                 - c: trainingdata.dnashape.DNAShape object
-                - seqin: if positive, get shape with direction to the inside;
-                        if negative, get shape with direction to the outside
+                - self.seqin: if positive, get shape with direction to the inside;
+                        if negative, get shape with direction to the outside. If
+                        direction is "orientation", seqin becomes head orientation.
                 - smode: "positional" or "strength" get direction anchored on the
                         position or strength of the site
-                - direction= "inout" or "ori" using in-out direction or based on
+                - direction= "inout" or "orientation" using in-out direction or based on
                         orientation
+                - positive_cores = must be supplied if direction == "orientation"
 
          Returns:
             NA
         """
         default_args = {
             "seqin": 0,
-            "smode": "positional",
-            "direction": "inout"
+            "smode": "positional", #site mode
+            "direction": "inout",
+            "positive_cores" : []
         }
         self.df = traindf
         self.set_attrs(params, default_args)
+        if self.smode != "strength" and self.smode != "positional":
+            raise TypeError("Smode can only be 'strength' or 'positional'")
+        if self.direction != "inout" and self.direction != "orientation":
+            raise TypeError("Direction can only be 'inout' or 'orientation'")
+        if self.direction == "orientation" and ("positive_cores" not in params or not params["positive_cores"]):
+            raise TypeError("Positive cores are needed when direction is 'orientation'")
 
         fastadict = dict(zip(self.df["name"], self.df["sequence"]))
-        tmpfasta = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-        dnashape_r = importr('DNAshapeR')
-        ds = dnashape_r.getShape("test.fasta")
-        print(ds)
-        #bio.makefasta(fastadict,"%s.fasta" % tmpfasta)
-        import sys
-        sys.exit(0)
+        shapeobj = ds.DNAShape(fastadict)
+        self.shapes = {k:getattr(shapeobj,k.lower()) for k in shapeobj.shapetypes}
+        # make a dictionary of list instead of nested dictionary since we use this
+        # as features
+        namelist = self.df["name"].tolist()
+        self.shapes = {k:[v[n] for n in namelist] for k, v in self.shapes.items()}
+        if self.direction == "orientation":
+            ori = Orientation(self.df, {"positive_cores":self.positive_cores}).get_feature()
+            self.df["orientation"] = [o["ori"] for o in ori]
 
     def get_feature(self):
-        self.get_feature_flank_shapes()
-        return None
-
-    def get_feature_flank_shapes_orientation(self, dnashape, seqin, site_mode="strength"):
-        if site_mode!="strength" and site_mode!="positional":
-            raise Exception("Site mode can only be 'strength' or 'positional'")
-        shapes = {"prot":dnashape.prot, "mgw":dnashape.mgw, "roll":dnashape.roll, "helt":dnashape.helt}
+        """
+        Get the shape features based on the features:
+            - self.seqin:
+            - smode: this determine whether we use the strength of binding sites
+                as the anchor (i.e. weak, strong) of flank or the position (i.e.
+                first site, second site)
+            - direction:
+        """
         rfeature = []
         for idx,row in self.df.iterrows():
-            orientation = row["orientation"]
+            # first get which site is on the left (site1) and on the right (site2)
             if row["site_wk_pos"] > row["site_str_pos"]:
                 site1, site2 = row["site_str_pos"], row["site_wk_pos"]
-                if site_mode == "strength":
+                if self.smode == "strength":
                     s1type, s2type = "str", "wk"
             else:
                 site1, site2 = row["site_wk_pos"], row["site_str_pos"]
-                if site_mode == "strength":
+                if self.smode == "strength":
                     s1type, s2type = "wk", "str"
-            if site_mode == "positional":
+            # if site mode is positional, we use the position instead
+            if self.smode == "positional":
                 s1type, s2type = "s1", "s2"
-            dfeature = {}
-            for s in shapes:
-                # get the inner flanking region
-                if orientation == 'HH':
-                    if seqin >= 0:
-                        flank1 = shapes[s][str(idx + 1)][site1:site1 + seqin]
-                        flank2 = shapes[s][str(idx + 1)][site2 - seqin:site2][::-1]
-                        type = "head"
-                    if seqin < 0:
-                        flank1 = shapes[s][str(idx + 1)][site1 + seqin:site1][::-1]
-                        flank2 = shapes[s][str(idx + 1)][site2:site2 - seqin]
-                        type = "tail"
-                elif orientation == 'TT':
-                    if seqin < 0:
-                        flank1 = shapes[s][str(idx + 1)][site1:site1 - seqin]
-                        flank2 = shapes[s][str(idx + 1)][site2 + seqin:site2][::-1]
-                        type = "tail"
-                    if seqin >= 0:
-                        flank1 = shapes[s][str(idx + 1)][site1 - seqin:site1][::-1]
-                        flank2 = shapes[s][str(idx + 1)][site2:site2 + seqin]
-                        type = "head"
-                elif orientation == 'HT/TH':
-                    if seqin >= 0:
-                        flank1 = shapes[s][str(idx + 1)][site1:site1 + seqin]
-                        flank2 = shapes[s][str(idx + 1)][site2:site2 + seqin]
-                        type = "head"
-                    if seqin < 0:
-                        flank1 = shapes[s][str(idx + 1)][site1 + seqin:site1][::-1]
-                        flank2 = shapes[s][str(idx + 1)][site2 + seqin:site2][::-1]
-                        type = "tail"
-                for i in range(abs(seqin)):
-                    dfeature["%s_%s_%s_pos_%d" % (s,type,s1type,i)] = flank1[i]
-                    dfeature["%s_%s_%s_pos_%d" % (s,type,s2type,i)] = flank2[i]
-            rfeature.append(dfeature)
+            # get flanking shape based on direction
+            if self.direction == "inout":
+                rfeature.append(self.get_shape_inout(idx, site1, site2, s1type, s2type))
+            else:
+                rfeature.append(self.get_shape_orientation(idx, site1, site2, s1type, s2type , row["orientation"]))
         return rfeature
 
-    def get_feature_flank_shapes(self):
-        if self.smode != "strength" and self.smode != "positional":
-            raise ValueError("Site mode can only be 'strength' or 'positional'")
-        shapes = {"prot":self.dnashape.prot, "mgw":self.dnashape.mgw, "roll":self.dnashape.roll, "helt":self.dnashape.helt}
-        rfeature = []
-        for idx,row in self.df.iterrows():
-            if row["site_wk_pos"] > row["site_str_pos"]:
-                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
-                if site_mode == "strength":
-                    s1type, s2type = "str", "wk"
-            else:
-                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
-                if site_mode == "strength":
-                    s1type, s2type = "wk", "str"
-            if site_mode == "positional":
-                s1type, s2type = "s1", "s2"
-            dfeature = {}
-            for s in shapes:
-                if seqin > 0: # inner
-                    flank1 = shapes[s][str(idx + 1)][site1:site1+seqin]
-                    flank2 = shapes[s][str(idx + 1)][site2-seqin:site2][::-1]
-                    type = "inner"
-                else: # outer
-                    flank1 = shapes[s][str(idx + 1)][site1+seqin:site1][::-1]
-                    flank2 = shapes[s][str(idx + 1)][site2:site2-seqin]
-                    type = "outer"
-                for i in range(abs(seqin)):
-                    dfeature["%s_%s_%s_pos_%d" % (s,type,s1type,i)] = flank1[i]
-                    dfeature["%s_%s_%s_pos_%d" % (s,type,s2type,i)] = flank2[i]
-            rfeature.append(dfeature)
-        return rfeature
+    def get_shape_inout(self, idx, site1, site2,  s1type, s2type):
+        dfeature = {}
+        for s in self.shapes:
+            # orientation
+            if self.seqin > 0: # inner
+                flank1 = self.shapes[s][idx][site1:site1+self.seqin]
+                flank2 = self.shapes[s][idx][site2-self.seqin+1:site2+1][::-1]
+                type = "inner"
+            else: # outer
+                flank1 = self.shapes[s][idx][site1+self.seqin:site1][::-1]
+                flank2 = self.shapes[s][idx][site2:site2-self.seqin]
+                type = "outer"
+            start = 1 if self.seqin < 0 else 0 # if outer, we start from 1
+            for i in range(start, abs(self.seqin) + start):
+                dfeature["%s_%s_%s_pos_%d" % (s,type,s1type,i)] = flank1[i-start]
+                dfeature["%s_%s_%s_pos_%d" % (s,type,s2type,i)] = flank2[i-start]
+        return dfeature
+
+    def get_shape_orientation(self, idx, site1, site2, s1type, s2type, orientation):
+        # for this, seqin becomes "head" orientation
+        dfeature = {}
+        for s in self.shapes:
+            # get the inner flanking region
+            if orientation == 'HH':
+                if self.seqin >= 0:
+                    flank1 = self.shapes[s][idx][site1:site1 + self.seqin]
+                    flank2 = self.shapes[s][idx][site2-self.seqin+1:site2+1][::-1]
+                    type = "head"
+                if self.seqin < 0:
+                    flank1 = self.shapes[s][idx][site1+self.seqin:site1][::-1]
+                    flank2 = self.shapes[s][idx][site2:site2-self.seqin]
+                    type = "tail"
+            elif orientation == 'TT':
+                if self.seqin < 0:
+                    flank1 = self.shapes[s][idx][site1+1:site1-self.seqin+1]
+                    flank2 = self.shapes[s][idx][site2+self.seqin:site2][::-1]
+                    type = "tail"
+                if self.seqin >= 0:
+                    flank1 = self.shapes[s][idx][site1-self.seqin+1:site1+1][::-1]
+                    flank2 = self.shapes[s][idx][site2:site2+self.seqin]
+                    type = "head"
+            elif orientation == 'HT/TH': # right now assume it faces right / glass
+                if self.seqin >= 0:
+                    flank1 = self.shapes[s][idx][site1:site1+self.seqin]
+                    flank2 = self.shapes[s][idx][site2:site2+self.seqin]
+                    type = "head"
+                if self.seqin < 0:
+                    flank1 = self.shapes[s][idx][site1+self.seqin:site1][::-1]
+                    flank2 = self.shapes[s][idx][site2+self.seqin:site2][::-1]
+                    type = "tail"
+            for i in range(abs(self.seqin)):
+                dfeature["%s_%s_%s_pos_%d" % (s,type,s1type,i)] = flank1[i]
+                dfeature["%s_%s_%s_pos_%d" % (s,type,s2type,i)] = flank2[i]
+        return dfeature
