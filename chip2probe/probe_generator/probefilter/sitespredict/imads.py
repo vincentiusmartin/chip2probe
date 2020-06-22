@@ -6,9 +6,10 @@ Created on Jul 16, 2019
 Authors: Vincentius Martin, Farica Zhuang
 '''
 
-import sitespredict.basepred as basepred
-import sitespredict.basemodel as basemodel
-import sitespredict.imadsmodel as imadsmodel
+
+import chip2probe.probe_generator.probefilter.sitespredict.basepred as basepred
+import chip2probe.probe_generator.probefilter.sitespredict.basemodel as basemodel
+import chip2probe.probe_generator.probefilter.sitespredict.imadsmodel as imadsmodel
 from chip2probe.util import bio as bio
 import itertools
 import math

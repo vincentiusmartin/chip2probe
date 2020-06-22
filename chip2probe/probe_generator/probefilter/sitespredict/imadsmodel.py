@@ -16,7 +16,6 @@ Run make in libsvm-3.24/python directory
 
 import os
 import sys
-# sys.path.append("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/libsvm-3.24/python")
 from libsvm import svmutil
 
 

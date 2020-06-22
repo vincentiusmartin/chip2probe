@@ -12,15 +12,14 @@ import itertools
 from matplotlib.backends.backend_pdf import PdfPages
 from decimal import Decimal
 
-import training.seqextractor as seqextractor
-
 import math
 
 import statistics
-import util.stats as st
-import util.bio as bio
-import util.util as util
-
+from chip2probe.util import stats as st
+from chip2probe.util import bio as bio
+from chip2probe.util import util as util
+from chip2probe.training_gen import utils
+from chip2probe.modeler.old.training import seqextractor
 
 class Training(object):
     """
@@ -143,7 +142,7 @@ class Training(object):
                 site_str = records[i]["sequence"][records[i]["site_str_pos"] - self.motiflen//2:records[i]["site_str_pos"] + self.motiflen//2]
                 site_wk = records[i]["sequence"][records[i]["site_wk_pos"] - self.motiflen//2:records[i]["site_wk_pos"] + self.motiflen//2]
                 if site_str not in positive_cores and site_wk not in positive_cores:
-                    records[i]["sequence"] = bio.revcompstr(records[i]["sequence"])
+                    records[i]["sequence"] = utils.revcompstr(records[i]["sequence"])
                     # flip the position as well
                     str_pos = records[i]["site_str_pos"]
                     wk_pos = records[i]["site_wk_pos"]
@@ -385,7 +384,7 @@ class Training(object):
         dfeature = {}
         for p in itertools.product(nucleotides, repeat=k):
             p = "".join(p)
-            rev = bio.revcompstr(p)
+            rev = utils.revcompstr(p)
             if p not in perm and rev not in perm:
                 to_append = p if p < rev else rev
                 dfeature["%s_%s"%(label,to_append)] = initcount
@@ -398,7 +397,7 @@ class Training(object):
             dfeature = {**dfeature,**self.get_nonrev_dfeature(k,label,initcount=0)}
             for i in range(len(seq) + 1 - k):
                 curseq = str(seq)[i:i+k]
-                revseq = bio.revcompstr(curseq)
+                revseq = utils.revcompstr(curseq)
                 curseq = curseq if curseq < revseq else revseq
                 key = "%s_%s"%(label,curseq)
                 dfeature[key] = dfeature[key] + 1
@@ -830,7 +829,7 @@ class Training(object):
         """
 
         """
-        negative_cores = [seqextractor.revcompstr(p) for p in positive_cores]
+        negative_cores = [utils.revcompstr(p) for p in positive_cores]
         rfeature = []
         for idx,row in self.df.iterrows():
             # get the binding sites
