@@ -1,0 +1,3 @@
+htth = ['dist_numeric', 'MGW_inner_s2_pos_3', 'Roll_inner_s2_pos_2', 'HelT_inner_s2_pos_2', 'MGW_inner_s1_pos_3', 'ProT_inner_s2_pos_2',  'ProT_inner_s2_pos_3', 'Roll_inner_s1_pos_3', 'ProT_inner_s2_pos_1', 'ProT_inner_s1_pos_1']
+tt = ['dist_numeric','Roll_inner_s2_pos_3','HelT_outer_s1_pos_3', 'Roll_inner_s1_pos_0', 'HelT_outer_s2_pos_2', 'ProT_outer_s1_pos_4', 'ProT_outer_s1_pos_2', 'Roll_inner_s2_pos_1', 'MGW_outer_s2_pos_2', 'HelT_inner_s1_pos_2']
+hh = ['Roll_inner_s2_pos_2', 'Roll_outer_s2_pos_1', 'ProT_outer_s2_pos_2', 'ProT_inner_s2_pos_1', 'ProT_inner_s2_pos_2', 'Roll_inner_s2_pos_0',  'ProT_inner_s1_pos_1', 'ProT_outer_s2_pos_1', 'ProT_inner_s2_pos_0', 'Roll_inner_s1_pos_0']

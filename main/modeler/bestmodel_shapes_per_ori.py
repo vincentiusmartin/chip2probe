@@ -20,10 +20,13 @@ if __name__ == "__main__":
     df = pd.read_csv(trainingpath, sep="\t")
     # select only genomic (i.e. non-custom) sequences
     df = df[~df['name'].str.contains("dist|weak")]
+
+    # we can add orientation to our data frame by using the cooptrain
     cooptr = CoopTrain(df, corelen=4, flip_th=True, positive_cores=["GGAA","GGAT"])
-    #
     x_ori = cooptr.get_feature("orientation", {"positive_cores":["GGAA", "GGAT"]})
     df["orientation"] = pd.DataFrame(x_ori)["ori"]
+
+    score_type = "auc" #auc/pr
 
     rf_param_grid = {
         'n_estimators': [500, 1000, 1500],
@@ -32,7 +35,7 @@ if __name__ == "__main__":
         "min_samples_split" :[5, 10, 15]
     }
 
-    orientations = ["HH", "TT", "HT/TH"]
+    orientations = ["HH"]#["HH", "TT", "HT/TH"]
     for ori in orientations:
         curdf = df[df["orientation"] == ori]
         curct = CoopTrain(curdf, corelen=4, positive_cores=["GGAA","GGAT"])
@@ -43,7 +46,7 @@ if __name__ == "__main__":
                               train_data=curct.get_training_df({
                                       "distance":{"type":"numerical"}
                                   }),
-                    ).run_all(),
+                    ).run_all(score_type=score_type),
                 "shape":
                   BestModel(clf="sklearn.ensemble.RandomForestClassifier",
                               param_grid=rf_param_grid,
@@ -51,7 +54,7 @@ if __name__ == "__main__":
                                       "shape_in": {"seqin":4, "smode":"positional", "direction":"inout"}, # maximum seqin is 4
                                       "shape_out": {"seqin":-4, "smode":"positional", "direction":"inout"}
                                   }),
-                    ).run_all(),
+                    ).run_all(score_type=score_type),
                 "dist,shape":
                   BestModel(clf="sklearn.ensemble.RandomForestClassifier",
                               param_grid=rf_param_grid,
@@ -60,7 +63,7 @@ if __name__ == "__main__":
                                       "shape_in": {"seqin":4, "smode":"positional", "direction":"inout"}, # maximum seqin is 4
                                       "shape_out": {"seqin":-4, "smode":"positional", "direction":"inout"}
                                   }),
-                    ).run_all(),
+                    ).run_all(score_type=score_type),
                 "dist,shape-top10":
                   BestModel(clf="sklearn.ensemble.RandomForestClassifier",
                               param_grid=rf_param_grid,
@@ -70,8 +73,8 @@ if __name__ == "__main__":
                                       "shape_out": {"seqin":-4, "smode":"positional", "direction":"inout"}
                                   }),
                               topn=10
-                    ).run_all(),
+                    ).run_all(score_type=score_type),
         }
         oriname = ori.replace("/","")
-        pl.plot_model_metrics(best_models, cvfold=10, score_type="auc", plotname="auc_%s.png" % oriname)
+        pl.plot_model_metrics(best_models, cvfold=10, score_type=score_type, plotname="auc_%s.png" % oriname)
         break

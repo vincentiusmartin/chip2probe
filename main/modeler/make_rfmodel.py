@@ -43,6 +43,6 @@ if __name__ == "__main__":
     # This is usually made based on the best model
     rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=15, min_samples_leaf=10, min_samples_split=10)
     rf.fit(train,label)
-    model_name = "dist_ori_8merimads.sav"
+    model_name = "dist_ori_12merimads.sav"
     pickle.dump(rf, open(model_name, 'wb'))
     print("Model saved in %s" % model_name)
