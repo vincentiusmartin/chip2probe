@@ -16,15 +16,23 @@ class ShapeModel:
         ori = ct.get_feature("orientation", {"positive_cores":["GGAA", "GGAT"]})
         df["orientation"] = pd.DataFrame(ori)["ori"]
 
+        predres = {}
+        predproba = {}
         for key in self.model:
             curdf = df.loc[df["orientation"] == key]
+            curct = CoopTrain(curdf, corelen=4, flip_th=True, positive_cores=["GGAA","GGAT"])
             feature_dict = {
                     "distance":{"type":"numerical"},
                     "shape_in": {"seqin":4, "smode":"positional", "direction":"inout"}, # maximum seqin is 4
                     "shape_out": {"seqin":-4, "smode":"positional", "direction":"inout"}
                 }
-            print(key,self.param[key])
-            train_df = pd.DataFrame(ct.get_feature_all(feature_dict))[self.param[key]]
+            train_df = pd.DataFrame(curct.get_feature_all(feature_dict))[self.param[key]]
             train = train_df.values.tolist()
             pred = self.model[key].predict(train)
-            print(pred)
+            proba = [max(prb) for prb in self.model[key].predict_proba(train)] # get the larger one
+            idxs = curdf.index
+            print(len(pred), len(proba), len(idxs))
+            for i in range(0,len(pred)):
+                predres[idxs[i]] = pred[i]
+                predproba[idxs[i]] = proba[i]
+        print(predproba)
