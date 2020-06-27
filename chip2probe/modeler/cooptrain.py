@@ -15,7 +15,7 @@ from chip2probe.modeler.features import *
 
 class CoopTrain:
 
-    def __init__(self, trainingdata, corelen, sep="\t", flip_th=False, positive_cores=[]):
+    def __init__(self, trainingdata, corelen, sep="\t", flip_th=False, positive_cores=[], imads=None):
         """
         Cooperative Training class constructor
 
@@ -26,22 +26,50 @@ class CoopTrain:
             flip_th: Flip all TH orientation to HT (important whe we want to treat TH == HT)
             positive_cores: Required if flip_th is true, contain all the positive cores that define
             HT orientation.
-
-         Returns:
+            imads: if the input is list, need to give imads model
+        Returns:
             NA
         """
         if isinstance(trainingdata, pd.DataFrame):
             self.df = trainingdata.copy().reset_index(drop=True)
         elif isinstance(trainingdata, str):
             self.df = pd.read_csv(trainingpath, sep=sep)
+        elif isinstance(trainingdata, list):
+            if imads is None:
+                raise Exception("imads must be provided when input is list")
+            self.df = self.make_train(trainingdata, imads)
+            ori = self.get_feature("orientation", {"positive_cores":positive_cores, "relative":True, "one_hot":False})
+            self.df["orientation"] = [x["ori"] for x in ori]
         else:
             raise Exception("input must be string path or data frame")
-        self.validate_cols()
+        #self.validate_cols()
         self.corelen = corelen
         if flip_th:
             if not positive_cores:
                 raise Exception("Positive cores must be defined when flip_th is True")
             self.df = self.flip_th2ht(positive_cores)
+
+    def make_train(self, seqs, imads):
+        trainlist = []
+        for seq in seqs:
+            row = {}
+            preds = imads.predict_sequence(seq)
+            if len(preds) != 2:
+                raise Exception("Number of sites must be 2 but found %d for %s" % (len(preds), seq))
+            row["sequence"] = seq
+            row["distance"] = preds[1]["core_mid"] - preds[0]["core_mid"]
+            if preds[0]["score"] > preds[1]["score"]:
+                row["site_wk_score"] = preds[1]["score"]
+                row["site_wk_pos"] = preds[1]["core_mid"]
+                row["site_str_score"] = preds[0]["score"]
+                row["site_str_pos"] = preds[0]["core_mid"]
+            else:
+                row["site_wk_score"] = preds[0]["score"]
+                row["site_wk_pos"] = preds[0]["core_mid"]
+                row["site_str_score"] = preds[1]["score"]
+                row["site_str_pos"] = preds[1]["core_mid"]
+            trainlist.append(row)
+        return pd.DataFrame(trainlist)
 
     def validate_cols(self):
         """
