@@ -92,7 +92,7 @@ def makefasta(sequences, path):
         NA
     """
     if isinstance(sequences, list):
-        seqdict = {"seq-%d"%(i+1):s for i in range(len(sequences))}
+        seqdict = {"seq-%d"%(i+1):sequences[i] for i in range(len(sequences))}
     elif isinstance(sequences, dict):
         seqdict =  dict(sequences)
     else:

@@ -51,6 +51,7 @@ class CoopTrain:
 
     def make_train(self, seqs, imads):
         trainlist = []
+        idx = 1
         for seq in seqs:
             row = {}
             preds = imads.predict_sequence(seq)
@@ -58,6 +59,8 @@ class CoopTrain:
                 raise Exception("Number of sites must be 2 but found %d for %s" % (len(preds), seq))
             row["sequence"] = seq
             row["distance"] = preds[1]["core_mid"] - preds[0]["core_mid"]
+            row["name"] = "seq-%d" % idx
+            idx += 1
             if preds[0]["score"] > preds[1]["score"]:
                 row["site_wk_score"] = preds[1]["score"]
                 row["site_wk_pos"] = preds[1]["core_mid"]

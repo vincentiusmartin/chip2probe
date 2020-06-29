@@ -31,8 +31,11 @@ class ShapeModel:
             pred = self.model[key].predict(train)
             proba = [max(prb) for prb in self.model[key].predict_proba(train)] # get the larger one
             idxs = curdf.index
-            print(len(pred), len(proba), len(idxs))
             for i in range(0,len(pred)):
                 predres[idxs[i]] = pred[i]
                 predproba[idxs[i]] = proba[i]
-        print(predproba)
+        allidxs = sorted(predres.keys())
+        predlist = [predres[i] for i in allidxs]
+        probalist = [predproba[i] for i in allidxs]
+        print(len(predlist),"asdasd")
+        return predlist, probalist

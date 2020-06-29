@@ -33,7 +33,7 @@ class DNAShape:
             NA
         """
         self.shapetypes = ["ProT" , "MGW", "Roll", "HelT"]
-        if isinstance(fasta, dict):
+        if isinstance(fasta, dict) or isinstance(fasta, list):
             # need to make fasta file first because DNAShapeR only accepts filepath
             tmpstr = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
             path = "%s.fasta" % tmpstr
@@ -47,7 +47,7 @@ class DNAShape:
             shpath = "%s.%s"%(path,st)
             setattr(self, st.lower(), util.read_dictlist_file(shpath))
 
-        if isinstance(fasta, dict):
+        if isinstance(fasta, dict) or isinstance(fasta, list):
             # remove the tmp files from DNAShapeR
             for p in pathlib.Path(".").glob("%s*" % tmpstr):
                 p.unlink()
