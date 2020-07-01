@@ -43,12 +43,18 @@ class Shape(basefeature.BaseFeature):
         if self.direction == "orientation" and ("positive_cores" not in params or not params["positive_cores"]):
             raise TypeError("Positive cores are needed when direction is 'orientation'")
 
-        fastadict = dict(zip(self.df["name"], self.df["sequence"]))
-        shapeobj = ds.DNAShape(fastadict)
+        if "name" in self.df:
+            fastadict = dict(zip(self.df["name"], self.df["sequence"]))
+            shapeobj = ds.DNAShape(fastadict)
+        else:
+            shapeobj = ds.DNAShape(self.df["sequence"].tolist())
         self.shapes = {k:getattr(shapeobj,k.lower()) for k in shapeobj.shapetypes}
         # make a dictionary of list instead of nested dictionary since we use this
         # as features
-        namelist = self.df["name"].tolist()
+        if "name" in self.df:
+            namelist = self.df["name"].tolist()
+        else:
+            namelist = next(iter(self.shapes.values())).keys()
         self.shapes = {k:[v[n] for n in namelist] for k, v in self.shapes.items()}
         if self.direction == "orientation":
             ori = Orientation(self.df, {"positive_cores":self.positive_cores}).get_feature()

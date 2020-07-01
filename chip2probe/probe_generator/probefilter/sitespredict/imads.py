@@ -157,7 +157,7 @@ class iMADS(basemodel.BaseModel):
                                        "core_width": len(model.core),
                                        "core_mid": mid
                                        })
-        return prediction
+        return sorted(prediction, key=lambda k: k['core_mid'])  
 
     # or predict fasta?
     def predict_sequences(self, sequence_df, const_intercept=False,
