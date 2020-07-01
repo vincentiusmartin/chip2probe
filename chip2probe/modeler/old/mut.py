@@ -97,6 +97,7 @@ def similar_score(wt, muts, imads, mlist, rndcount=2):
 def make_ets1_mutations(df, imads, flanklen=4):
     """
     Generate ets1 sequences where the cores or flanking regions are mutated.
+    Assumes site mode is positional.
 
     df: Dataframe containing sequences of interest
     imads: imads object used for prediction
@@ -118,10 +119,28 @@ def make_ets1_mutations(df, imads, flanklen=4):
         s2pos = row["site_wk_pos"] if row["site_wk_pos"] > row["site_str_pos"] else row["site_str_pos"]
         spos = [s1pos, s2pos]
 
+        # predict the imads score of the wild type
+        pred = imads.predict_sequence(seq)
+
+        if len(pred) < 2:
+            continue
+
+        if pred[0]['score'] > pred[1]['score']:
+            strong = 0
+            weak = 1
+        else:
+            strong = 1
+            weak = 0
+
+        site_str_pos = pred[strong]['core_mid']
+        site_wk_pos = pred[weak]['core_mid']
+        site_str_score = pred[strong]['score']
+        site_wk_score = pred[weak]['score']
+
         # add the wildtype
-        allmut += [{"sequence": row["sequence"], "site_wk_pos":row["site_wk_pos"], \
-                    "site_str_pos":row["site_str_pos"], "site_wk_score": row["site_wk_score"],
-                    "site_str_score": row["site_str_score"], "distance":row["distance"], \
+        allmut += [{"sequence": seq, "site_wk_pos":site_wk_pos, \
+                    "site_str_pos":site_str_pos, "site_wk_score": site_wk_score,
+                    "site_str_score": site_str_score, "distance":row["distance"], \
                     "comment":"wt"}]
 
         # get list of mutations where the cores or flanks are mutated
@@ -268,30 +287,39 @@ def predict_all_ori(test,ds):
     yprob = [yprob[i][0] if ypred[i] == 0 else yprob[i][1] for i in range(len(ypred))]
     return ypred,yprob
 
-def populate_wt_pred(df):
-    """Populate the dataframe with column indicating the wt pred."""
+
+def populate_wt_preds(df):
+    """Populate the dataframe with column indicating the wt pred and proba."""
     df["wt_pred"] = 0
+    wt_probas = []
     for idx, row in df.iterrows():
         if row["comment"] == "wt":
             wt_pred = row["y_pred"]
+            wt_proba = row["y_proba"]
+        wt_probas.append(wt_proba)
         df.at[idx, "wt_pred"] = wt_pred
+    df["wt_proba"] = wt_probas
 
     return df
+
 
 def filter_changed_pred_label(df):
     """Get rows in the df where wt pred and y pred are different."""
     df = df.loc[(df['wt_pred'] != df['y_pred']) | (df['comment']=='wt')]
     return df
 
+
 def filter_high_pred_prob(df, cutoff=0.7):
     """Get rows in the df where y proba is at least cutoff."""
-    df = df.loc[df['y_proba'] >= cutoff]
+    df = df.loc[(df['y_proba'] >= cutoff) | (df['comment'] == 'wt')]
     return df
+
 
 def filter_same_pred_label(df):
     """Get rows in the df where wt pred and y pred are the same."""
     df = df.loc[(df['wt_pred'] == df['y_pred'])]
     return df
+
 
 def filter_similar_score(df, imads):
     """Get rows in the df where the imads scores for both sites are the same after mutation."""
@@ -312,7 +340,8 @@ def filter_similar_score(df, imads):
     # drop the rows where scores of corresponding sites are not similar
     df = df.drop(rows)
     return df
-                
+
+
 def clean_df(df):
     """Remove wild types with no eligible mutated sequences after filtering."""
     rows = []
@@ -333,6 +362,84 @@ def clean_df(df):
     df = df.drop(rows)
     return df
 
+
+def convert_site_mode(df, strength_to_pos=True):
+    # TODO: Put this somewhere in utils since this is used in multiple places
+    # TODO: Find another way that doesn't use for loop for more efficiency
+    # TODO: Add convertion for when strength_to_pos == False
+    """
+    Convert site mode from the given df.
+
+    strength_to_pos: True if we are converting site_str_pos, site_wk_pos to site1, site2
+                     False if we are converting s1pos, s2post to site_str_pos and site_wk_pos
+    Return: The df with converted site mode
+    """
+    if strength_to_pos:
+        df['s1_pos'] = 0
+        df['s2_pos'] = 0
+        s1scores = []
+        s2scores = []
+        for idx, row in df.iterrows():
+            if row["site_wk_pos"] < row["site_str_pos"]:
+                s1pos = row["site_wk_pos"]
+                s1score = row["site_wk_score"]
+                s2pos = row["site_str_pos"]
+                s2score = row["site_str_score"]
+            else:
+                s1pos = row["site_str_pos"]
+                s1score = row["site_str_score"]
+                s2pos = row["site_wk_pos"]
+                s2score = row["site_wk_score"]
+            
+            df.at[idx, 's1_pos'] = s1pos
+            df.at[idx, 's2_pos'] = s2pos
+            s1scores.append(s1score)
+            s2scores.append(s2score)
+        df['s1_score'] = s1scores
+        df['s2_score'] = s2scores
+        df = df.drop(['site_wk_pos', 'site_str_pos', 'site_str_score', 'site_wk_score'], axis=1)
+    else:
+        pass
+
+    # move the comment column to the end
+    comments = df.pop('comment')
+    df['comment'] = comments
+
+    return df
+
+def get_score_diff(df):
+    """Calculate score difference of wt and mutations."""
+    wt_score_1 = 0
+    wt_score_2 = 0
+
+    for idx, row in df.iterrows():
+        # for each wt, get all its mutations
+        if df['comment'] == 'wt':
+            muts = []
+        else:
+
+            muts.append(idx)
+
+# TODO
+def sort_mutations(df, increasing=True):
+    """Sort mutations in increasing change between imads pred of wt and mutation."""
+    muts = []
+    diff = []
+    for idx, row in df.iterrows():
+        # for each wt, get all its mutations
+        if df['comment'] == 'wt':
+            muts = []
+        else:
+
+            muts.append(idx)
+
+def sort_by_affinity(df, increasing=True):
+    """Sort mutations in increasing affinity, starting from weak then strong site."""
+    for idx, row in df.iterrows():
+        # for each wt, get all its mutations
+        break
+
+
 if __name__ == '__main__':
     
     trainingpath = "../../../input/modeler/training_data/training_p01_adjusted.tsv"
@@ -344,37 +451,41 @@ if __name__ == '__main__':
                     zip(modelpaths, modelcores)]
     imads = iMADS(imads_models, imads_threshold=IMADS_THRESHOLD)
 
+
     #-----------------generate list of mutated sequences------------------
-    pd.set_option('display.max_columns', None)
-    df = pd.read_csv(trainingpath, sep="\t")
+    # pd.set_option('display.max_columns', None)
+    # df = pd.read_csv(trainingpath, sep="\t")
 
-    md = make_ets1_mutations(df, imads, flanklen=4)
-    pd.DataFrame(md).to_csv("mutlist.csv", index=False)
+    # df = pd.DataFrame(make_ets1_mutations(df, imads, flanklen=4))
 
-    # --------------predict labels of new mutated sequences-----------------
+    # #df = sort_by_affinity(df)
+
+    # df.to_csv("mutlist.csv", index=False)
+
+    # # --------------predict labels of new mutated sequences-----------------
     #we have 72833 rows, including wild types
-    df = pd.read_csv("mutlist.csv")
+    # df = pd.read_csv("mutlist.csv")
     
-    t = Training(df,corelen=4)
+    # t = Training(df, corelen=4)
 
-    xt = t.get_feature_all({
-        "distance":{"type":"numerical"},
-        "sitepref": {"imadsmodel": imads, "modelwidth":12}, # use custom imads
-        "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
-    })
-    xt = pd.DataFrame(xt).values.tolist()
+    # xt = t.get_feature_all({
+    #     "distance":{"type":"numerical"},
+    #     "sitepref": {"imadsmodel": imads, "modelwidth":12}, # use custom imads
+    #     "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+    # })
+    # xt = pd.DataFrame(xt).values.tolist()
     
-    model = pickle.load(open("dist_ori_12merimads.sav", "rb"))
+    # model = pickle.load(open("dist_ori_12merimads.sav", "rb"))
     
-    ypred = model.predict(xt)
-    yprob = model.predict_proba(xt)
-    yprob = [yprob[i][0] if ypred[i] == 0 else yprob[i][1] for i in range(len(ypred))]
-    df["y_pred"] = ypred
-    df["y_proba"] = yprob
-    df = populate_wt_pred(df)
-    df.to_csv("mutpred.csv", index=None)
+    # ypred = model.predict(xt)
+    # yprob = model.predict_proba(xt)
+    # yprob = [yprob[i][0] if ypred[i] == 0 else yprob[i][1] for i in range(len(ypred))]
+    # df["y_pred"] = ypred
+    # df["y_proba"] = yprob
+    # df = populate_wt_preds(df)
+    # df.to_csv("mutpred.csv", index=None)
 
-    # --------Filter to get mutated sequences with changed label and high pred prob--------
+    # # --------Filter to get mutated sequences with changed label and high pred prob--------
     df = pd.read_csv("mutpred.csv")
     plt.hist(df["y_proba"], density=False, bins=10)
     plt.ylabel('Count')
@@ -383,19 +494,20 @@ if __name__ == '__main__':
     plt.savefig("pred_prob_distribution.png")
     df = filter_changed_pred_label(df)
     df = filter_high_pred_prob(df, cutoff=np.percentile(df["y_proba"], 75))
+    df = clean_df(df)
     df.to_csv("mut_changed_label_high_pred_prob.csv", index=None)
 
-    # ---------Filter to get mutated sequences where predicted labels don't change-------
-    df = pd.read_csv("mutpred.csv")
-    df = filter_same_pred_label(df)
-    df.to_csv("mut_same_label.csv", index=None)
+    # # ---------Filter to get mutated sequences where predicted labels don't change-------
+    # df = pd.read_csv("mutpred.csv")
+    # df = filter_same_pred_label(df)
+    # df.to_csv("mut_same_label.csv", index=None)
 
-    #---------Filter to get sequences that have different predictions -------------
-    #---------but have similar imads score for each corresponding site-------------
-    df = pd.read_csv("mutpred.csv")
-    df = filter_changed_pred_label(df)
-    df = filter_similar_score(df, imads)
-    df = clean_df(df)
-    df.to_csv("mut_changed_label_similar_score.csv", index=None)
+    # #---------Filter to get sequences that have different predictions -------------
+    # #---------but have similar imads score for each corresponding site-------------
+    # df = pd.read_csv("mutpred.csv")
+    # df = filter_changed_pred_label(df)
+    # df = filter_similar_score(df, imads)
+    # df = clean_df(df)
+    # df.to_csv("mut_changed_label_similar_score.csv", index=None)
 
 
