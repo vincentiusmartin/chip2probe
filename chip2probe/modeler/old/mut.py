@@ -421,19 +421,99 @@ def get_score_diff(df):
             muts.append(idx)
 
 # TODO
-def sort_mutations(df, increasing=True):
+def sort_by_change_in_affinity(df, increasing=True, positional=False):
     """Sort mutations in increasing change between imads pred of wt and mutation."""
-    muts = []
-    diff = []
+    wt_idx = 0
+    # difference in s1/wk affinity
+    diff_s1 = []
+    # difference in s2/str affinity
+    diff_s2 = []
+    # indices of mutations where the s1/wk changed
+    idx_s1 = []
+    # indices of mutations where the s2/str changed
+    idx_s2 = []
+    new_indices = []
+    wt_s1 = 0
+    wt_s2 = 0
+    sorted_s1 = []
+    sorted_s2 = []
+
+    df = df[:10]
+
     for idx, row in df.iterrows():
         # for each wt, get all its mutations
-        if df['comment'] == 'wt':
-            muts = []
+        if row['comment'] == 'wt' or idx == len(df)-1:
+            if idx == len(df) - 1:
+                if positional:
+                    if (wt_s1 - float(row['s1_score'])) != 0:
+                        diff_s1.append(wt_s1 - float(row['s1_score']))
+                        idx_s1.append(idx)
+                    else:
+                        diff_s2.append(wt_s2 - float(row['s2_score']))
+                        idx_s2.append(idx)
+                else:
+                    if (wt_s1 - float(row['site_wk_score'])) != 0:
+                        diff_s1.append(wt_s1 - float(row['site_wk_score']))
+                        idx_s1.append(idx)
+                    else:
+                        diff_s2.append(wt_s2 - float(row['site_str_score']))
+                        idx_s2.append(idx)
+            if idx != 0:
+                idx_s1 = list(np.array(idx_s1)[np.argsort(diff_s1)])
+                new_indices += idx_s1
+                idx_s2 = list(np.array(idx_s2)[np.argsort(diff_s2)])
+                new_indices += idx_s2
+
+                sorted_s1 += [0] + sorted(diff_s1) + [0 for i in diff_s2]
+                sorted_s2 += [0] + [0 for i in diff_s1] + sorted(diff_s2)
+
+                diff_s1 = []
+                diff_s2 = []
+                idx_s1 = []
+                idx_s2 = []
+
+                print(new_indices)
+
+            new_indices.append(idx)
+
+            # record the affinity of the current wt
+            if positional:
+                wt_s1 = float(row['s1_score'])
+                wt_s2 = float(row['s2_score'])
+            else:
+                wt_s1 = float(row['site_wk_score'])
+                wt_s2 = float(row['site_str_score'])
+        # for mutations, calculate the change in affinity
         else:
+            if positional:
+                print(wt_s1, float(row['s1_score']), wt_s1 - float(row['s1_score']))
+                print(wt_s2, float(row['s2_score']), wt_s2 - float(row['s2_score']))
+                if (wt_s1 - float(row['s1_score'])) != 0.0:
+                    diff_s1.append(wt_s1 - float(row['s1_score']))
+                    idx_s1.append(idx)
+                else:
+                    diff_s2.append(wt_s2 - float(row['s1_score']))
+                    idx_s2.append(idx)
+            else:
+                if (wt_s1 - float(row['site_wk_score'])) != 0.0:
+                    diff_s1.append(wt_s1 - float(row['site_wk_score']))
+                    idx_s1.append(idx)
+                else:
+                    diff_s2.append(wt_s2 - float(row['site_str_score']))
+                    idx_s2.append(idx)
 
-            muts.append(idx)
+    if positional:
+        df['change_in_s1_score'] = sorted_s1
+        df['change_in_s2_score'] = sorted_s2
+    else:
+        df['change_in_wk_score'] = sorted_s1 
+        df['change_in_str_score'] = sorted_s2
 
-def sort_by_affinity(df, increasing=True):
+    df = df.reindex(new_indices)
+
+    return df
+
+def sort_by_affinity(df, increasing=True, positional=False):
     """Sort mutations in increasing affinity, starting from weak then strong site."""
     for idx, row in df.iterrows():
         # for each wt, get all its mutations
@@ -486,16 +566,16 @@ if __name__ == '__main__':
     # df.to_csv("mutpred.csv", index=None)
 
     # # --------Filter to get mutated sequences with changed label and high pred prob--------
-    df = pd.read_csv("mutpred.csv")
-    plt.hist(df["y_proba"], density=False, bins=10)
-    plt.ylabel('Count')
-    plt.xlabel('Probability')
-    plt.title("Predicted Probability Distribution")
-    plt.savefig("pred_prob_distribution.png")
-    df = filter_changed_pred_label(df)
-    df = filter_high_pred_prob(df, cutoff=np.percentile(df["y_proba"], 75))
-    df = clean_df(df)
-    df.to_csv("mut_changed_label_high_pred_prob.csv", index=None)
+    # df = pd.read_csv("mutpred.csv")
+    # plt.hist(df["y_proba"], density=False, bins=10)
+    # plt.ylabel('Count')
+    # plt.xlabel('Probability')
+    # plt.title("Predicted Probability Distribution")
+    # plt.savefig("pred_prob_distribution.png")
+    # df = filter_changed_pred_label(df)
+    # df = filter_high_pred_prob(df, cutoff=np.percentile(df["y_proba"], 75))
+    # df = clean_df(df)
+    # df.to_csv("mut_changed_label_high_pred_prob.csv", index=None)
 
     # # ---------Filter to get mutated sequences where predicted labels don't change-------
     # df = pd.read_csv("mutpred.csv")
@@ -510,4 +590,13 @@ if __name__ == '__main__':
     # df = clean_df(df)
     # df.to_csv("mut_changed_label_similar_score.csv", index=None)
 
+    # ----------------------------------Convert from strength to positional-----------------------
+    # df = pd.read_csv("mutpred.csv")
+    # df = convert_site_mode(df, strength_to_pos=True)
+    # df.to_csv("mutpred_positional.csv", index=None)
+
+    #-----------------------------Sorting by change in affinity----------------------------
+    df = pd.read_csv("mutpred_positional.csv")
+    df = sort_by_change_in_affinity(df, positional=True)
+    df.to_csv("mutpred_sorted_by_change_in_affinity.csv", index=None)
 
