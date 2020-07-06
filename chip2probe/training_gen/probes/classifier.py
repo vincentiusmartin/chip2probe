@@ -6,7 +6,7 @@ from termcolor import colored
 import statsmodels.stats.multitest as sm
 
 #  custom library
-import util.stats as sta
+import chip2probe.util.stats as sta
 
 # ================ R function wrapper ================
 

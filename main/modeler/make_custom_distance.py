@@ -19,10 +19,12 @@ if __name__ == "__main__":
     imads12_models = [iMADSModel(path, core, 12, [1, 2, 3]) for path, core in zip(imads12_paths, imads12_cores)]
     imads12 = iMADS(imads12_models, 0.19) # 0.2128
 
-    # dm = mut.mutate_dist(df["sequence"].tolist(), imads12, warning=False)
-    # dm["label"] = df["label"]
-    # dm.to_csv("dm.csv", index=False, header=True)
-    dm = pd.read_csv("dm.csv")
+    print("Number of input rows: %d"%df.shape[0])
+    indf = df[["sequence","label"]]
+    indf["label"] = indf["label"].map({"cooperative":1,"additive":0})
+    dm = mut.mutate_dist(indf, imads12, warning=False)
+    dm.to_csv("custom_distance.csv", index=False, header=True)
+    dm = pd.read_csv("custom_distance.csv")
 
     ct = CoopTrain(dm["sequence"].values.tolist(), corelen=4, flip_th=True, positive_cores=["GGAA","GGAT"], imads=imads12)
     ori = ct.get_feature("orientation", {"positive_cores":["GGAA","GGAT"], "relative":True, "one_hot":False})
@@ -52,5 +54,5 @@ if __name__ == "__main__":
     pred = model.predict(train)
     prob = model.predict_proba(train)
     dm["main_pred"] = pred
-    dm["main_prob"] = [prob[i][pred[i]] for i in range(len(pred))]
-    dm.to_csv("distmut.csv", index=False, header=True)
+    dm["main_prob"] = [prob[i][pred[1]] for i in range(len(pred))] # use the probability of being cooperative
+    dm.to_csv("custom_distance_withpred.csv", index=False, header=True)
