@@ -119,21 +119,21 @@ def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", 
 
 def display_output(xy, score_dict, path, title, score_type="auc", varyline=False):
     """
-        Display output
+    Display output
 
-        This plots the average ROC curve of all the classifiers in a single plot
+    This plots the average ROC curve of all the classifiers in a single plot
 
-        Args:
-            xy: a dictionary of dictionary with the plot title as key. The subdictionary
-               contains 'x' and 'y' where each is a list of values in the plot.
-            score_dict: a dictionary of auc/pr value, the keys in xy should be the same
-               with keys in score_dict
-            path:
-            title:
-            score_type:
-            varyline: if True generates different type of line depending # features
-        Returns:
-            (NA)
+    Args:
+        xy: a dictionary of dictionary with the plot title as key. The subdictionary
+           contains 'x' and 'y' where each is a list of values in the plot.
+        score_dict: a dictionary of auc/pr value, the keys in xy should be the same
+           with keys in score_dict
+        path:
+        title:
+        score_type:
+        varyline: if True generates different type of line depending # features
+    Returns:
+        (NA)
     """
     plt.clf() # first, clear the canvas
     plt.plot([0, 1], [0, 1], color="gray", alpha=0.5, lw=0.3)#linestyle="--",

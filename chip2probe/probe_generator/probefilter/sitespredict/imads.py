@@ -33,8 +33,7 @@ class iMADS(basemodel.BaseModel):
         self.models = imads_models #temporary use 0
         self.imads_threshold = imads_threshold
         self.sitewidth = imads_models[0].width
-
-    #def generate_matching_sequence(self, sequence, core, width):
+        self.corewidth = len(imads_models[0].core)
 
     def generate_matching_sequence(self, sequence, core, width):
         """
@@ -157,7 +156,7 @@ class iMADS(basemodel.BaseModel):
                                        "core_width": len(model.core),
                                        "core_mid": mid
                                        })
-        return sorted(prediction, key=lambda k: k['core_mid'])  
+        return sorted(prediction, key=lambda k: k['core_mid'])
 
     # or predict fasta?
     def predict_sequences(self, sequence_df, const_intercept=False,
