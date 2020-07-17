@@ -14,22 +14,30 @@ from chip2probe.util import bio
 from chip2probe.modeler.features import *
 
 class CoopTrain:
-
-    def __init__(self, trainingdata, corelen, sep="\t", flip_th=False, positive_cores=[], imads=None):
+    def __init__(self, trainingdata, corelen, sep="\t", flip_th=False,
+                positive_cores=[], imads=None, ignore_sites_err=False):
         """
         Cooperative Training class constructor
 
         Args:
-            trainigdata : Path string or data frame with the required columns
+            traininngdata : Path string or data frame with the required columns
             corelen : The length of the core binding site
             sep: Separator for the csv/tsv file if the trainingdata is string
             flip_th: Flip all TH orientation to HT (important whe we want to treat TH == HT)
             positive_cores: Required if flip_th is true, contain all the positive cores that define
             HT orientation.
             imads: if the input is list, need to give imads model
+            ignore_sites_err: if True, skip sequences with sites not equal to 2
         Returns:
             NA
         """
+        self.ignore_sites_err = ignore_sites_err
+        self.corelen = corelen
+        # Get the positive cores
+        if imads: # take positive cores from imads
+            positive_cores = [m.core for  m in imads.models]
+        elif (flip_th or isinstance(trainingdata, list)) and not positive_cores:
+            raise Exception("Positive cores must be defined when flip_th is True")
         if isinstance(trainingdata, pd.DataFrame):
             self.df = trainingdata.copy().reset_index(drop=True)
         elif isinstance(trainingdata, str):
@@ -43,10 +51,7 @@ class CoopTrain:
         else:
             raise Exception("input must be string path or data frame")
         #self.validate_cols()
-        self.corelen = corelen
         if flip_th:
-            if not positive_cores:
-                raise Exception("Positive cores must be defined when flip_th is True")
             self.df = self.flip_th2ht(positive_cores)
 
     def make_train(self, seqs, imads):
@@ -54,13 +59,16 @@ class CoopTrain:
         idx = 1
         for seq in seqs:
             row = {}
+            # need to put index first so it is not affected by the sequences we ignore
+            row["name"] = "seq-%d" % idx
+            idx += 1
             preds = imads.predict_sequence(seq)
             if len(preds) != 2:
+                if self.ignore_sites_err:
+                    continue
                 raise Exception("Number of sites must be 2 but found %d for %s" % (len(preds), seq))
             row["sequence"] = seq
             row["distance"] = preds[1]["core_mid"] - preds[0]["core_mid"]
-            row["name"] = "seq-%d" % idx
-            idx += 1
             if preds[0]["score"] > preds[1]["score"]:
                 row["site_wk_score"] = preds[1]["score"]
                 row["site_wk_pos"] = preds[1]["core_mid"]

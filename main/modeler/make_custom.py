@@ -19,15 +19,27 @@ if __name__ == "__main__":
     imads12_models = [iMADSModel(path, core, 12, [1, 2, 3]) for path, core in zip(imads12_paths, imads12_cores)]
     imads12 = iMADS(imads12_models, 0.19) # 0.2128
 
-    # dm = mut.mutate_dist(df["sequence"].tolist(), imads12, warning=False)
-    # dm["label"] = df["label"]
-    # dm.to_csv("dm.csv", index=False, header=True)
-    dm = pd.read_csv("dm.csv")
+    print("Number of input rows: %d"%df.shape[0])
+    indf = df[["id","sequence","label"]]
+    indf["label"] = indf["label"].replace({"cooperative":1,"additive":0})
 
-    ct = CoopTrain(dm["sequence"].values.tolist(), corelen=4, flip_th=True, positive_cores=["GGAA","GGAT"], imads=imads12)
-    ori = ct.get_feature("orientation", {"positive_cores":["GGAA","GGAT"], "relative":True, "one_hot":False})
-    dm["orientation"] = [x["ori"] for x in ori]
+    # 1. Mutate based on distance
+    dist_m = mut.mutate_dist(indf, imads12, warning=False)
+    #dm.to_csv("custom_distance.csv", index=False, header=True)
+    #dm = pd.read_csv("custom_distance.csv")
+    # we need to add the orientation information for the distance
+    ctd = CoopTrain(dist_m["sequence"].values.tolist(), corelen=4, flip_th=True, positive_cores=["GGAA","GGAT"], imads=imads12)
+    ori = ctd.get_feature("orientation", {"positive_cores":["GGAA","GGAT"], "relative":True, "one_hot":False})
+    dist_m["orientation"] = [x["ori"] for x in ori]
 
+    # 1. Mutate based on orientation
+    ori_m = mut.mutate_orientation(indf, imads12)
+
+    mutdf = pd.concat([dist_m, ori_m])
+    mutdf.to_csv("custom.csv", index=False, header=True)
+
+    # not the most effective way since we calculate cooptrain twice...
+    ct = CoopTrain(mutdf["sequence"].values.tolist(), corelen=4, flip_th=True, positive_cores=["GGAA","GGAT"], imads=imads12)
     feature_dict = {
         "distance":{"type":"numerical"},
          "shape_in": {"seqin":4, "smode":"strength", "direction":"inout"}, # maximum seqin is 4
@@ -39,8 +51,8 @@ if __name__ == "__main__":
     model1 = pickle.load(open("input/modeler/coopmodel/dist_shapeio.sav", "rb"))
     pred1 = model1.predict(train1)
     prob1 = model1.predict_proba(train1)
-    dm["shape_pred"] = pred1
-    dm["shape_prob"] = [prob1[i][pred1[i]] for i in range(len(pred1))]
+    mutdf["shape_pred"] = pred1
+    mutdf["shape_prob"] = [prob1[i][pred1[1]] for i in range(len(pred1))]
 
     feature_dict = {
         "distance":{"type":"numerical"},
@@ -51,6 +63,6 @@ if __name__ == "__main__":
     model = pickle.load(open("input/modeler/coopmodel/dist_ori_12merimads.sav", "rb"))
     pred = model.predict(train)
     prob = model.predict_proba(train)
-    dm["main_pred"] = pred
-    dm["main_prob"] = [prob[i][pred[i]] for i in range(len(pred))]
-    dm.to_csv("distmut.csv", index=False, header=True)
+    mutdf["main_pred"] = pred
+    mutdf["main_prob"] = [prob[i][pred[1]] for i in range(len(pred))] # use the probability of being cooperative
+    mutdf.to_csv("custom_withpred.csv", index=False, header=True)
