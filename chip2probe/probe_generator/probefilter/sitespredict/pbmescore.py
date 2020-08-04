@@ -5,7 +5,7 @@ Created on Jul 22, 2019
 
 Authors: Vincentius Martin, Farica Zhuang
 """
-from sitespredict import basepred, basemodel
+from chip2probe.probe_generator.probefilter.sitespredict import basepred, basemodel
 from chip2probe.util import bio as bio
 import pandas as pd
 
