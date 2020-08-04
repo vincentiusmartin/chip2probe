@@ -12,6 +12,7 @@ from chip2probe.modeler.shapemodel import ShapeModel
 if __name__ == "__main__":
     trainingpath = "input/modeler/training_data/training_p01_adjusted.tsv"
     df = pd.read_csv(trainingpath, sep="\t")
+    # select only genomic sequences
     df = df[~df['name'].str.contains("dist|weak")]
 
     imads12_paths = ["input/modeler/imads_model/Ets1_w12_GGAA.model", "input/modeler/imads_model/Ets1_w12_GGAT.model"]
@@ -23,20 +24,22 @@ if __name__ == "__main__":
     indf = df[["id","sequence","label"]]
     indf["label"] = indf["label"].replace({"cooperative":1,"additive":0})
 
-    # 1. Mutate based on distance
-    dist_m = mut.mutate_dist(indf, imads12, warning=False)
-    #dm.to_csv("custom_distance.csv", index=False, header=True)
-    #dm = pd.read_csv("custom_distance.csv")
+    # 1. Mutate based on affinity
+    aff_m = mut.mutate_affinity(indf, imads12, deep=3)
+
+    """
+    # 2. Mutate based on orientation
+    ori_m = mut.mutate_orientation(indf, imads12, deep=3)
+
+    # 3. Mutate based on distance
+    dis_m = mut.mutate_dist(indf, imads12, warning=False, deep=3)
+    # dm.to_csv("custom_distance.csv", index=False, header=True)
+    # dm = pd.read_csv("custom_distance.csv")
     # we need to add the orientation information for the distance
-    ctd = CoopTrain(dist_m["sequence"].values.tolist(), corelen=4, flip_th=True, positive_cores=["GGAA","GGAT"], imads=imads12)
-    ori = ctd.get_feature("orientation", {"positive_cores":["GGAA","GGAT"], "relative":True, "one_hot":False})
-    dist_m["orientation"] = [x["ori"] for x in ori]
 
-    # 1. Mutate based on orientation
-    ori_m = mut.mutate_orientation(indf, imads12)
-
-    mutdf = pd.concat([dist_m, ori_m])
+    mutdf = pd.concat([aff_m, dis_m, ori_m]) # ,
     mutdf.to_csv("custom.csv", index=False, header=True)
+    mutdf = pd.read_csv("custom.csv")
 
     # not the most effective way since we calculate cooptrain twice...
     ct = CoopTrain(mutdf["sequence"].values.tolist(), corelen=4, flip_th=True, positive_cores=["GGAA","GGAT"], imads=imads12)
@@ -52,7 +55,7 @@ if __name__ == "__main__":
     pred1 = model1.predict(train1)
     prob1 = model1.predict_proba(train1)
     mutdf["shape_pred"] = pred1
-    mutdf["shape_prob"] = [prob1[i][pred1[1]] for i in range(len(pred1))]
+    mutdf["shape_prob"] = [prob1[i][1] for i in range(len(pred1))]
 
     feature_dict = {
         "distance":{"type":"numerical"},
@@ -64,5 +67,6 @@ if __name__ == "__main__":
     pred = model.predict(train)
     prob = model.predict_proba(train)
     mutdf["main_pred"] = pred
-    mutdf["main_prob"] = [prob[i][pred[1]] for i in range(len(pred))] # use the probability of being cooperative
+    mutdf["main_prob"] = [prob[i][1] for i in range(len(pred))] # use the probability of being cooperative
     mutdf.to_csv("custom_withpred.csv", index=False, header=True)
+    """

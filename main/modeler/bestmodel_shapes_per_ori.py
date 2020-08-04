@@ -35,7 +35,7 @@ if __name__ == "__main__":
         "min_samples_split" :[5, 10, 15]
     }
 
-    orientations = ["HH"]#["HH", "TT", "HT/TH"]
+    orientations = ["HH", "TT", "HT/TH"]
     for ori in orientations:
         curdf = df[df["orientation"] == ori]
         curct = CoopTrain(curdf, corelen=4, positive_cores=["GGAA","GGAT"])
@@ -77,4 +77,3 @@ if __name__ == "__main__":
         }
         oriname = ori.replace("/","")
         pl.plot_model_metrics(best_models, cvfold=10, score_type=score_type, plotname="auc_%s.png" % oriname)
-        break

@@ -18,6 +18,7 @@ def get_relative_orientation(sequence, predictor, htth=True):
     Args:
         sequence
         predictor
+        htth: if True, predict HT or TH as HT/TH
     Return:
         orientation
     Example:
@@ -49,7 +50,8 @@ def get_relative_orientation(sequence, predictor, htth=True):
         return '-1'
 
 def move_single_site(sequence, site1_end, site2_start,
-                    step, flank_append = "", patch=False):
+                    step, flank_append = "", patch=False,
+                    can_overlap=False):
     """
     Make sites closer by shifting the position of a binding site.
 
@@ -79,7 +81,8 @@ def move_single_site(sequence, site1_end, site2_start,
     seqlen = len(sequence)
 
     # check if the the shift is valid
-    if (step > 0 and site1_end + step > site2_start) or (step < 0 and site2_start + step < site1_end):
+    if not can_overlap and ((step > 0 and site1_end + step > site2_start) or
+                            (step < 0 and site2_start + step < site1_end)):
         raise Exception("step is larger than allowed")
     if len(flank_append) > 0 and patch:
         raise Exception("Should only specify either flank or patch")
