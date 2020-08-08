@@ -146,22 +146,24 @@ def mutate_cores(seq, midlist, coremap):
                         "comment": comment})
     return mutants
 
-def mutate_orientation(seqdf, predictor, deep=0):
+def mutate_orientation(seqdf, imads, deep=0):
     """
     Make mutation for orientation
 
-    Flip one or both sites, flip the whole 12 mer.
-    For sites less than predictor.sitewidth, we use 'predictor'
+    Flip one or both sites, flip the whole 12 mer. We only use HH, HT, TT
+    orientation (i.e. no TH).
 
     Args:
-        feature_dict: the following is the list of currently available feature:
-            1. seqdf:
-            2: predictor
+        1. seqdf: input data frame with the wt sequences to mutate
+        2. imads: imads model to predict the strength of the mutants
+        3. deep: how far we permit distance to go under imads.sitewidth. The
+            minimum distance is set to imads.sitewidth - deep. The flip length
+            is changed from sitewidth to (sitewidth-deep)//2*2.
      Returns:
-
+        A data frame with changed orientations
     """
     # we need to get orientation information, this already filter if each sequence has 2 sites
-    ct = CoopTrain(seqdf["sequence"].values.tolist(), corelen=4, flip_th=True, imads=predictor, ignore_sites_err=True)
+    ct = CoopTrain(seqdf["sequence"].values.tolist(), corelen=4, flip_th=True, imads=imads, ignore_sites_err=True)
     om = ct.df.join(seqdf.set_index("sequence"), on="sequence", how="inner") # this already include the orientation
     mutres = []
     orilist = {"HH","TT","HT/TH"}
@@ -169,13 +171,13 @@ def mutate_orientation(seqdf, predictor, deep=0):
     iter = 0
     nrow = om.shape[0]
     div = nrow // 100
-    mindist = predictor.sitewidth - deep
+    mindist = imads.sitewidth - deep
     for index, row in om.iterrows():
         if iter % div == 0:
             print("Mutating orientation, progress {:.2f}% ({}/{})".format(iter*100/nrow,iter,nrow))
         iter += 1
         mutres_cur = []
-        sites = predictor.predict_sequence(row["sequence"])
+        sites = imads.predict_sequence(row["sequence"])
         curdist = sites[1]["core_mid"] - sites[0]["core_mid"]
         if  curdist < mindist or len(sites) != 2:
             continue
@@ -194,15 +196,15 @@ def mutate_orientation(seqdf, predictor, deep=0):
         })
         for fs in flipsites:
             newseq = row["sequence"]
-            adjust = 0 if curdist >= predictor.sitewidth else int(math.ceil(float(predictor.sitewidth - curdist) / 2))
+            adjust = 0 if curdist >= imads.sitewidth else int(math.ceil(float(imads.sitewidth - curdist) / 2))
             for i in fs:
                 start,end = sites[i]["site_start"]+adjust, sites[i]["site_start"]+sites[i]["site_width"]-adjust
                 toflip = bio.revcompstr(row["sequence"][start:end])
                 newseq = newseq[:start] + toflip + newseq[end:]
-            newsites = predictor.predict_sequence(newseq)
+            newsites = imads.predict_sequence(newseq)
             if len(newsites) != 2: # we ignore if there are new sites
                 continue
-            newori = cg.get_relative_orientation(newseq, predictor, htth=False)
+            newori = cg.get_relative_orientation(newseq, imads, htth=False)
             if newori == "HT":
                 newori = "HT/TH"
             elif newori == "TH":
@@ -226,26 +228,32 @@ def mutate_orientation(seqdf, predictor, deep=0):
             mutres.extend(mutres_cur)
     return pd.DataFrame(mutres)
 
-def mutate_dist(seqdf, predictor, fixsecond=True, warning=True, deep=0):
+def mutate_dist(seqdf, imads, deep=0,  warning=True):
     """
     Make mutation for distance
 
-    Insert and cut, for cutting can fix the second site (site that closer to the glass slide) and can just use the the nucleotide that is cut to patch. CHECK WE ARE NOT CREATING NEW SITE.
+    Make closer distance between two sites.
+    Insert and cut, for cutting can fix the second site (site that closer to the
+    glass slide) and can just use the the nucleotide that is cut to patch.
+    CHECK WE ARE NOT CREATING NEW SITE.
 
     Args:
         feature_dict: the following is the list of currently available feature:
-            1. df: input data frame with id, sequence, label
-            2: predictor:
-            3: fixsecond
-            4: deep, how much do we want to allow distance to go beyond minimum
-     Returns:
-
+            1. seqdf: input data frame with the wt sequences to mutate
+            2. imads: imads model to predict the strength of the mutants
+            3. deep: how far we permit distance to go under imads.sitewidth. The
+                minimum distance is set to imads.sitewidth - deep. When deep > 0,
+                the affinity of each site will change after the distance is
+                less than sitewidth.
+            4. warning: print warning when input has sites number != 2
+    Returns:
+        A data frame where each sequence has mutants
     """
-    ct = CoopTrain(seqdf["sequence"].values.tolist(), corelen=4, flip_th=True, imads=predictor, ignore_sites_err=True)
+    ct = CoopTrain(seqdf["sequence"].values.tolist(), corelen=4, flip_th=True, imads=imads, ignore_sites_err=True)
     om = ct.df.join(seqdf.set_index("sequence"), on="sequence", how="inner") # this already include the orientation
 
     mutres = []
-    mindist = predictor.sitewidth - deep
+    mindist = imads.sitewidth - deep
     nrow = om.shape[0]
     iter = 0
     div = nrow // 100
@@ -255,7 +263,7 @@ def mutate_dist(seqdf, predictor, fixsecond=True, warning=True, deep=0):
         iter += 1
         seq = row["sequence"]
         mutres_cur = []
-        sites = predictor.predict_sequence(seq)
+        sites = imads.predict_sequence(seq)
         if len(sites) != 2:
             if warning:
                 print("Found a sequence with number of sites not equal to 2: ",seq,sites)
@@ -282,7 +290,7 @@ def mutate_dist(seqdf, predictor, fixsecond=True, warning=True, deep=0):
             s1_end = sites[0]["site_start"]+sites[0]["site_width"]
             s2_start = sites[1]["site_start"]
             curseq = cg.move_single_site(seq, s1_end, s2_start, move, patch=True, can_overlap=True)
-            cursites = predictor.predict_sequence(curseq)
+            cursites = imads.predict_sequence(curseq)
             move += 1
             if len(cursites) != 2: # we ignore if there are new sites
                 continue
