@@ -27,7 +27,6 @@ if __name__ == "__main__":
     # 1. Mutate based on affinity
     aff_m = mut.mutate_affinity(indf, imads12, deep=3)
 
-    """
     # 2. Mutate based on orientation
     ori_m = mut.mutate_orientation(indf, imads12, deep=3)
 
@@ -69,4 +68,15 @@ if __name__ == "__main__":
     mutdf["main_pred"] = pred
     mutdf["main_prob"] = [prob[i][1] for i in range(len(pred))] # use the probability of being cooperative
     mutdf.to_csv("custom_withpred.csv", index=False, header=True)
-    """
+
+    mutdf = pd.read_csv("custom_withpred.csv")
+    wtdf = mutdf.loc[mutdf["comment"] == "wt"][["seqid","sequence","wtlabel","shape_pred","main_pred"]].drop_duplicates()
+    main_true = wtdf.loc[wtdf["main_pred"] == wtdf["wtlabel"]]
+    shape_true = wtdf.loc[wtdf["shape_pred"] == wtdf["wtlabel"]]
+    intersect = main_true.merge(shape_true, on=["seqid","sequence"])
+    print(main_true.shape[0], shape_true.shape[0])
+    print("Number of wt sequence: %d" % wtdf.shape[0])
+    print(("Number of correctly predicted wt training:\n" +
+          "  main_pred : %d\n" +
+          "  shape_pred: %d") % (main_true.shape[0], shape_true.shape[0]))
+    print("Number of correctly predicted wt intersection main vs shape: %d" % intersect.shape[0])

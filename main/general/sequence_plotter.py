@@ -1,10 +1,10 @@
 import pandas as pd
 
-from chip2probe.probe_generator.probefilter.sitespredict.imads import iMADS
-from chip2probe.probe_generator.probefilter.sitespredict.imadsmodel import iMADSModel
-from chip2probe.probe_generator.probefilter.sitespredict.pbmescore import PBMEscore
-from chip2probe.probe_generator.probefilter.sitespredict.kompas import Kompas
-from chip2probe.probe_generator.probefilter.sitespredict.sitesplotter import SitesPlotter
+from chip2probe.sitespredict.imads import iMADS
+from chip2probe.sitespredict.imadsmodel import iMADSModel
+from chip2probe.sitespredict.pbmescore import PBMEscore
+from chip2probe.sitespredict.kompas import Kompas
+from chip2probe.sitespredict.sitesplotter import SitesPlotter
 
 seq = "TTACGGCAAGCGGGCCGGAAGCCACTCCTCGAGTCT"
 df = pd.DataFrame([[seq, 'seq1']], columns=['sequence', 'key'])
@@ -66,4 +66,3 @@ sp = SitesPlotter()
 # if need to plot, uncomment this
 sp.plot_seq_combine([esplots, model_plots],
                     filepath="outlier.pdf")
-
