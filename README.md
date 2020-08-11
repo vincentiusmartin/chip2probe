@@ -3,6 +3,7 @@
 ## Major Changes
 1. Refactor features, each feature has its own class
 2. Using DNAShapeR for DNAShape prediction
+3. Documentation with pdoc3
 
 ## Required packages:
 1. https://www.bioconductor.org/packages/release/bioc/html/DNAshapeR.html for DNAShape prediction

@@ -7,24 +7,40 @@ Authors: Vincentius Martin, Farica Zhuang
 '''
 
 
-import chip2probe.probe_generator.probefilter.sitespredict.basepred as basepred
-import chip2probe.probe_generator.probefilter.sitespredict.basemodel as basemodel
-import chip2probe.probe_generator.probefilter.sitespredict.imadsmodel as imadsmodel
+import chip2probe.sitespredict.basepred as basepred
+import chip2probe.sitespredict.basemodel as basemodel
+import chip2probe.sitespredict.imadsmodel as imadsmodel
 from chip2probe.util import bio as bio
 import itertools
 import math
 import matplotlib.patches as patches
+import pandas as pd
 
 class iMADS(basemodel.BaseModel):
-    '''
-    classdocs
-    '''
+    """iMADS sitespredict class
+
+    Make iMADS predictions from input sequences.
+
+    Example:
+    >>> imads_paths = ["input/site_models/imads_model/Ets1_w12_GGAA.model", "input/site_models/imads_model/Ets1_w12_GGAT.model"]
+    >>> imads_cores = ["GGAA", "GGAT"]
+    >>> imads_models = [iMADSModel(path, core, 12, [1, 2, 3]) for path, core in zip(imads_paths, imads_cores)]
+    >>> imads = iMADS(imads_models, 0.19)
+    >>> # predict one sequence
+    >>> single_sequence = "TTACGGCAAGCGGGCCGGAAGCCACTCCTCGAGTCT"
+    >>> singlepred = imads.predict_sequence(single_sequence)
+    >>> # predict many sequence
+    >>> many_sequences = ["ACTGGCAGGAAGGGCAGTTTTGGCAGGAAAAGCCAT", "CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC"]
+    >>> manypredlist = imads.predict_sequences(many_sequences)
+    >>> # or as a data frame input
+    >>> df = pd.DataFrame([[single_sequence, 'seq1']], columns=['sequence', 'key'])
+    >>> manypredlist = imads.predict_sequences(df)
+    """
     def __init__(self, imads_models, imads_threshold):
         """
-        Desc
-        :param imads_models: a list of models
-        :param flank_colname: must be a column name where the direction can be obtained using
-                              flank_colname + _left/_right
+        Args
+            imads_models: a list of models
+            imads_threshold: the minimum imads prediction for the kmer to be considered a site
         """
         if not isinstance(imads_models, list) or not isinstance(imads_models[0], imadsmodel.iMADSModel):
             raise Exception('imads_models must be a list of iMADSModel')
@@ -119,10 +135,23 @@ class iMADS(basemodel.BaseModel):
         return svr_features
 
     def transform_score(self, score):
+        """
+        inverse logistic transformation of score
+        """
         # f(x) = 1 / ( 1 + exp(-x) )  to obtain only values between 0 and 1.
         return 1.0 / (1.0 + math.exp(0.0 - score))
 
     def predict_sequence(self, sequence, const_intercept=False, transform_scores=True):
+        """
+        Make imads predictions of an input sequence
+
+        Args:
+            sequence (str): input sequence
+            const_intercept (bool): use intercept for the SVR predictor
+            transform_score (bool):
+        Return:
+            dictionary of sequence to E-score
+        """
         prediction = []
         for model in self.models:
             for position, core_pos, matching_sequences in self.generate_matching_sequence(sequence, model.core, model.width):
@@ -159,7 +188,7 @@ class iMADS(basemodel.BaseModel):
         return sorted(prediction, key=lambda k: k['core_mid'])
 
     # or predict fasta?
-    def predict_sequences(self, sequence_df, const_intercept=False,
+    def predict_sequences(self, sequences, const_intercept=False,
                           transform_scores=True, key_colname="",
                           sequence_colname="sequence", flank_colname="flank",
                           predict_flanks=False, flank_len=0,
@@ -173,18 +202,20 @@ class iMADS(basemodel.BaseModel):
             only_pred: return only prediction dictionary, if False, return BasePrediction
                        object which contains the sequence.
         """
-        seqdict = self.pred_input_todict(sequence_df,
-                                         sequence_colname=sequence_colname,
-                                         key_colname=key_colname)
-        flank_left = bio.get_seqdict(sequence_df, "%s_left" % flank_colname,
-                                     keycolname=key_colname,
-                                     ignore_missing_colname=True)
-        flank_right = bio.get_seqdict(sequence_df, "%s_right" % flank_colname,
-                                      keycolname=key_colname,
-                                      ignore_missing_colname=True)
+        seqdict = bio.get_seqdict(sequences, sequence_col=sequence_colname, keycol=key_colname)
+        if type(sequences) == pd.DataFrame:
+            flank_left = bio.get_seqdict(sequences, "%s_left" % flank_colname,
+                                         keycol=key_colname,
+                                         ignore_missing_col=True)
+            flank_right = bio.get_seqdict(sequences, "%s_right" % flank_colname,
+                                          keycol=key_colname,
+                                          ignore_missing_col=True)
         predictions = {}
         for key in seqdict:
-            sequence = flank_left[key][-flank_len:] + seqdict[key] + flank_right[key][:flank_len]
+            if type(sequences) == pd.DataFrame:
+                sequence = flank_left[key][-flank_len:] + seqdict[key] + flank_right[key][:flank_len]
+            else:
+                sequence = seqdict[key]
             prediction = self.predict_sequence(sequence, const_intercept, transform_scores)
 
             # since we use flank, we need to update the result
@@ -205,17 +236,18 @@ class iMADS(basemodel.BaseModel):
 
     def make_plot_data(self, predictions_dict, color = "mediumspringgreen",
                        show_model_flanks=True):
-        #predictions = self.predict_sequences(sequence_df, const_intercept,
-        #                                    transform_scores, sequence_colname, flank_colname)
+        """
+        Make plot data from `predict_sequences` result
+
+        Args:
+            predictions_dict: result from `predict_sequences`
+            color: color of the imads box
+            show_model_flanks: whether to show the flanking sequences
+        """
         func_dict = {}
         for key in predictions_dict:
             sequence = predictions_dict[key].sequence
             sites_prediction = predictions_dict[key].predictions
-            # if clean is true, and sequence has no imads object, indicate set this sequence to None
-            # if self.clean and len(sites_prediction) == 0:
-            #     func_dict[key] = None
-            #     continue
-            # otherwise, set the appropriate dictionary as value for this key
             func_pred = []
             for pred in sites_prediction:
                 # first argument is x,y and y is basically just starts at 0

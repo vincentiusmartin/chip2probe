@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.8.1" />
+<title>imads API documentation</title>
+<meta name="description" content="This file is a modified version of https://github.com/Duke-GCB/Predict-TF-Binding …" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>imads</code></h1>
+</header>
+<section id="section-intro">
+<p>This file is a modified version of <a href="https://github.com/Duke-GCB/Predict-TF-Binding.">https://github.com/Duke-GCB/Predict-TF-Binding.</a></p>
+<p>Created on Jul 16, 2019</p>
+<p>Authors: Vincentius Martin, Farica Zhuang</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#39;&#39;&#39;
+This file is a modified version of https://github.com/Duke-GCB/Predict-TF-Binding.
+
+Created on Jul 16, 2019
+
+Authors: Vincentius Martin, Farica Zhuang
+&#39;&#39;&#39;
+
+
+import chip2probe.sitespredict.basepred as basepred
+import chip2probe.sitespredict.basemodel as basemodel
+import chip2probe.sitespredict.imadsmodel as imadsmodel
+from chip2probe.util import bio as bio
+import itertools
+import math
+import matplotlib.patches as patches
+import pandas as pd
+
+class iMADS(basemodel.BaseModel):
+    &#34;&#34;&#34;iMADS sitespredict class
+
+    Make iMADS predictions from input sequences.
+
+    Example:
+    &gt;&gt;&gt; imads_paths = [&#34;input/site_models/imads_model/Ets1_w12_GGAA.model&#34;, &#34;input/site_models/imads_model/Ets1_w12_GGAT.model&#34;]
+    &gt;&gt;&gt; imads_cores = [&#34;GGAA&#34;, &#34;GGAT&#34;]
+    &gt;&gt;&gt; imads_models = [iMADSModel(path, core, 12, [1, 2, 3]) for path, core in zip(imads_paths, imads_cores)]
+    &gt;&gt;&gt; imads = iMADS(imads_models, 0.19)
+    &gt;&gt;&gt; # predict one sequence
+    &gt;&gt;&gt; single_sequence = &#34;TTACGGCAAGCGGGCCGGAAGCCACTCCTCGAGTCT&#34;
+    &gt;&gt;&gt; singlepred = imads.predict_sequence(single_sequence)
+    &gt;&gt;&gt; # predict many sequence
+    &gt;&gt;&gt; many_sequences = [&#34;ACTGGCAGGAAGGGCAGTTTTGGCAGGAAAAGCCAT&#34;, &#34;CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC&#34;]
+    &gt;&gt;&gt; manypredlist = imads.predict_sequences(many_sequences)
+    &gt;&gt;&gt; # or as a data frame input
+    &gt;&gt;&gt; df = pd.DataFrame([[single_sequence, &#39;seq1&#39;]], columns=[&#39;sequence&#39;, &#39;key&#39;])
+    &gt;&gt;&gt; manypredlist = imads.predict_sequences(df)
+    &#34;&#34;&#34;
+    def __init__(self, imads_models, imads_threshold):
+        &#34;&#34;&#34;
+        Args
+            imads_models: a list of models
+            imads_threshold: the minimum imads prediction for the kmer to be considered a site
+        &#34;&#34;&#34;
+        if not isinstance(imads_models, list) or not isinstance(imads_models[0], imadsmodel.iMADSModel):
+            raise Exception(&#39;imads_models must be a list of iMADSModel&#39;)
+        if not all(im.width == imads_models[0].width for im in imads_models):
+            raise Exception(&#39;all imads models must have the same core width&#39;)
+        self.models = imads_models #temporary use 0
+        self.imads_threshold = imads_threshold
+        self.sitewidth = imads_models[0].width
+        self.corewidth = len(imads_models[0].core)
+
+    def generate_matching_sequence(self, sequence, core, width):
+        &#34;&#34;&#34;
+        Returns sub-sequences of width, that match the core in the middle.
+        :param sequence: The the sequence to search, such as the whole sequence for a chromosome.
+                Can be a string or a Bio.Seq
+        :param core: The bases for which to search, in the center
+        :param width: The desired sub-sequence width, e.g. 36
+        :return: Generator, returning one sub-sequence per call
+        &#34;&#34;&#34;
+
+        # Need to search for core and reverse complement in the window region
+        # If RC is found in the region, return the reverse-complement of the window instead
+        # Also, if core is palindromic, need to return both regions and return best score
+        core_rc = bio.revcompstr(core)
+        max_start = len(sequence) - width
+        core_start = (width - len(core)) // 2
+        for start in range(max_start + 1):
+            end = start + width
+            window_sequence = sequence[start:end]
+            # If any of the bases in the window are unknown, we cannot predict on the sequence
+            if &#39;N&#39; in window_sequence:
+                continue
+            window_core = window_sequence[core_start:core_start + len(core)]
+            #print(&#34;seq and core&#34;,window_sequence,window_core)
+            # If core is palindromic, return two sequences and let the caller decide which to use
+            core_pos = core_start + start
+            if core == core_rc and window_core == core:
+                yield start, core_pos, (str(window_sequence), str(bio.revcompstr(window_sequence)),)
+            elif window_core == core:
+                yield start, core_pos, (window_sequence,)
+            elif window_core == core_rc:
+                yield start, core_pos, (str(bio.revcompstr(window_sequence)),)
+
+    def svr_features_from_sequence(self, seq, kmers):
+        &#34;&#34;&#34;
+        Transforms a sequence and list of kmer values into a list of dictionaries
+        that be converted easily into an SVR matrix.
+
+        kmers is a list of lengths. For each length, the function will enumerate all possible
+        nucleotide combinations at that length (&#39;AA&#39;,&#39;AC&#39;,&#39;AG&#39;,...&#39;TT&#39;)
+
+        The function returns a list of all possible positions in the sequence x all possible features
+        and indicates 1 if the feature matches that position in the sequence, or 0 if it does not.
+
+        For example, for the input sequence &#39;ACAGTC&#39; and a kmer value of [2,3], the function
+         produces the following
+
+        [{&#39;position&#39;: 0, &#39;value&#39;: 0, &#39;feature&#39;: &#39;AA&#39;}, # &#39;AA&#39; does not match at position 0
+         {&#39;position&#39;: 0, &#39;value&#39;: 1, &#39;feature&#39;: &#39;AC&#39;}, # &#39;AC&#39; matches at position 0 in &#39;ACAGTC&#39;
+         {&#39;position&#39;: 0, &#39;value&#39;: 0, &#39;feature&#39;: &#39;AG&#39;},
+         ...
+         {&#39;position&#39;: 1, &#39;value&#39;: 1, &#39;feature&#39;: &#39;CA&#39;}, # &#39;CA&#39; matches at position 1 in &#39;ACAGTC&#39;
+         ...
+         {&#39;position&#39;: 0, &#39;value&#39;: 0, &#39;feature&#39;: &#39;AAT&#39;},
+         {&#39;position&#39;: 0, &#39;value&#39;: 1, &#39;feature&#39;: &#39;ACA&#39;},
+         {&#39;position&#39;: 0, &#39;value&#39;: 0, &#39;feature&#39;: &#39;ACC&#39;},
+
+        :param seq: A sequence of nucleotides to expand
+        :param kmers: list of integers (e.g. [1,2,3])
+        :return: a list of dictionaries, containing position, featvalue, and feature
+        &#34;&#34;&#34;
+        NUCLEOTIDES=&#39;ACGT&#39;
+
+        str_seq = str(seq) # If seq is a Bio.Seq, it&#39;s faster to check it as a string
+        svr_features = []
+        for k in kmers:
+            # Generate all possible combinations of length k (e.g [&#39;AAA&#39;, &#39;AAC&#39;, ...  &#39;TTG&#39;, &#39;TTT&#39;]
+            features = [&#39;&#39;.join(x) for x in itertools.product(NUCLEOTIDES, repeat=k)]
+            # Check each position in the sequence for a match
+            n_sub_seqs = len(str_seq) - (k - 1) # If seq length is 36 and k is 3, there are 34 positions
+            for position in range(n_sub_seqs):
+                sub_seq = str_seq[position:position + k] # the sub-sequence with length k
+                # start with a template list. All zero values at the current position
+                exploded = [{&#39;feature&#39;: feature, &#39;position&#39;: position, &#39;value&#39;: 0} for feature in features]
+                # Determine the index of the current sub seq
+                try:
+                    feature_index = features.index(sub_seq)
+                    exploded[feature_index][&#39;value&#39;] = 1
+                except ValueError:
+                    print(&#34;Warning: sub-sequence &#39;{}&#39; not found in features&#34;.format(sub_seq))
+                svr_features.extend(exploded)
+        return svr_features
+
+    def transform_score(self, score):
+        &#34;&#34;&#34;
+        inverse logistic transformation of score
+        &#34;&#34;&#34;
+        # f(x) = 1 / ( 1 + exp(-x) )  to obtain only values between 0 and 1.
+        return 1.0 / (1.0 + math.exp(0.0 - score))
+
+    def predict_sequence(self, sequence, const_intercept=False, transform_scores=True):
+        &#34;&#34;&#34;
+        Make imads predictions of an input sequence
+
+        Args:
+            sequence (str): input sequence
+            const_intercept (bool): use intercept for the SVR predictor
+            transform_score (bool):
+        Return:
+            dictionary of sequence to E-score
+        &#34;&#34;&#34;
+        prediction = []
+        for model in self.models:
+            for position, core_pos, matching_sequences in self.generate_matching_sequence(sequence, model.core, model.width):
+                # generator returns a position, and a tuple of 1 or 2 sequences
+                # If two sequences are returned, core is palindromic and can bind on either strand
+                # So generate predictions for both and return the best
+                # 4. Translate the sequences into SVR matrix by kmers
+                best_prediction = None
+                best_match = None
+                for matching_sequence in matching_sequences:
+                    features = self.svr_features_from_sequence(matching_sequence, model.kmers)
+                    predictions, accuracy, values = model.predict(features, const_intercept)
+                    if best_prediction is None or predictions[0] &gt; best_prediction:
+                        best_prediction = predictions[0]
+                        best_match = matching_sequence
+                if best_prediction is None:
+                    continue
+                if transform_scores:
+                    best_prediction = self.transform_score(best_prediction)
+                if len(model.core) % 2 == 0:
+                    mid = core_pos + len(model.core) // 2
+                elif len(model.core) % 2 == 1:
+                    mid = core_pos + len(model.core) // 2 + 1
+                # only return if score &gt; threshold
+                if best_prediction &gt; self.imads_threshold:
+                    prediction.append({&#34;site_start&#34;: position,
+                                       &#34;site_width&#34;: model.width,
+                                       &#34;best_match&#34;: best_match,
+                                       &#34;score&#34;: best_prediction,
+                                       &#34;core_start&#34;: core_pos,
+                                       &#34;core_width&#34;: len(model.core),
+                                       &#34;core_mid&#34;: mid
+                                       })
+        return sorted(prediction, key=lambda k: k[&#39;core_mid&#39;])
+
+    # or predict fasta?
+    def predict_sequences(self, sequences, const_intercept=False,
+                          transform_scores=True, key_colname=&#34;&#34;,
+                          sequence_colname=&#34;sequence&#34;, flank_colname=&#34;flank&#34;,
+                          predict_flanks=False, flank_len=0,
+                          only_pred = False
+                          ):
+        &#34;&#34;&#34;
+        Do not make this as generator, because we need to use it somewhere else.
+        TODO: handle flank_len
+
+        Args:
+            only_pred: return only prediction dictionary, if False, return BasePrediction
+                       object which contains the sequence.
+        &#34;&#34;&#34;
+        seqdict = bio.get_seqdict(sequences, sequence_col=sequence_colname, keycol=key_colname)
+        if type(sequences) == pd.DataFrame:
+            flank_left = bio.get_seqdict(sequences, &#34;%s_left&#34; % flank_colname,
+                                         keycol=key_colname,
+                                         ignore_missing_col=True)
+            flank_right = bio.get_seqdict(sequences, &#34;%s_right&#34; % flank_colname,
+                                          keycol=key_colname,
+                                          ignore_missing_col=True)
+        predictions = {}
+        for key in seqdict:
+            if type(sequences) == pd.DataFrame:
+                sequence = flank_left[key][-flank_len:] + seqdict[key] + flank_right[key][:flank_len]
+            else:
+                sequence = seqdict[key]
+            prediction = self.predict_sequence(sequence, const_intercept, transform_scores)
+
+            # since we use flank, we need to update the result
+            for result in prediction:
+                result[&#39;site_start&#39;] = result[&#39;site_start&#39;] - flank_len
+                result[&#39;core_start&#39;] = result[&#39;core_start&#39;] - flank_len
+                # if a prediction is in the flanks
+                if result[&#39;core_start&#39;] &lt; 0 or \
+                   result[&#39;core_start&#39;] + result[&#39;core_width&#39;] &gt; len(seqdict[key]) - 1:
+                   # remove the prediction
+                   prediction.remove(result)
+                result[&#39;core_mid&#39;] = result[&#39;core_mid&#39;] - flank_len
+            if only_pred:
+                predictions[key] = prediction
+            else:
+                predictions[key] = basepred.BasePrediction(sequence, prediction)
+        return predictions
+
+    def make_plot_data(self, predictions_dict, color = &#34;mediumspringgreen&#34;,
+                       show_model_flanks=True):
+        &#34;&#34;&#34;
+        Make plot data from `predict_sequences` result
+
+        Args:
+            predictions_dict: result from `predict_sequences`
+            color: color of the imads box
+            show_model_flanks: whether to show the flanking sequences
+        &#34;&#34;&#34;
+        func_dict = {}
+        for key in predictions_dict:
+            sequence = predictions_dict[key].sequence
+            sites_prediction = predictions_dict[key].predictions
+            func_pred = []
+            for pred in sites_prediction:
+                # first argument is x,y and y is basically just starts at 0
+                # first plot the binding site
+                # Note that it is important to do -1 on rectangle width so we only cover the site
+                if show_model_flanks:
+                    site_rect = patches.Rectangle((pred[&#34;site_start&#34;],0),pred[&#34;site_width&#34;] - 1,pred[&#34;score&#34;],
+                                     facecolor=color,alpha=0.6,edgecolor=&#39;black&#39;)
+                    func_pred.append({&#34;func&#34;:&#34;add_patch&#34;,&#34;args&#34;:[site_rect],&#34;kwargs&#34;:{}})
+                # then plot the core
+                core_rect = patches.Rectangle((pred[&#34;core_start&#34;],0),pred[&#34;core_width&#34;] - 1,pred[&#34;score&#34;],
+                                 facecolor=color,alpha=0.9,edgecolor=&#39;black&#39;)
+                func_pred.append({&#34;func&#34;: &#34;add_patch&#34;,
+                                  &#34;args&#34;: [core_rect],
+                                  &#34;kwargs&#34;: {}})
+            func_pred.append({&#34;func&#34;: &#34;axhline&#34;,
+                              &#34;args&#34;: [self.imads_threshold],
+                              &#34;kwargs&#34;: {&#34;color&#34;: color,
+                              &#34;linestyle&#34;: &#34;dashed&#34;,
+                              &#34;linewidth&#34;: 1}})
+            func_dict[key] = {&#34;sequence&#34;: sequence,
+                              &#34;plt&#34;: func_pred}
+        return func_dict</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="imads.iMADS"><code class="flex name class">
+<span>class <span class="ident">iMADS</span></span>
+<span>(</span><span>imads_models, imads_threshold)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>iMADS sitespredict class</p>
+<p>Make iMADS predictions from input sequences.</p>
+<p>Example:</p>
+<pre><code class="python">&gt;&gt;&gt; imads_paths = [&quot;input/site_models/imads_model/Ets1_w12_GGAA.model&quot;, &quot;input/site_models/imads_model/Ets1_w12_GGAT.model&quot;]
+&gt;&gt;&gt; imads_cores = [&quot;GGAA&quot;, &quot;GGAT&quot;]
+&gt;&gt;&gt; imads_models = [iMADSModel(path, core, 12, [1, 2, 3]) for path, core in zip(imads_paths, imads_cores)]
+&gt;&gt;&gt; imads = iMADS(imads_models, 0.19)
+&gt;&gt;&gt; # predict one sequence
+&gt;&gt;&gt; single_sequence = &quot;TTACGGCAAGCGGGCCGGAAGCCACTCCTCGAGTCT&quot;
+&gt;&gt;&gt; singlepred = imads.predict_sequence(single_sequence)
+&gt;&gt;&gt; # predict many sequence
+&gt;&gt;&gt; many_sequences = [&quot;ACTGGCAGGAAGGGCAGTTTTGGCAGGAAAAGCCAT&quot;, &quot;CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC&quot;]
+&gt;&gt;&gt; manypredlist = imads.predict_sequences(many_sequences)
+&gt;&gt;&gt; # or as a data frame input
+&gt;&gt;&gt; df = pd.DataFrame([[single_sequence, 'seq1']], columns=['sequence', 'key'])
+&gt;&gt;&gt; manypredlist = imads.predict_sequences(df)
+</code></pre>
+<p>Args
+imads_models: a list of models
+imads_threshold: the minimum imads prediction for the kmer to be considered a site</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class iMADS(basemodel.BaseModel):
+    &#34;&#34;&#34;iMADS sitespredict class
+
+    Make iMADS predictions from input sequences.
+
+    Example:
+    &gt;&gt;&gt; imads_paths = [&#34;input/site_models/imads_model/Ets1_w12_GGAA.model&#34;, &#34;input/site_models/imads_model/Ets1_w12_GGAT.model&#34;]
+    &gt;&gt;&gt; imads_cores = [&#34;GGAA&#34;, &#34;GGAT&#34;]
+    &gt;&gt;&gt; imads_models = [iMADSModel(path, core, 12, [1, 2, 3]) for path, core in zip(imads_paths, imads_cores)]
+    &gt;&gt;&gt; imads = iMADS(imads_models, 0.19)
+    &gt;&gt;&gt; # predict one sequence
+    &gt;&gt;&gt; single_sequence = &#34;TTACGGCAAGCGGGCCGGAAGCCACTCCTCGAGTCT&#34;
+    &gt;&gt;&gt; singlepred = imads.predict_sequence(single_sequence)
+    &gt;&gt;&gt; # predict many sequence
+    &gt;&gt;&gt; many_sequences = [&#34;ACTGGCAGGAAGGGCAGTTTTGGCAGGAAAAGCCAT&#34;, &#34;CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC&#34;]
+    &gt;&gt;&gt; manypredlist = imads.predict_sequences(many_sequences)
+    &gt;&gt;&gt; # or as a data frame input
+    &gt;&gt;&gt; df = pd.DataFrame([[single_sequence, &#39;seq1&#39;]], columns=[&#39;sequence&#39;, &#39;key&#39;])
+    &gt;&gt;&gt; manypredlist = imads.predict_sequences(df)
+    &#34;&#34;&#34;
+    def __init__(self, imads_models, imads_threshold):
+        &#34;&#34;&#34;
+        Args
+            imads_models: a list of models
+            imads_threshold: the minimum imads prediction for the kmer to be considered a site
+        &#34;&#34;&#34;
+        if not isinstance(imads_models, list) or not isinstance(imads_models[0], imadsmodel.iMADSModel):
+            raise Exception(&#39;imads_models must be a list of iMADSModel&#39;)
+        if not all(im.width == imads_models[0].width for im in imads_models):
+            raise Exception(&#39;all imads models must have the same core width&#39;)
+        self.models = imads_models #temporary use 0
+        self.imads_threshold = imads_threshold
+        self.sitewidth = imads_models[0].width
+        self.corewidth = len(imads_models[0].core)
+
+    def generate_matching_sequence(self, sequence, core, width):
+        &#34;&#34;&#34;
+        Returns sub-sequences of width, that match the core in the middle.
+        :param sequence: The the sequence to search, such as the whole sequence for a chromosome.
+                Can be a string or a Bio.Seq
+        :param core: The bases for which to search, in the center
+        :param width: The desired sub-sequence width, e.g. 36
+        :return: Generator, returning one sub-sequence per call
+        &#34;&#34;&#34;
+
+        # Need to search for core and reverse complement in the window region
+        # If RC is found in the region, return the reverse-complement of the window instead
+        # Also, if core is palindromic, need to return both regions and return best score
+        core_rc = bio.revcompstr(core)
+        max_start = len(sequence) - width
+        core_start = (width - len(core)) // 2
+        for start in range(max_start + 1):
+            end = start + width
+            window_sequence = sequence[start:end]
+            # If any of the bases in the window are unknown, we cannot predict on the sequence
+            if &#39;N&#39; in window_sequence:
+                continue
+            window_core = window_sequence[core_start:core_start + len(core)]
+            #print(&#34;seq and core&#34;,window_sequence,window_core)
+            # If core is palindromic, return two sequences and let the caller decide which to use
+            core_pos = core_start + start
+            if core == core_rc and window_core == core:
+                yield start, core_pos, (str(window_sequence), str(bio.revcompstr(window_sequence)),)
+            elif window_core == core:
+                yield start, core_pos, (window_sequence,)
+            elif window_core == core_rc:
+                yield start, core_pos, (str(bio.revcompstr(window_sequence)),)
+
+    def svr_features_from_sequence(self, seq, kmers):
+        &#34;&#34;&#34;
+        Transforms a sequence and list of kmer values into a list of dictionaries
+        that be converted easily into an SVR matrix.
+
+        kmers is a list of lengths. For each length, the function will enumerate all possible
+        nucleotide combinations at that length (&#39;AA&#39;,&#39;AC&#39;,&#39;AG&#39;,...&#39;TT&#39;)
+
+        The function returns a list of all possible positions in the sequence x all possible features
+        and indicates 1 if the feature matches that position in the sequence, or 0 if it does not.
+
+        For example, for the input sequence &#39;ACAGTC&#39; and a kmer value of [2,3], the function
+         produces the following
+
+        [{&#39;position&#39;: 0, &#39;value&#39;: 0, &#39;feature&#39;: &#39;AA&#39;}, # &#39;AA&#39; does not match at position 0
+         {&#39;position&#39;: 0, &#39;value&#39;: 1, &#39;feature&#39;: &#39;AC&#39;}, # &#39;AC&#39; matches at position 0 in &#39;ACAGTC&#39;
+         {&#39;position&#39;: 0, &#39;value&#39;: 0, &#39;feature&#39;: &#39;AG&#39;},
+         ...
+         {&#39;position&#39;: 1, &#39;value&#39;: 1, &#39;feature&#39;: &#39;CA&#39;}, # &#39;CA&#39; matches at position 1 in &#39;ACAGTC&#39;
+         ...
+         {&#39;position&#39;: 0, &#39;value&#39;: 0, &#39;feature&#39;: &#39;AAT&#39;},
+         {&#39;position&#39;: 0, &#39;value&#39;: 1, &#39;feature&#39;: &#39;ACA&#39;},
+         {&#39;position&#39;: 0, &#39;value&#39;: 0, &#39;feature&#39;: &#39;ACC&#39;},
+
+        :param seq: A sequence of nucleotides to expand
+        :param kmers: list of integers (e.g. [1,2,3])
+        :return: a list of dictionaries, containing position, featvalue, and feature
+        &#34;&#34;&#34;
+        NUCLEOTIDES=&#39;ACGT&#39;
+
+        str_seq = str(seq) # If seq is a Bio.Seq, it&#39;s faster to check it as a string
+        svr_features = []
+        for k in kmers:
+            # Generate all possible combinations of length k (e.g [&#39;AAA&#39;, &#39;AAC&#39;, ...  &#39;TTG&#39;, &#39;TTT&#39;]
+            features = [&#39;&#39;.join(x) for x in itertools.product(NUCLEOTIDES, repeat=k)]
+            # Check each position in the sequence for a match
+            n_sub_seqs = len(str_seq) - (k - 1) # If seq length is 36 and k is 3, there are 34 positions
+            for position in range(n_sub_seqs):
+                sub_seq = str_seq[position:position + k] # the sub-sequence with length k
+                # start with a template list. All zero values at the current position
+                exploded = [{&#39;feature&#39;: feature, &#39;position&#39;: position, &#39;value&#39;: 0} for feature in features]
+                # Determine the index of the current sub seq
+                try:
+                    feature_index = features.index(sub_seq)
+                    exploded[feature_index][&#39;value&#39;] = 1
+                except ValueError:
+                    print(&#34;Warning: sub-sequence &#39;{}&#39; not found in features&#34;.format(sub_seq))
+                svr_features.extend(exploded)
+        return svr_features
+
+    def transform_score(self, score):
+        &#34;&#34;&#34;
+        inverse logistic transformation of score
+        &#34;&#34;&#34;
+        # f(x) = 1 / ( 1 + exp(-x) )  to obtain only values between 0 and 1.
+        return 1.0 / (1.0 + math.exp(0.0 - score))
+
+    def predict_sequence(self, sequence, const_intercept=False, transform_scores=True):
+        &#34;&#34;&#34;
+        Make imads predictions of an input sequence
+
+        Args:
+            sequence (str): input sequence
+            const_intercept (bool): use intercept for the SVR predictor
+            transform_score (bool):
+        Return:
+            dictionary of sequence to E-score
+        &#34;&#34;&#34;
+        prediction = []
+        for model in self.models:
+            for position, core_pos, matching_sequences in self.generate_matching_sequence(sequence, model.core, model.width):
+                # generator returns a position, and a tuple of 1 or 2 sequences
+                # If two sequences are returned, core is palindromic and can bind on either strand
+                # So generate predictions for both and return the best
+                # 4. Translate the sequences into SVR matrix by kmers
+                best_prediction = None
+                best_match = None
+                for matching_sequence in matching_sequences:
+                    features = self.svr_features_from_sequence(matching_sequence, model.kmers)
+                    predictions, accuracy, values = model.predict(features, const_intercept)
+                    if best_prediction is None or predictions[0] &gt; best_prediction:
+                        best_prediction = predictions[0]
+                        best_match = matching_sequence
+                if best_prediction is None:
+                    continue
+                if transform_scores:
+                    best_prediction = self.transform_score(best_prediction)
+                if len(model.core) % 2 == 0:
+                    mid = core_pos + len(model.core) // 2
+                elif len(model.core) % 2 == 1:
+                    mid = core_pos + len(model.core) // 2 + 1
+                # only return if score &gt; threshold
+                if best_prediction &gt; self.imads_threshold:
+                    prediction.append({&#34;site_start&#34;: position,
+                                       &#34;site_width&#34;: model.width,
+                                       &#34;best_match&#34;: best_match,
+                                       &#34;score&#34;: best_prediction,
+                                       &#34;core_start&#34;: core_pos,
+                                       &#34;core_width&#34;: len(model.core),
+                                       &#34;core_mid&#34;: mid
+                                       })
+        return sorted(prediction, key=lambda k: k[&#39;core_mid&#39;])
+
+    # or predict fasta?
+    def predict_sequences(self, sequences, const_intercept=False,
+                          transform_scores=True, key_colname=&#34;&#34;,
+                          sequence_colname=&#34;sequence&#34;, flank_colname=&#34;flank&#34;,
+                          predict_flanks=False, flank_len=0,
+                          only_pred = False
+                          ):
+        &#34;&#34;&#34;
+        Do not make this as generator, because we need to use it somewhere else.
+        TODO: handle flank_len
+
+        Args:
+            only_pred: return only prediction dictionary, if False, return BasePrediction
+                       object which contains the sequence.
+        &#34;&#34;&#34;
+        seqdict = bio.get_seqdict(sequences, sequence_col=sequence_colname, keycol=key_colname)
+        if type(sequences) == pd.DataFrame:
+            flank_left = bio.get_seqdict(sequences, &#34;%s_left&#34; % flank_colname,
+                                         keycol=key_colname,
+                                         ignore_missing_col=True)
+            flank_right = bio.get_seqdict(sequences, &#34;%s_right&#34; % flank_colname,
+                                          keycol=key_colname,
+                                          ignore_missing_col=True)
+        predictions = {}
+        for key in seqdict:
+            if type(sequences) == pd.DataFrame:
+                sequence = flank_left[key][-flank_len:] + seqdict[key] + flank_right[key][:flank_len]
+            else:
+                sequence = seqdict[key]
+            prediction = self.predict_sequence(sequence, const_intercept, transform_scores)
+
+            # since we use flank, we need to update the result
+            for result in prediction:
+                result[&#39;site_start&#39;] = result[&#39;site_start&#39;] - flank_len
+                result[&#39;core_start&#39;] = result[&#39;core_start&#39;] - flank_len
+                # if a prediction is in the flanks
+                if result[&#39;core_start&#39;] &lt; 0 or \
+                   result[&#39;core_start&#39;] + result[&#39;core_width&#39;] &gt; len(seqdict[key]) - 1:
+                   # remove the prediction
+                   prediction.remove(result)
+                result[&#39;core_mid&#39;] = result[&#39;core_mid&#39;] - flank_len
+            if only_pred:
+                predictions[key] = prediction
+            else:
+                predictions[key] = basepred.BasePrediction(sequence, prediction)
+        return predictions
+
+    def make_plot_data(self, predictions_dict, color = &#34;mediumspringgreen&#34;,
+                       show_model_flanks=True):
+        &#34;&#34;&#34;
+        Make plot data from `predict_sequences` result
+
+        Args:
+            predictions_dict: result from `predict_sequences`
+            color: color of the imads box
+            show_model_flanks: whether to show the flanking sequences
+        &#34;&#34;&#34;
+        func_dict = {}
+        for key in predictions_dict:
+            sequence = predictions_dict[key].sequence
+            sites_prediction = predictions_dict[key].predictions
+            func_pred = []
+            for pred in sites_prediction:
+                # first argument is x,y and y is basically just starts at 0
+                # first plot the binding site
+                # Note that it is important to do -1 on rectangle width so we only cover the site
+                if show_model_flanks:
+                    site_rect = patches.Rectangle((pred[&#34;site_start&#34;],0),pred[&#34;site_width&#34;] - 1,pred[&#34;score&#34;],
+                                     facecolor=color,alpha=0.6,edgecolor=&#39;black&#39;)
+                    func_pred.append({&#34;func&#34;:&#34;add_patch&#34;,&#34;args&#34;:[site_rect],&#34;kwargs&#34;:{}})
+                # then plot the core
+                core_rect = patches.Rectangle((pred[&#34;core_start&#34;],0),pred[&#34;core_width&#34;] - 1,pred[&#34;score&#34;],
+                                 facecolor=color,alpha=0.9,edgecolor=&#39;black&#39;)
+                func_pred.append({&#34;func&#34;: &#34;add_patch&#34;,
+                                  &#34;args&#34;: [core_rect],
+                                  &#34;kwargs&#34;: {}})
+            func_pred.append({&#34;func&#34;: &#34;axhline&#34;,
+                              &#34;args&#34;: [self.imads_threshold],
+                              &#34;kwargs&#34;: {&#34;color&#34;: color,
+                              &#34;linestyle&#34;: &#34;dashed&#34;,
+                              &#34;linewidth&#34;: 1}})
+            func_dict[key] = {&#34;sequence&#34;: sequence,
+                              &#34;plt&#34;: func_pred}
+        return func_dict</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>chip2probe.sitespredict.basemodel.BaseModel</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="imads.iMADS.generate_matching_sequence"><code class="name flex">
+<span>def <span class="ident">generate_matching_sequence</span></span>(<span>self, sequence, core, width)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns sub-sequences of width, that match the core in the middle.
+:param sequence: The the sequence to search, such as the whole sequence for a chromosome.
+Can be a string or a Bio.Seq
+:param core: The bases for which to search, in the center
+:param width: The desired sub-sequence width, e.g. 36
+:return: Generator, returning one sub-sequence per call</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_matching_sequence(self, sequence, core, width):
+    &#34;&#34;&#34;
+    Returns sub-sequences of width, that match the core in the middle.
+    :param sequence: The the sequence to search, such as the whole sequence for a chromosome.
+            Can be a string or a Bio.Seq
+    :param core: The bases for which to search, in the center
+    :param width: The desired sub-sequence width, e.g. 36
+    :return: Generator, returning one sub-sequence per call
+    &#34;&#34;&#34;
+
+    # Need to search for core and reverse complement in the window region
+    # If RC is found in the region, return the reverse-complement of the window instead
+    # Also, if core is palindromic, need to return both regions and return best score
+    core_rc = bio.revcompstr(core)
+    max_start = len(sequence) - width
+    core_start = (width - len(core)) // 2
+    for start in range(max_start + 1):
+        end = start + width
+        window_sequence = sequence[start:end]
+        # If any of the bases in the window are unknown, we cannot predict on the sequence
+        if &#39;N&#39; in window_sequence:
+            continue
+        window_core = window_sequence[core_start:core_start + len(core)]
+        #print(&#34;seq and core&#34;,window_sequence,window_core)
+        # If core is palindromic, return two sequences and let the caller decide which to use
+        core_pos = core_start + start
+        if core == core_rc and window_core == core:
+            yield start, core_pos, (str(window_sequence), str(bio.revcompstr(window_sequence)),)
+        elif window_core == core:
+            yield start, core_pos, (window_sequence,)
+        elif window_core == core_rc:
+            yield start, core_pos, (str(bio.revcompstr(window_sequence)),)</code></pre>
+</details>
+</dd>
+<dt id="imads.iMADS.make_plot_data"><code class="name flex">
+<span>def <span class="ident">make_plot_data</span></span>(<span>self, predictions_dict, color='mediumspringgreen', show_model_flanks=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Make plot data from <code>predict_sequences</code> result</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>predictions_dict</code></strong></dt>
+<dd>result from <code>predict_sequences</code></dd>
+<dt><strong><code>color</code></strong></dt>
+<dd>color of the imads box</dd>
+<dt><strong><code>show_model_flanks</code></strong></dt>
+<dd>whether to show the flanking sequences</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_plot_data(self, predictions_dict, color = &#34;mediumspringgreen&#34;,
+                   show_model_flanks=True):
+    &#34;&#34;&#34;
+    Make plot data from `predict_sequences` result
+
+    Args:
+        predictions_dict: result from `predict_sequences`
+        color: color of the imads box
+        show_model_flanks: whether to show the flanking sequences
+    &#34;&#34;&#34;
+    func_dict = {}
+    for key in predictions_dict:
+        sequence = predictions_dict[key].sequence
+        sites_prediction = predictions_dict[key].predictions
+        func_pred = []
+        for pred in sites_prediction:
+            # first argument is x,y and y is basically just starts at 0
+            # first plot the binding site
+            # Note that it is important to do -1 on rectangle width so we only cover the site
+            if show_model_flanks:
+                site_rect = patches.Rectangle((pred[&#34;site_start&#34;],0),pred[&#34;site_width&#34;] - 1,pred[&#34;score&#34;],
+                                 facecolor=color,alpha=0.6,edgecolor=&#39;black&#39;)
+                func_pred.append({&#34;func&#34;:&#34;add_patch&#34;,&#34;args&#34;:[site_rect],&#34;kwargs&#34;:{}})
+            # then plot the core
+            core_rect = patches.Rectangle((pred[&#34;core_start&#34;],0),pred[&#34;core_width&#34;] - 1,pred[&#34;score&#34;],
+                             facecolor=color,alpha=0.9,edgecolor=&#39;black&#39;)
+            func_pred.append({&#34;func&#34;: &#34;add_patch&#34;,
+                              &#34;args&#34;: [core_rect],
+                              &#34;kwargs&#34;: {}})
+        func_pred.append({&#34;func&#34;: &#34;axhline&#34;,
+                          &#34;args&#34;: [self.imads_threshold],
+                          &#34;kwargs&#34;: {&#34;color&#34;: color,
+                          &#34;linestyle&#34;: &#34;dashed&#34;,
+                          &#34;linewidth&#34;: 1}})
+        func_dict[key] = {&#34;sequence&#34;: sequence,
+                          &#34;plt&#34;: func_pred}
+    return func_dict</code></pre>
+</details>
+</dd>
+<dt id="imads.iMADS.predict_sequence"><code class="name flex">
+<span>def <span class="ident">predict_sequence</span></span>(<span>self, sequence, const_intercept=False, transform_scores=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Make imads predictions of an input sequence</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>sequence</code></strong> :&ensp;<code>str</code></dt>
+<dd>input sequence</dd>
+<dt><strong><code>const_intercept</code></strong> :&ensp;<code>bool</code></dt>
+<dd>use intercept for the SVR predictor</dd>
+</dl>
+<p>transform_score (bool):</p>
+<h2 id="return">Return</h2>
+<p>dictionary of sequence to E-score</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def predict_sequence(self, sequence, const_intercept=False, transform_scores=True):
+    &#34;&#34;&#34;
+    Make imads predictions of an input sequence
+
+    Args:
+        sequence (str): input sequence
+        const_intercept (bool): use intercept for the SVR predictor
+        transform_score (bool):
+    Return:
+        dictionary of sequence to E-score
+    &#34;&#34;&#34;
+    prediction = []
+    for model in self.models:
+        for position, core_pos, matching_sequences in self.generate_matching_sequence(sequence, model.core, model.width):
+            # generator returns a position, and a tuple of 1 or 2 sequences
+            # If two sequences are returned, core is palindromic and can bind on either strand
+            # So generate predictions for both and return the best
+            # 4. Translate the sequences into SVR matrix by kmers
+            best_prediction = None
+            best_match = None
+            for matching_sequence in matching_sequences:
+                features = self.svr_features_from_sequence(matching_sequence, model.kmers)
+                predictions, accuracy, values = model.predict(features, const_intercept)
+                if best_prediction is None or predictions[0] &gt; best_prediction:
+                    best_prediction = predictions[0]
+                    best_match = matching_sequence
+            if best_prediction is None:
+                continue
+            if transform_scores:
+                best_prediction = self.transform_score(best_prediction)
+            if len(model.core) % 2 == 0:
+                mid = core_pos + len(model.core) // 2
+            elif len(model.core) % 2 == 1:
+                mid = core_pos + len(model.core) // 2 + 1
+            # only return if score &gt; threshold
+            if best_prediction &gt; self.imads_threshold:
+                prediction.append({&#34;site_start&#34;: position,
+                                   &#34;site_width&#34;: model.width,
+                                   &#34;best_match&#34;: best_match,
+                                   &#34;score&#34;: best_prediction,
+                                   &#34;core_start&#34;: core_pos,
+                                   &#34;core_width&#34;: len(model.core),
+                                   &#34;core_mid&#34;: mid
+                                   })
+    return sorted(prediction, key=lambda k: k[&#39;core_mid&#39;])</code></pre>
+</details>
+</dd>
+<dt id="imads.iMADS.predict_sequences"><code class="name flex">
+<span>def <span class="ident">predict_sequences</span></span>(<span>self, sequences, const_intercept=False, transform_scores=True, key_colname='', sequence_colname='sequence', flank_colname='flank', predict_flanks=False, flank_len=0, only_pred=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Do not make this as generator, because we need to use it somewhere else.
+TODO: handle flank_len</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>only_pred</code></strong></dt>
+<dd>return only prediction dictionary, if False, return BasePrediction
+object which contains the sequence.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def predict_sequences(self, sequences, const_intercept=False,
+                      transform_scores=True, key_colname=&#34;&#34;,
+                      sequence_colname=&#34;sequence&#34;, flank_colname=&#34;flank&#34;,
+                      predict_flanks=False, flank_len=0,
+                      only_pred = False
+                      ):
+    &#34;&#34;&#34;
+    Do not make this as generator, because we need to use it somewhere else.
+    TODO: handle flank_len
+
+    Args:
+        only_pred: return only prediction dictionary, if False, return BasePrediction
+                   object which contains the sequence.
+    &#34;&#34;&#34;
+    seqdict = bio.get_seqdict(sequences, sequence_col=sequence_colname, keycol=key_colname)
+    if type(sequences) == pd.DataFrame:
+        flank_left = bio.get_seqdict(sequences, &#34;%s_left&#34; % flank_colname,
+                                     keycol=key_colname,
+                                     ignore_missing_col=True)
+        flank_right = bio.get_seqdict(sequences, &#34;%s_right&#34; % flank_colname,
+                                      keycol=key_colname,
+                                      ignore_missing_col=True)
+    predictions = {}
+    for key in seqdict:
+        if type(sequences) == pd.DataFrame:
+            sequence = flank_left[key][-flank_len:] + seqdict[key] + flank_right[key][:flank_len]
+        else:
+            sequence = seqdict[key]
+        prediction = self.predict_sequence(sequence, const_intercept, transform_scores)
+
+        # since we use flank, we need to update the result
+        for result in prediction:
+            result[&#39;site_start&#39;] = result[&#39;site_start&#39;] - flank_len
+            result[&#39;core_start&#39;] = result[&#39;core_start&#39;] - flank_len
+            # if a prediction is in the flanks
+            if result[&#39;core_start&#39;] &lt; 0 or \
+               result[&#39;core_start&#39;] + result[&#39;core_width&#39;] &gt; len(seqdict[key]) - 1:
+               # remove the prediction
+               prediction.remove(result)
+            result[&#39;core_mid&#39;] = result[&#39;core_mid&#39;] - flank_len
+        if only_pred:
+            predictions[key] = prediction
+        else:
+            predictions[key] = basepred.BasePrediction(sequence, prediction)
+    return predictions</code></pre>
+</details>
+</dd>
+<dt id="imads.iMADS.svr_features_from_sequence"><code class="name flex">
+<span>def <span class="ident">svr_features_from_sequence</span></span>(<span>self, seq, kmers)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Transforms a sequence and list of kmer values into a list of dictionaries
+that be converted easily into an SVR matrix.</p>
+<p>kmers is a list of lengths. For each length, the function will enumerate all possible
+nucleotide combinations at that length ('AA','AC','AG',&hellip;'TT')</p>
+<p>The function returns a list of all possible positions in the sequence x all possible features
+and indicates 1 if the feature matches that position in the sequence, or 0 if it does not.</p>
+<p>For example, for the input sequence 'ACAGTC' and a kmer value of [2,3], the function
+produces the following</p>
+<p>[{'position': 0, 'value': 0, 'feature': 'AA'}, # 'AA' does not match at position 0
+{'position': 0, 'value': 1, 'feature': 'AC'}, # 'AC' matches at position 0 in 'ACAGTC'
+{'position': 0, 'value': 0, 'feature': 'AG'},
+&hellip;
+{'position': 1, 'value': 1, 'feature': 'CA'}, # 'CA' matches at position 1 in 'ACAGTC'
+&hellip;
+{'position': 0, 'value': 0, 'feature': 'AAT'},
+{'position': 0, 'value': 1, 'feature': 'ACA'},
+{'position': 0, 'value': 0, 'feature': 'ACC'},</p>
+<p>:param seq: A sequence of nucleotides to expand
+:param kmers: list of integers (e.g. [1,2,3])
+:return: a list of dictionaries, containing position, featvalue, and feature</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def svr_features_from_sequence(self, seq, kmers):
+    &#34;&#34;&#34;
+    Transforms a sequence and list of kmer values into a list of dictionaries
+    that be converted easily into an SVR matrix.
+
+    kmers is a list of lengths. For each length, the function will enumerate all possible
+    nucleotide combinations at that length (&#39;AA&#39;,&#39;AC&#39;,&#39;AG&#39;,...&#39;TT&#39;)
+
+    The function returns a list of all possible positions in the sequence x all possible features
+    and indicates 1 if the feature matches that position in the sequence, or 0 if it does not.
+
+    For example, for the input sequence &#39;ACAGTC&#39; and a kmer value of [2,3], the function
+     produces the following
+
+    [{&#39;position&#39;: 0, &#39;value&#39;: 0, &#39;feature&#39;: &#39;AA&#39;}, # &#39;AA&#39; does not match at position 0
+     {&#39;position&#39;: 0, &#39;value&#39;: 1, &#39;feature&#39;: &#39;AC&#39;}, # &#39;AC&#39; matches at position 0 in &#39;ACAGTC&#39;
+     {&#39;position&#39;: 0, &#39;value&#39;: 0, &#39;feature&#39;: &#39;AG&#39;},
+     ...
+     {&#39;position&#39;: 1, &#39;value&#39;: 1, &#39;feature&#39;: &#39;CA&#39;}, # &#39;CA&#39; matches at position 1 in &#39;ACAGTC&#39;
+     ...
+     {&#39;position&#39;: 0, &#39;value&#39;: 0, &#39;feature&#39;: &#39;AAT&#39;},
+     {&#39;position&#39;: 0, &#39;value&#39;: 1, &#39;feature&#39;: &#39;ACA&#39;},
+     {&#39;position&#39;: 0, &#39;value&#39;: 0, &#39;feature&#39;: &#39;ACC&#39;},
+
+    :param seq: A sequence of nucleotides to expand
+    :param kmers: list of integers (e.g. [1,2,3])
+    :return: a list of dictionaries, containing position, featvalue, and feature
+    &#34;&#34;&#34;
+    NUCLEOTIDES=&#39;ACGT&#39;
+
+    str_seq = str(seq) # If seq is a Bio.Seq, it&#39;s faster to check it as a string
+    svr_features = []
+    for k in kmers:
+        # Generate all possible combinations of length k (e.g [&#39;AAA&#39;, &#39;AAC&#39;, ...  &#39;TTG&#39;, &#39;TTT&#39;]
+        features = [&#39;&#39;.join(x) for x in itertools.product(NUCLEOTIDES, repeat=k)]
+        # Check each position in the sequence for a match
+        n_sub_seqs = len(str_seq) - (k - 1) # If seq length is 36 and k is 3, there are 34 positions
+        for position in range(n_sub_seqs):
+            sub_seq = str_seq[position:position + k] # the sub-sequence with length k
+            # start with a template list. All zero values at the current position
+            exploded = [{&#39;feature&#39;: feature, &#39;position&#39;: position, &#39;value&#39;: 0} for feature in features]
+            # Determine the index of the current sub seq
+            try:
+                feature_index = features.index(sub_seq)
+                exploded[feature_index][&#39;value&#39;] = 1
+            except ValueError:
+                print(&#34;Warning: sub-sequence &#39;{}&#39; not found in features&#34;.format(sub_seq))
+            svr_features.extend(exploded)
+    return svr_features</code></pre>
+</details>
+</dd>
+<dt id="imads.iMADS.transform_score"><code class="name flex">
+<span>def <span class="ident">transform_score</span></span>(<span>self, score)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>inverse logistic transformation of score</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def transform_score(self, score):
+    &#34;&#34;&#34;
+    inverse logistic transformation of score
+    &#34;&#34;&#34;
+    # f(x) = 1 / ( 1 + exp(-x) )  to obtain only values between 0 and 1.
+    return 1.0 / (1.0 + math.exp(0.0 - score))</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="imads.iMADS" href="#imads.iMADS">iMADS</a></code></h4>
+<ul class="">
+<li><code><a title="imads.iMADS.generate_matching_sequence" href="#imads.iMADS.generate_matching_sequence">generate_matching_sequence</a></code></li>
+<li><code><a title="imads.iMADS.make_plot_data" href="#imads.iMADS.make_plot_data">make_plot_data</a></code></li>
+<li><code><a title="imads.iMADS.predict_sequence" href="#imads.iMADS.predict_sequence">predict_sequence</a></code></li>
+<li><code><a title="imads.iMADS.predict_sequences" href="#imads.iMADS.predict_sequences">predict_sequences</a></code></li>
+<li><code><a title="imads.iMADS.svr_features_from_sequence" href="#imads.iMADS.svr_features_from_sequence">svr_features_from_sequence</a></code></li>
+<li><code><a title="imads.iMADS.transform_score" href="#imads.iMADS.transform_score">transform_score</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>

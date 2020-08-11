@@ -11,14 +11,15 @@ def revcompstr(seq):
     return "".join([rev[base] for base in reversed(seq)])
 
 
-def get_seqdict(sequence_tbl, sequence_colname="sequence", keycolname="", keyname="sequence",
-                ignore_missing_colname=False):
+def get_seqdict(sequence_tbl, sequence_col="sequence", keycol="",
+                ignore_missing_col=False):
     """
     Generate dictionary representation from sequence table or list.
 
     :param sequence_tbl: sequence table as a df or list of lists
-    :param sequence_colname: column name of sequences
-    :param ignore_missing_colname: boolean
+    :param sequence_col: column name of sequences
+    :param ignore_missing_col: if column name is non existent, just return keycol
+        to empty string for each row
     :return: dictionary representation of sequence table
     """
     # if sequence table is neither a dataframe nor a list
@@ -28,28 +29,32 @@ def get_seqdict(sequence_tbl, sequence_colname="sequence", keycolname="", keynam
     # if seqeunce table is a dataframe
     if type(sequence_tbl) == pd.DataFrame:
         # if sequence column is not found
-        if sequence_colname not in sequence_tbl:
+        if sequence_col not in sequence_tbl:
             # create a list of empty strings as sequences
-            if ignore_missing_colname:
-                seqlist = [""] * sequence_tbl.shape[0]
+            if ignore_missing_col:
+                if keycol:
+                    kc = sequence_tbl[keycol].tolist()
+                    return {k:"" for k in kc}
+                else:
+                    seqlist = [""] * sequence_tbl.shape[0]
             # raise exception if sequence column is not found
             else:
-                raise Exception('Could not find column %s in the data frame. This can be ignored by turning on \'ignore_missing_colname\'.' % sequence_colname)
+                raise Exception('Could not find column %s in the data frame. This can be ignored by turning on \'ignore_missing_colname\'.' % sequence_col)
         # if sequence column is found
         else:
             # return the dictionary representation of the sequences using one of the columns in the sequence table given as keys
-            if keycolname:
-                return pd.Series(sequence_tbl[sequence_colname].values, index=sequence_tbl[keycolname]).to_dict()
+            if keycol:
+                return pd.Series(sequence_tbl[sequence_col].values, index=sequence_tbl[keycol]).to_dict()
             # get the sequences
             else:
-                seqlist = sequence_tbl[sequence_colname].tolist()
+                seqlist = sequence_tbl[sequence_col].tolist()
     # if sequence table is a list
     elif type(sequence_tbl) == dict:
         return sequence_tbl
     else:
         seqlist = list(sequence_tbl)
     # return the dictionary representation of the sequences
-    return {"%s%d" % (keyname, (k + 1)): v for k, v in enumerate(seqlist)}
+    return {str(k + 1): v for k, v in enumerate(seqlist)}
 
 
 def itoseq(seqint, kmer):

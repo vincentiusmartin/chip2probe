@@ -1,5 +1,5 @@
 import pandas as pd
-from chip2probe.probe_generator.probefilter.sitespredict import basepred, basemodel
+from chip2probe.sitespredict import basepred, basemodel
 from chip2probe.util import bio as bio
 import itertools
 import math
@@ -24,7 +24,7 @@ class Kompas(basemodel.BaseModel):
         self.clean = clean
         self.kmer_align_path = kmer_align_path
         #pass
-        
+
     def predict_sequence(self, sequence, kmerFile, core, centerPos, threshold, protein):
         '''This function uses kompas to predict the position of a
            tf binding site on a given sequence'''

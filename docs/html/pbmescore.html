@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.8.1" />
+<title>pbmescore API documentation</title>
+<meta name="description" content="This file contains a class for PBMEscore object …" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>pbmescore</code></h1>
+</header>
+<section id="section-intro">
+<p>This file contains a class for PBMEscore object.</p>
+<p>Created on Jul 22, 2019</p>
+<p>Authors: Vincentius Martin, Farica Zhuang</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;
+This file contains a class for PBMEscore object.
+
+Created on Jul 22, 2019
+
+Authors: Vincentius Martin, Farica Zhuang
+&#34;&#34;&#34;
+from chip2probe.sitespredict import basepred, basemodel
+from chip2probe.util import bio as bio
+import pandas as pd
+
+class PBMEscore(basemodel.BaseModel):
+    &#34;&#34;&#34;PBMEscore sitespredict class
+
+    Make E-score predictions for all k-mers (currently only accept 8) in the
+    input sequences.
+
+    Example:
+    &gt;&gt;&gt; escore = PBMEscore(&#34;&lt;insert path here&gt;&#34;)
+    &gt;&gt;&gt; # predict one sequence
+    &gt;&gt;&gt; single_sequence = &#34;TTACGGCAAGCGGGCCGGAAGCCACTCCTCGAGTCT&#34;
+    &gt;&gt;&gt; singlepred = escore.predict_sequence(single_sequence)
+    &gt;&gt;&gt; # predict many sequence
+    &gt;&gt;&gt; many_sequences = [&#34;ACTGGCAGGAAGGGCAGTTTTGGCAGGAAAAGCCAT&#34;, &#34;CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC&#34;]
+    &gt;&gt;&gt; manypredlist = escore.predict_sequences(many_sequences)
+    &gt;&gt;&gt; # or as a data frame input
+    &gt;&gt;&gt; df = pd.DataFrame(list(zip(many_sequences, [&#39;seq1&#39;,&#39;seq2&#39;])), columns=[&#39;sequence&#39;, &#39;key&#39;])
+    &gt;&gt;&gt; manypredlist = escore.predict_sequences(df)
+
+    TODO:
+        Make this available for gap E-score and different k-mer length
+    &#34;&#34;&#34;
+
+    def __init__(self, escore_path, escore_map_path=&#34;&#34;, kmer=8):
+        &#34;&#34;&#34;
+        Args:
+            escore_path: path to the escore file, can be in the long format (i.e. a file
+                with k-mer sequence, its reverse complement, and E-score) or just the short
+                format with the just the E-score in sorted k-mer order.
+            escore_map_path: when the short format is used, the map of the index
+                short to long needs to be provided.
+            kmer: the value of k, default 8
+        &#34;&#34;&#34;
+        self.escore = self.read_escore(escore_path, escore_map_path)
+        self.kmer = kmer
+
+
+    def read_escore(self, filepath, map_path=&#34;&#34;):
+        &#34;&#34;&#34;
+        Read an escore file to produce PBMEscore object. If map_path is provided
+        then the function assumes that the condensed version of the input file is used.
+
+        Args:
+            filepath: The path to the escore file
+            map_path: Path to the short to log map
+        Return:
+            dictionary of sequence to E-score
+        &#34;&#34;&#34;
+
+        # if map_path is provided, assume short escore
+        if map_path:
+            with open(map_path) as f:
+                next(f)
+                emap = [int(line.split(&#34;,&#34;)[1])-1 for line in f]
+            with open(filepath) as f:
+                eshort = [float(line) for line in f]
+            # kmer is always 8 in escore
+            elong = {bio.itoseq(idx,self.kmer):eshort[idx] for idx in emap}
+            return elong
+        else: # full escore file
+            df = pd.read_csv(filepath, sep=&#34;\t&#34;)
+            d1 = pd.Series(df[&#34;E-score&#34;].values,index=df[&#34;8-mer&#34;]).to_dict()
+            d2 = pd.Series(df[&#34;E-score&#34;].values,index=df[&#34;8-mer.1&#34;]).to_dict()
+            dboth = {**d1, **d2}
+            return dboth
+
+    def predict_sequence(self, sequence):
+        &#34;&#34;&#34;
+        Make E-score predictions of an input sequence
+
+        Args:
+            sequence (str): input sequence
+        Return:
+            list of dictionary of sequence to E-score
+        &#34;&#34;&#34;
+        prediction = []
+        for i in range(0,len(sequence)-self.kmer+1):
+            score = self.escore[sequence[i:i+self.kmer]]
+            # list index is the position from the first e-scoreo (i.e. i-th position)
+            prediction.append({&#34;position&#34;:i+(self.kmer+1)//2,&#34;escore_seq&#34;:sequence[i:i+self.kmer],&#34;score&#34;:score,&#34;start_idx&#34;:i})
+        return prediction
+
+    def predict_sequences(self, sequences, sequence_colname=&#34;sequence&#34;,
+                          key_colname=&#34;&#34;, predict_flanks=False, flank_colname=&#34;flank&#34;,
+                          flank_len=10,  only_pred = False):
+        &#34;&#34;&#34;
+        Get a dictionary of escore predictions for each sequence.
+
+        Args:
+            sequences: list / data frame / dictionary of sequences (see bio.get_seqdict)
+            sequence_colname: when input is a data frame, this is the column name of
+                the sequence (default: sequence)
+            key_colname: when input is data frame, this is the column with the key
+                that denotes distict row (default: &#34;&#34;)
+            predict_flanks: default False, when True check flank column--input needs
+                to be a data frame
+            flank_colname: the column name of the flank sequence
+            flank_len: length of the flanking sequences
+            only_pred: by default we return result as `BasePred` object for plotting
+        Return:
+            list of dictionary of the predicted sequences as a BasePred object
+            if `only_pred` is False, else just return the list
+        &#34;&#34;&#34;
+        seqdict = bio.get_seqdict(sequences, sequence_col=sequence_colname, keycol=key_colname)
+        # get the flanks if we are including flank predictions
+        if predict_flanks:
+            flank_left = bio.get_seqdict(sequence_df, &#34;%s_left&#34; % flank_colname,
+                                         keycol=key_colname,
+                                         ignore_missing_colname=True)
+            flank_right = bio.get_seqdict(sequence_df, &#34;%s_right&#34; % flank_colname,
+                                          keycol=key_colname,
+                                          ignore_missing_colname=True)
+        # get prediction of each sequence
+        predictions = {}
+        for key, sequence in seqdict.items():
+            # if we are including flanks in the prediction
+            if predict_flanks:
+                # make sure there are enough flanks to take
+                if len(flank_left[key]) &lt; flank_len or len(flank_right[key]) &lt; flank_len:
+                    raise Exception(&#34;flank_len is greater than the length of flanks available&#34;)
+                # update the sequence to be predicted
+                sequence = flank_left[key][-flank_len:] + sequence + flank_right[key][:flank_len]
+            # get the prediction for this sequence
+            prediction = self.predict_sequence(sequence)
+            if only_pred:
+                predictions[key] = prediction
+            else:
+                predictions[key] = basepred.BasePrediction(sequence, prediction)
+        # return the dictionary of predictions for each sequence
+        return predictions
+
+    # TODO: modify sequence to use this function instead
+    def get_escores_specific(self, sequence, escore_cutoff = 0.4, escore_gap = 0):
+        &#34;&#34;&#34;Get the list of specific escore regions in the given sequence.&#34;&#34;&#34;
+        escores = self.predict_sequence(sequence).predictions
+        signifcount = 0
+        startidx = -1
+        gapcount = 0
+        escore_signifsites = []
+        for i in range(0, len(escores)):
+            escoresite = escores[i]
+            if escoresite[&#34;score&#34;] &gt; escore_cutoff :
+                if signifcount == 0:
+                    startidx = i
+                signifcount += 1
+                gapcount = 0
+            # we can ignore else if here since we need i == len(esores)-1
+            if escoresite[&#34;score&#34;] &lt;= escore_cutoff and i != len(escores)-1 and gapcount &lt; escore_gap:
+                # check if the sequence is still within
+                gapcount += 1
+            elif escoresite[&#34;score&#34;] &lt;= escore_cutoff or i == len(escores)-1:
+                if signifcount &gt; 0:
+                    # if we have found sufficient e-scores above the cutoff then get the binding sites
+                    if signifcount &gt;= 2:
+                        # startpos: the start of binding
+                        escore_bind = {&#34;startpos&#34;:escores[startidx][&#39;position&#39;],  &#34;escorelength&#34;:signifcount + gapcount,
+                                &#34;escore_startidx&#34;:escores[startidx][&#39;start_idx&#39;]}
+                        escore_signifsites.append(escore_bind)
+                    startidx = -1
+                    signifcount = 0
+        # list of significant regions are in sorted order
+        return escore_signifsites
+
+    def make_plot_data(self, predictions_dict, scale=1, escore_cutoff=0.4,
+                        additional_functions={}, color=&#34;orange&#34;,
+                        line_color=&#34;darkorange&#34;):
+        &#34;&#34;&#34;
+        Make plot data from `predict_sequences` result
+
+        Args:
+            predictions_dict: result from `predict_sequences`
+            scale: scale the E-score, useful when plotting E-score with another
+                model with (usually) larger score such as PWM
+            escore_cutoff: where to plot the horizontal threshold line
+            additional_function: additional plotting functions
+            color: color of the E-score line
+            line_color: color for the horizontal threshold line
+        &#34;&#34;&#34;
+        func_dict = {}
+        for key in predictions_dict:
+            sequence = predictions_dict[key].sequence
+            escores = predictions_dict[key].predictions
+            func_pred =[]
+            y_escore = [x[&#34;score&#34;] * scale for x in escores]
+            x_escore = [x[&#34;position&#34;] for x in escores]
+            func_pred.append({&#34;func&#34;:&#34;plot&#34;,&#34;args&#34;:[x_escore, y_escore],&#34;kwargs&#34;:{&#34;color&#34;:color, &#34;linewidth&#34; : 2.5}})
+            func_pred.append({&#34;func&#34;:&#34;axhline&#34;, &#34;args&#34;:[escore_cutoff * scale], &#34;kwargs&#34;:{&#34;color&#34;:line_color, &#34;linestyle&#34; : &#34;dashed&#34;, &#34;linewidth&#34;:1}})
+            if key in additional_functions and additional_functions[key]:
+                func_pred.extend(additional_functions[key])
+            func_dict[key] = {&#34;sequence&#34;:sequence,
+                                  &#34;plt&#34;:func_pred}
+        return func_dict</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="pbmescore.PBMEscore"><code class="flex name class">
+<span>class <span class="ident">PBMEscore</span></span>
+<span>(</span><span>escore_path, escore_map_path='', kmer=8)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>PBMEscore sitespredict class</p>
+<p>Make E-score predictions for all k-mers (currently only accept 8) in the
+input sequences.</p>
+<p>Example:</p>
+<pre><code class="python">&gt;&gt;&gt; escore = PBMEscore(&quot;&lt;insert path here&gt;&quot;)
+&gt;&gt;&gt; # predict one sequence
+&gt;&gt;&gt; single_sequence = &quot;TTACGGCAAGCGGGCCGGAAGCCACTCCTCGAGTCT&quot;
+&gt;&gt;&gt; singlepred = escore.predict_sequence(single_sequence)
+&gt;&gt;&gt; # predict many sequence
+&gt;&gt;&gt; many_sequences = [&quot;ACTGGCAGGAAGGGCAGTTTTGGCAGGAAAAGCCAT&quot;, &quot;CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC&quot;]
+&gt;&gt;&gt; manypredlist = escore.predict_sequences(many_sequences)
+&gt;&gt;&gt; # or as a data frame input
+&gt;&gt;&gt; df = pd.DataFrame(list(zip(many_sequences, ['seq1','seq2'])), columns=['sequence', 'key'])
+&gt;&gt;&gt; manypredlist = escore.predict_sequences(df)
+</code></pre>
+<h2 id="todo">Todo</h2>
+<p>Make this available for gap E-score and different k-mer length</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>escore_path</code></strong></dt>
+<dd>path to the escore file, can be in the long format (i.e. a file
+with k-mer sequence, its reverse complement, and E-score) or just the short
+format with the just the E-score in sorted k-mer order.</dd>
+<dt><strong><code>escore_map_path</code></strong></dt>
+<dd>when the short format is used, the map of the index
+short to long needs to be provided.</dd>
+<dt><strong><code>kmer</code></strong></dt>
+<dd>the value of k, default 8</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PBMEscore(basemodel.BaseModel):
+    &#34;&#34;&#34;PBMEscore sitespredict class
+
+    Make E-score predictions for all k-mers (currently only accept 8) in the
+    input sequences.
+
+    Example:
+    &gt;&gt;&gt; escore = PBMEscore(&#34;&lt;insert path here&gt;&#34;)
+    &gt;&gt;&gt; # predict one sequence
+    &gt;&gt;&gt; single_sequence = &#34;TTACGGCAAGCGGGCCGGAAGCCACTCCTCGAGTCT&#34;
+    &gt;&gt;&gt; singlepred = escore.predict_sequence(single_sequence)
+    &gt;&gt;&gt; # predict many sequence
+    &gt;&gt;&gt; many_sequences = [&#34;ACTGGCAGGAAGGGCAGTTTTGGCAGGAAAAGCCAT&#34;, &#34;CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC&#34;]
+    &gt;&gt;&gt; manypredlist = escore.predict_sequences(many_sequences)
+    &gt;&gt;&gt; # or as a data frame input
+    &gt;&gt;&gt; df = pd.DataFrame(list(zip(many_sequences, [&#39;seq1&#39;,&#39;seq2&#39;])), columns=[&#39;sequence&#39;, &#39;key&#39;])
+    &gt;&gt;&gt; manypredlist = escore.predict_sequences(df)
+
+    TODO:
+        Make this available for gap E-score and different k-mer length
+    &#34;&#34;&#34;
+
+    def __init__(self, escore_path, escore_map_path=&#34;&#34;, kmer=8):
+        &#34;&#34;&#34;
+        Args:
+            escore_path: path to the escore file, can be in the long format (i.e. a file
+                with k-mer sequence, its reverse complement, and E-score) or just the short
+                format with the just the E-score in sorted k-mer order.
+            escore_map_path: when the short format is used, the map of the index
+                short to long needs to be provided.
+            kmer: the value of k, default 8
+        &#34;&#34;&#34;
+        self.escore = self.read_escore(escore_path, escore_map_path)
+        self.kmer = kmer
+
+
+    def read_escore(self, filepath, map_path=&#34;&#34;):
+        &#34;&#34;&#34;
+        Read an escore file to produce PBMEscore object. If map_path is provided
+        then the function assumes that the condensed version of the input file is used.
+
+        Args:
+            filepath: The path to the escore file
+            map_path: Path to the short to log map
+        Return:
+            dictionary of sequence to E-score
+        &#34;&#34;&#34;
+
+        # if map_path is provided, assume short escore
+        if map_path:
+            with open(map_path) as f:
+                next(f)
+                emap = [int(line.split(&#34;,&#34;)[1])-1 for line in f]
+            with open(filepath) as f:
+                eshort = [float(line) for line in f]
+            # kmer is always 8 in escore
+            elong = {bio.itoseq(idx,self.kmer):eshort[idx] for idx in emap}
+            return elong
+        else: # full escore file
+            df = pd.read_csv(filepath, sep=&#34;\t&#34;)
+            d1 = pd.Series(df[&#34;E-score&#34;].values,index=df[&#34;8-mer&#34;]).to_dict()
+            d2 = pd.Series(df[&#34;E-score&#34;].values,index=df[&#34;8-mer.1&#34;]).to_dict()
+            dboth = {**d1, **d2}
+            return dboth
+
+    def predict_sequence(self, sequence):
+        &#34;&#34;&#34;
+        Make E-score predictions of an input sequence
+
+        Args:
+            sequence (str): input sequence
+        Return:
+            list of dictionary of sequence to E-score
+        &#34;&#34;&#34;
+        prediction = []
+        for i in range(0,len(sequence)-self.kmer+1):
+            score = self.escore[sequence[i:i+self.kmer]]
+            # list index is the position from the first e-scoreo (i.e. i-th position)
+            prediction.append({&#34;position&#34;:i+(self.kmer+1)//2,&#34;escore_seq&#34;:sequence[i:i+self.kmer],&#34;score&#34;:score,&#34;start_idx&#34;:i})
+        return prediction
+
+    def predict_sequences(self, sequences, sequence_colname=&#34;sequence&#34;,
+                          key_colname=&#34;&#34;, predict_flanks=False, flank_colname=&#34;flank&#34;,
+                          flank_len=10,  only_pred = False):
+        &#34;&#34;&#34;
+        Get a dictionary of escore predictions for each sequence.
+
+        Args:
+            sequences: list / data frame / dictionary of sequences (see bio.get_seqdict)
+            sequence_colname: when input is a data frame, this is the column name of
+                the sequence (default: sequence)
+            key_colname: when input is data frame, this is the column with the key
+                that denotes distict row (default: &#34;&#34;)
+            predict_flanks: default False, when True check flank column--input needs
+                to be a data frame
+            flank_colname: the column name of the flank sequence
+            flank_len: length of the flanking sequences
+            only_pred: by default we return result as `BasePred` object for plotting
+        Return:
+            list of dictionary of the predicted sequences as a BasePred object
+            if `only_pred` is False, else just return the list
+        &#34;&#34;&#34;
+        seqdict = bio.get_seqdict(sequences, sequence_col=sequence_colname, keycol=key_colname)
+        # get the flanks if we are including flank predictions
+        if predict_flanks:
+            flank_left = bio.get_seqdict(sequence_df, &#34;%s_left&#34; % flank_colname,
+                                         keycol=key_colname,
+                                         ignore_missing_colname=True)
+            flank_right = bio.get_seqdict(sequence_df, &#34;%s_right&#34; % flank_colname,
+                                          keycol=key_colname,
+                                          ignore_missing_colname=True)
+        # get prediction of each sequence
+        predictions = {}
+        for key, sequence in seqdict.items():
+            # if we are including flanks in the prediction
+            if predict_flanks:
+                # make sure there are enough flanks to take
+                if len(flank_left[key]) &lt; flank_len or len(flank_right[key]) &lt; flank_len:
+                    raise Exception(&#34;flank_len is greater than the length of flanks available&#34;)
+                # update the sequence to be predicted
+                sequence = flank_left[key][-flank_len:] + sequence + flank_right[key][:flank_len]
+            # get the prediction for this sequence
+            prediction = self.predict_sequence(sequence)
+            if only_pred:
+                predictions[key] = prediction
+            else:
+                predictions[key] = basepred.BasePrediction(sequence, prediction)
+        # return the dictionary of predictions for each sequence
+        return predictions
+
+    # TODO: modify sequence to use this function instead
+    def get_escores_specific(self, sequence, escore_cutoff = 0.4, escore_gap = 0):
+        &#34;&#34;&#34;Get the list of specific escore regions in the given sequence.&#34;&#34;&#34;
+        escores = self.predict_sequence(sequence).predictions
+        signifcount = 0
+        startidx = -1
+        gapcount = 0
+        escore_signifsites = []
+        for i in range(0, len(escores)):
+            escoresite = escores[i]
+            if escoresite[&#34;score&#34;] &gt; escore_cutoff :
+                if signifcount == 0:
+                    startidx = i
+                signifcount += 1
+                gapcount = 0
+            # we can ignore else if here since we need i == len(esores)-1
+            if escoresite[&#34;score&#34;] &lt;= escore_cutoff and i != len(escores)-1 and gapcount &lt; escore_gap:
+                # check if the sequence is still within
+                gapcount += 1
+            elif escoresite[&#34;score&#34;] &lt;= escore_cutoff or i == len(escores)-1:
+                if signifcount &gt; 0:
+                    # if we have found sufficient e-scores above the cutoff then get the binding sites
+                    if signifcount &gt;= 2:
+                        # startpos: the start of binding
+                        escore_bind = {&#34;startpos&#34;:escores[startidx][&#39;position&#39;],  &#34;escorelength&#34;:signifcount + gapcount,
+                                &#34;escore_startidx&#34;:escores[startidx][&#39;start_idx&#39;]}
+                        escore_signifsites.append(escore_bind)
+                    startidx = -1
+                    signifcount = 0
+        # list of significant regions are in sorted order
+        return escore_signifsites
+
+    def make_plot_data(self, predictions_dict, scale=1, escore_cutoff=0.4,
+                        additional_functions={}, color=&#34;orange&#34;,
+                        line_color=&#34;darkorange&#34;):
+        &#34;&#34;&#34;
+        Make plot data from `predict_sequences` result
+
+        Args:
+            predictions_dict: result from `predict_sequences`
+            scale: scale the E-score, useful when plotting E-score with another
+                model with (usually) larger score such as PWM
+            escore_cutoff: where to plot the horizontal threshold line
+            additional_function: additional plotting functions
+            color: color of the E-score line
+            line_color: color for the horizontal threshold line
+        &#34;&#34;&#34;
+        func_dict = {}
+        for key in predictions_dict:
+            sequence = predictions_dict[key].sequence
+            escores = predictions_dict[key].predictions
+            func_pred =[]
+            y_escore = [x[&#34;score&#34;] * scale for x in escores]
+            x_escore = [x[&#34;position&#34;] for x in escores]
+            func_pred.append({&#34;func&#34;:&#34;plot&#34;,&#34;args&#34;:[x_escore, y_escore],&#34;kwargs&#34;:{&#34;color&#34;:color, &#34;linewidth&#34; : 2.5}})
+            func_pred.append({&#34;func&#34;:&#34;axhline&#34;, &#34;args&#34;:[escore_cutoff * scale], &#34;kwargs&#34;:{&#34;color&#34;:line_color, &#34;linestyle&#34; : &#34;dashed&#34;, &#34;linewidth&#34;:1}})
+            if key in additional_functions and additional_functions[key]:
+                func_pred.extend(additional_functions[key])
+            func_dict[key] = {&#34;sequence&#34;:sequence,
+                                  &#34;plt&#34;:func_pred}
+        return func_dict</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>chip2probe.sitespredict.basemodel.BaseModel</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="pbmescore.PBMEscore.get_escores_specific"><code class="name flex">
+<span>def <span class="ident">get_escores_specific</span></span>(<span>self, sequence, escore_cutoff=0.4, escore_gap=0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the list of specific escore regions in the given sequence.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_escores_specific(self, sequence, escore_cutoff = 0.4, escore_gap = 0):
+    &#34;&#34;&#34;Get the list of specific escore regions in the given sequence.&#34;&#34;&#34;
+    escores = self.predict_sequence(sequence).predictions
+    signifcount = 0
+    startidx = -1
+    gapcount = 0
+    escore_signifsites = []
+    for i in range(0, len(escores)):
+        escoresite = escores[i]
+        if escoresite[&#34;score&#34;] &gt; escore_cutoff :
+            if signifcount == 0:
+                startidx = i
+            signifcount += 1
+            gapcount = 0
+        # we can ignore else if here since we need i == len(esores)-1
+        if escoresite[&#34;score&#34;] &lt;= escore_cutoff and i != len(escores)-1 and gapcount &lt; escore_gap:
+            # check if the sequence is still within
+            gapcount += 1
+        elif escoresite[&#34;score&#34;] &lt;= escore_cutoff or i == len(escores)-1:
+            if signifcount &gt; 0:
+                # if we have found sufficient e-scores above the cutoff then get the binding sites
+                if signifcount &gt;= 2:
+                    # startpos: the start of binding
+                    escore_bind = {&#34;startpos&#34;:escores[startidx][&#39;position&#39;],  &#34;escorelength&#34;:signifcount + gapcount,
+                            &#34;escore_startidx&#34;:escores[startidx][&#39;start_idx&#39;]}
+                    escore_signifsites.append(escore_bind)
+                startidx = -1
+                signifcount = 0
+    # list of significant regions are in sorted order
+    return escore_signifsites</code></pre>
+</details>
+</dd>
+<dt id="pbmescore.PBMEscore.make_plot_data"><code class="name flex">
+<span>def <span class="ident">make_plot_data</span></span>(<span>self, predictions_dict, scale=1, escore_cutoff=0.4, additional_functions={}, color='orange', line_color='darkorange')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Make plot data from <code>predict_sequences</code> result</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>predictions_dict</code></strong></dt>
+<dd>result from <code>predict_sequences</code></dd>
+<dt><strong><code>scale</code></strong></dt>
+<dd>scale the E-score, useful when plotting E-score with another
+model with (usually) larger score such as PWM</dd>
+<dt><strong><code>escore_cutoff</code></strong></dt>
+<dd>where to plot the horizontal threshold line</dd>
+<dt><strong><code>additional_function</code></strong></dt>
+<dd>additional plotting functions</dd>
+<dt><strong><code>color</code></strong></dt>
+<dd>color of the E-score line</dd>
+<dt><strong><code>line_color</code></strong></dt>
+<dd>color for the horizontal threshold line</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_plot_data(self, predictions_dict, scale=1, escore_cutoff=0.4,
+                    additional_functions={}, color=&#34;orange&#34;,
+                    line_color=&#34;darkorange&#34;):
+    &#34;&#34;&#34;
+    Make plot data from `predict_sequences` result
+
+    Args:
+        predictions_dict: result from `predict_sequences`
+        scale: scale the E-score, useful when plotting E-score with another
+            model with (usually) larger score such as PWM
+        escore_cutoff: where to plot the horizontal threshold line
+        additional_function: additional plotting functions
+        color: color of the E-score line
+        line_color: color for the horizontal threshold line
+    &#34;&#34;&#34;
+    func_dict = {}
+    for key in predictions_dict:
+        sequence = predictions_dict[key].sequence
+        escores = predictions_dict[key].predictions
+        func_pred =[]
+        y_escore = [x[&#34;score&#34;] * scale for x in escores]
+        x_escore = [x[&#34;position&#34;] for x in escores]
+        func_pred.append({&#34;func&#34;:&#34;plot&#34;,&#34;args&#34;:[x_escore, y_escore],&#34;kwargs&#34;:{&#34;color&#34;:color, &#34;linewidth&#34; : 2.5}})
+        func_pred.append({&#34;func&#34;:&#34;axhline&#34;, &#34;args&#34;:[escore_cutoff * scale], &#34;kwargs&#34;:{&#34;color&#34;:line_color, &#34;linestyle&#34; : &#34;dashed&#34;, &#34;linewidth&#34;:1}})
+        if key in additional_functions and additional_functions[key]:
+            func_pred.extend(additional_functions[key])
+        func_dict[key] = {&#34;sequence&#34;:sequence,
+                              &#34;plt&#34;:func_pred}
+    return func_dict</code></pre>
+</details>
+</dd>
+<dt id="pbmescore.PBMEscore.predict_sequence"><code class="name flex">
+<span>def <span class="ident">predict_sequence</span></span>(<span>self, sequence)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Make E-score predictions of an input sequence</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>sequence</code></strong> :&ensp;<code>str</code></dt>
+<dd>input sequence</dd>
+</dl>
+<h2 id="return">Return</h2>
+<p>list of dictionary of sequence to E-score</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def predict_sequence(self, sequence):
+    &#34;&#34;&#34;
+    Make E-score predictions of an input sequence
+
+    Args:
+        sequence (str): input sequence
+    Return:
+        list of dictionary of sequence to E-score
+    &#34;&#34;&#34;
+    prediction = []
+    for i in range(0,len(sequence)-self.kmer+1):
+        score = self.escore[sequence[i:i+self.kmer]]
+        # list index is the position from the first e-scoreo (i.e. i-th position)
+        prediction.append({&#34;position&#34;:i+(self.kmer+1)//2,&#34;escore_seq&#34;:sequence[i:i+self.kmer],&#34;score&#34;:score,&#34;start_idx&#34;:i})
+    return prediction</code></pre>
+</details>
+</dd>
+<dt id="pbmescore.PBMEscore.predict_sequences"><code class="name flex">
+<span>def <span class="ident">predict_sequences</span></span>(<span>self, sequences, sequence_colname='sequence', key_colname='', predict_flanks=False, flank_colname='flank', flank_len=10, only_pred=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get a dictionary of escore predictions for each sequence.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>sequences</code></strong></dt>
+<dd>list / data frame / dictionary of sequences (see bio.get_seqdict)</dd>
+<dt><strong><code>sequence_colname</code></strong></dt>
+<dd>when input is a data frame, this is the column name of
+the sequence (default: sequence)</dd>
+<dt><strong><code>key_colname</code></strong></dt>
+<dd>when input is data frame, this is the column with the key
+that denotes distict row (default: "")</dd>
+<dt><strong><code>predict_flanks</code></strong></dt>
+<dd>default False, when True check flank column&ndash;input needs
+to be a data frame</dd>
+<dt><strong><code>flank_colname</code></strong></dt>
+<dd>the column name of the flank sequence</dd>
+<dt><strong><code>flank_len</code></strong></dt>
+<dd>length of the flanking sequences</dd>
+<dt><strong><code>only_pred</code></strong></dt>
+<dd>by default we return result as <code>BasePred</code> object for plotting</dd>
+</dl>
+<h2 id="return">Return</h2>
+<p>list of dictionary of the predicted sequences as a BasePred object
+if <code>only_pred</code> is False, else just return the list</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def predict_sequences(self, sequences, sequence_colname=&#34;sequence&#34;,
+                      key_colname=&#34;&#34;, predict_flanks=False, flank_colname=&#34;flank&#34;,
+                      flank_len=10,  only_pred = False):
+    &#34;&#34;&#34;
+    Get a dictionary of escore predictions for each sequence.
+
+    Args:
+        sequences: list / data frame / dictionary of sequences (see bio.get_seqdict)
+        sequence_colname: when input is a data frame, this is the column name of
+            the sequence (default: sequence)
+        key_colname: when input is data frame, this is the column with the key
+            that denotes distict row (default: &#34;&#34;)
+        predict_flanks: default False, when True check flank column--input needs
+            to be a data frame
+        flank_colname: the column name of the flank sequence
+        flank_len: length of the flanking sequences
+        only_pred: by default we return result as `BasePred` object for plotting
+    Return:
+        list of dictionary of the predicted sequences as a BasePred object
+        if `only_pred` is False, else just return the list
+    &#34;&#34;&#34;
+    seqdict = bio.get_seqdict(sequences, sequence_col=sequence_colname, keycol=key_colname)
+    # get the flanks if we are including flank predictions
+    if predict_flanks:
+        flank_left = bio.get_seqdict(sequence_df, &#34;%s_left&#34; % flank_colname,
+                                     keycol=key_colname,
+                                     ignore_missing_colname=True)
+        flank_right = bio.get_seqdict(sequence_df, &#34;%s_right&#34; % flank_colname,
+                                      keycol=key_colname,
+                                      ignore_missing_colname=True)
+    # get prediction of each sequence
+    predictions = {}
+    for key, sequence in seqdict.items():
+        # if we are including flanks in the prediction
+        if predict_flanks:
+            # make sure there are enough flanks to take
+            if len(flank_left[key]) &lt; flank_len or len(flank_right[key]) &lt; flank_len:
+                raise Exception(&#34;flank_len is greater than the length of flanks available&#34;)
+            # update the sequence to be predicted
+            sequence = flank_left[key][-flank_len:] + sequence + flank_right[key][:flank_len]
+        # get the prediction for this sequence
+        prediction = self.predict_sequence(sequence)
+        if only_pred:
+            predictions[key] = prediction
+        else:
+            predictions[key] = basepred.BasePrediction(sequence, prediction)
+    # return the dictionary of predictions for each sequence
+    return predictions</code></pre>
+</details>
+</dd>
+<dt id="pbmescore.PBMEscore.read_escore"><code class="name flex">
+<span>def <span class="ident">read_escore</span></span>(<span>self, filepath, map_path='')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Read an escore file to produce PBMEscore object. If map_path is provided
+then the function assumes that the condensed version of the input file is used.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>filepath</code></strong></dt>
+<dd>The path to the escore file</dd>
+<dt><strong><code>map_path</code></strong></dt>
+<dd>Path to the short to log map</dd>
+</dl>
+<h2 id="return">Return</h2>
+<p>dictionary of sequence to E-score</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read_escore(self, filepath, map_path=&#34;&#34;):
+    &#34;&#34;&#34;
+    Read an escore file to produce PBMEscore object. If map_path is provided
+    then the function assumes that the condensed version of the input file is used.
+
+    Args:
+        filepath: The path to the escore file
+        map_path: Path to the short to log map
+    Return:
+        dictionary of sequence to E-score
+    &#34;&#34;&#34;
+
+    # if map_path is provided, assume short escore
+    if map_path:
+        with open(map_path) as f:
+            next(f)
+            emap = [int(line.split(&#34;,&#34;)[1])-1 for line in f]
+        with open(filepath) as f:
+            eshort = [float(line) for line in f]
+        # kmer is always 8 in escore
+        elong = {bio.itoseq(idx,self.kmer):eshort[idx] for idx in emap}
+        return elong
+    else: # full escore file
+        df = pd.read_csv(filepath, sep=&#34;\t&#34;)
+        d1 = pd.Series(df[&#34;E-score&#34;].values,index=df[&#34;8-mer&#34;]).to_dict()
+        d2 = pd.Series(df[&#34;E-score&#34;].values,index=df[&#34;8-mer.1&#34;]).to_dict()
+        dboth = {**d1, **d2}
+        return dboth</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="pbmescore.PBMEscore" href="#pbmescore.PBMEscore">PBMEscore</a></code></h4>
+<ul class="">
+<li><code><a title="pbmescore.PBMEscore.get_escores_specific" href="#pbmescore.PBMEscore.get_escores_specific">get_escores_specific</a></code></li>
+<li><code><a title="pbmescore.PBMEscore.make_plot_data" href="#pbmescore.PBMEscore.make_plot_data">make_plot_data</a></code></li>
+<li><code><a title="pbmescore.PBMEscore.predict_sequence" href="#pbmescore.PBMEscore.predict_sequence">predict_sequence</a></code></li>
+<li><code><a title="pbmescore.PBMEscore.predict_sequences" href="#pbmescore.PBMEscore.predict_sequences">predict_sequences</a></code></li>
+<li><code><a title="pbmescore.PBMEscore.read_escore" href="#pbmescore.PBMEscore.read_escore">read_escore</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>
