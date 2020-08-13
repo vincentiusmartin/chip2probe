@@ -141,16 +141,8 @@ class PBMEscore(basemodel.BaseModel):
 
     # TODO: modify sequence to use this function instead
     def get_escores_specific(self, sequence, escore_cutoff = 0.4, escore_gap = 0):
-        """
-        Get the list of specific escore regions in the given sequence.
-
-        Using this, we get only speicifc escore list based on the cutoff and gap
-        threshold.
-
-        Args:
-            sequence: sequence string
-        """
-        escores = self.predict_sequence(sequence)
+        """Get the list of specific escore regions in the given sequence."""
+        escores = self.predict_sequence(sequence).predictions
         signifcount = 0
         startidx = -1
         gapcount = 0

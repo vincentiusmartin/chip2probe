@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
-def get_shifted_pred(df, printlog=True):
+def get_shifted_pred(df, printlog=False):
     """
     Get prediction that is shifted from coop->add vice versa
     """
@@ -207,19 +207,19 @@ def pick_largest_affdif(df, m, n , sitetarget):
     # pick highest, lowest, and some sequences in the middle
     g = subselect.groupby('seqid')
     gh = pd.DataFrame(g.head(1))
-    gh["select"] = "largest_affdiff_%s_%s" % (sitetarget,"min")
+    gh["select"] = "largest_affdiff_%s" % sitetarget
     gt = pd.DataFrame(g.tail(1))
-    gt["select"] = "largest_affdiff_%s_%s" % (sitetarget,"max")
+    gt["select"] = "largest_affdiff_%s" % sitetarget
 
     g = g.apply(lambda g: g.iloc[1:-1]) # remove the first (tail -1) and last (head -1) row
 
     mid = pick_similar_affdif(subselect, n, coltarget)
-    mid["select"] = "largest_affdiff_%s_%s" % (sitetarget,"mid")
+    mid["select"] = "largest_affdiff_%s" % sitetarget
 
     # save the wt
     wt_df = df.loc[df["comment"] == "wt"] \
         .merge(subselect[["seqid"]].drop_duplicates(), on="seqid") \
-        .assign(select = "wt")
+        .assign(select = "largest_affdiff_%s" % sitetarget)
     selected = pd.concat([wt_df, gh,gt, mid]) \
             .sort_values(by=["seqid",coltarget]) \
             .reset_index(drop=True)
@@ -300,21 +300,24 @@ if __name__ == "__main__":
         cur_df = df.loc[df["muttype"] == mty]
         sortby = ["seqid",muttypes[mty]["col"]] if muttypes[mty] else ["seqid"]
         sortasc = [True,muttypes[mty]["ascending"]] if muttypes[mty] else True
-        posctrl = pick_positive_ctrl(cur_df, 20, 2, "shape", "main") \
+        posctrl = pick_positive_ctrl(cur_df, 80, 10, "shape", "main") \
                     .sort_values(by=sortby, ascending=sortasc)
-        p1 = pick_largest_probdif(cur_df, 20, 4) \
+        p1 = pick_largest_probdif(cur_df, 145, 10) \
                     .sort_values(by=["seqid","main_prob"])
-        p2 = pick_consecutive_preddif(cur_df, 20, 4) \
+        p2 = pick_consecutive_preddif(cur_df, 145, 10) \
                     .sort_values(by=["seqid","main_prob"])
-        p3 = pick_incos_pred(cur_df, 20, 4, "shape", "main") \
+        p3 = pick_incos_pred(cur_df, 145, 10, "shape", "main") \
                     .sort_values(by=sortby, ascending=sortasc)
         p = pd.concat([p1, p2, p3, posctrl])
         if mty == "affinity":
-            p_s1 = pick_largest_affdif(cur_df, 20, 2, "site1")
-            p_s2 = pick_largest_affdif(cur_df, 20, 2, "site2")
+            p_s1 = pick_largest_affdif(cur_df, 145, 10, "site1")
+            p_s2 = pick_largest_affdif(cur_df, 145, 10, "site2")
             p = pd.concat([p,p_s1,p_s2])
         allpicks = pd.concat([allpicks, p])
     allpicks.to_csv("custom_probes_selected.csv", index=False, header=True)
+
+    print("Number of unique sequences %d" % len(allpicks["sequence"].unique()))
+    print(len(allpicks["sequence"].unique()) * 24)
 
     # # Analysis part:
     # allpicks = pd.read_csv("custom_probes_selected.csv")

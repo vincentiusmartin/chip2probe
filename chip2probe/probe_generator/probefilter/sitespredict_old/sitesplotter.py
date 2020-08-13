@@ -33,8 +33,10 @@ class SitesPlotter(object):
         return {"indices":[*range(-pos,len(maxseq)-pos)], "maxseq":maxseq, "minseq":minseq}
 
     def plot_seq_combine(self, plotlist, filepath = "plot.pdf" ,
-                         numcol=4, numrow=4, bottom_cutoff=0):
+                         numcol = 4, numrow = 4, bottom_cutoff=0):
         plt.close('all')
+        print("Making plot to %s" % filepath)
+
         n = 0
         plot_count = 0
         if type(plotlist) != list:
@@ -53,15 +55,9 @@ class SitesPlotter(object):
         # plotlist = [list(d.values()) for d in plotlist]
         # plotlist = sum(plotlist,[])
 
-        print("Making plot to %s" % filepath)
-        fig = plt.figure(figsize=(18,18))
         with PdfPages(filepath) as pdf:
             # we can just take the first object since each object has the same key
-            lenall = len(plotlist[0])
-            iter = 1
             for key in plotlist[0]:
-                print("Processing %d/%d" % (iter,lenall))
-                iter += 1
                 if n == 0:
                     fig = plt.figure(figsize=(18,18))
                     fig.subplots_adjust(hspace=0.4,wspace=0.5)

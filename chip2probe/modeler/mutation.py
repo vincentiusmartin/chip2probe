@@ -10,12 +10,13 @@ Created on May, 2020
 import chip2probe.util.coopgeneral as cg
 from chip2probe.modeler.cooptrain import CoopTrain
 from chip2probe.util import bio
+from chip2probe.sitespredict.dnasequence import DNASequence
 
 import math
 import pandas as pd
 import itertools
 
-def mutate_affinity(seqdf, imads, deep=0):
+def mutate_affinity(seqdf, imads, escore, deep=0, escore_cutoff=0.4, escore_gap=0):
     """
     Make mutation to change the affinity (i.e. strength) prediction.
 
@@ -55,14 +56,15 @@ def mutate_affinity(seqdf, imads, deep=0):
 
     iter = 0
     nrow = om.shape[0]
-    div = nrow // 100
+    div = 1 if nrow // 100 == 0 else nrow // 100
     for index, row in om.iterrows():
         if iter % div == 0:
             print("Mutating affinity, progress {:.2f}% ({}/{})".format(iter*100/nrow,iter,nrow))
         iter += 1
         mutres_cur = []
-        sites = imads.predict_sequence(row["sequence"])
-        if sites[1]["core_mid"] - sites[0]["core_mid"] < mindist or len(sites) != 2:
+        # we use DNASequence object to have overlap with escore
+        sites, sites_specific = DNASequence(row["sequence"], imads, escore, escore_cutoff, escore_gap).sites
+        if len(sites) != 2 or len(sites_specific) != 2 or sites[1]["core_mid"] - sites[0]["core_mid"] < mindist:
             continue
         mutres_cur.append({
             "seqid":row["id"],
@@ -88,8 +90,8 @@ def mutate_affinity(seqdf, imads, deep=0):
 
         allmt = coremt + flankmt
         for i in range(len(allmt)):
-            newsites = imads.predict_sequence(allmt[i]["sequence"])
-            if len(newsites) != 2:
+            newsites, newsites_specific = DNASequence(allmt[i]["sequence"], imads, escore, escore_cutoff, escore_gap).sites
+            if len(newsites) != 2 or len(newsites_specific) != 2:
                 continue
             newori = cg.get_relative_orientation(allmt[i]["sequence"], imads, htth=True)
             mutres_cur.append({
@@ -146,7 +148,7 @@ def mutate_cores(seq, midlist, coremap):
                         "comment": comment})
     return mutants
 
-def mutate_orientation(seqdf, imads, deep=0):
+def mutate_orientation(seqdf, imads, escore, deep=0, escore_cutoff=0.4, escore_gap=0):
     """
     Make mutation for orientation
 
@@ -170,17 +172,17 @@ def mutate_orientation(seqdf, imads, deep=0):
     flipsites = [[0],[1],[0,1]] # which sites to flip
     iter = 0
     nrow = om.shape[0]
-    div = nrow // 100
+    div = 1 if nrow // 100 == 0 else nrow // 100
     mindist = imads.sitewidth - deep
     for index, row in om.iterrows():
         if iter % div == 0:
             print("Mutating orientation, progress {:.2f}% ({}/{})".format(iter*100/nrow,iter,nrow))
         iter += 1
         mutres_cur = []
-        sites = imads.predict_sequence(row["sequence"])
-        curdist = sites[1]["core_mid"] - sites[0]["core_mid"]
-        if  curdist < mindist or len(sites) != 2:
+        sites, sites_specific = DNASequence(row["sequence"], imads, escore, escore_cutoff, escore_gap).sites
+        if  len(sites) != 2 or len(sites_specific) != 2 or sites[1]["core_mid"] - sites[0]["core_mid"] < mindist:
             continue
+        curdist = sites[1]["core_mid"] - sites[0]["core_mid"]
         mutres_cur.append({
             "seqid":row["id"],
             "sequence":str(row["sequence"]),
@@ -188,7 +190,7 @@ def mutate_orientation(seqdf, imads, deep=0):
             "site1_affinity":sites[0]["score"],
             "site2_pos":sites[1]["core_mid"],
             "site2_affinity":sites[1]["score"],
-            "distance":sites[1]["core_mid"]-sites[0]["core_mid"],
+            "distance":curdist,
             "muttype":"orientation",
             "comment":"wt",
             "wtlabel":row["label"],
@@ -201,8 +203,8 @@ def mutate_orientation(seqdf, imads, deep=0):
                 start,end = sites[i]["site_start"]+adjust, sites[i]["site_start"]+sites[i]["site_width"]-adjust
                 toflip = bio.revcompstr(row["sequence"][start:end])
                 newseq = newseq[:start] + toflip + newseq[end:]
-            newsites = imads.predict_sequence(newseq)
-            if len(newsites) != 2: # we ignore if there are new sites
+            newsites, newsites_specific = DNASequence(newseq, imads, escore, escore_cutoff, escore_gap).sites
+            if len(newsites) != 2 or len(newsites_specific) != 2: # we ignore if there are new sites
                 continue
             newori = cg.get_relative_orientation(newseq, imads, htth=False)
             if newori == "HT":
@@ -228,7 +230,7 @@ def mutate_orientation(seqdf, imads, deep=0):
             mutres.extend(mutres_cur)
     return pd.DataFrame(mutres)
 
-def mutate_dist(seqdf, imads, deep=0,  warning=True):
+def mutate_dist(seqdf, imads, escore, deep=0, escore_cutoff=0.4, escore_gap=0, warning=True):
     """
     Make mutation for distance
 
@@ -256,15 +258,15 @@ def mutate_dist(seqdf, imads, deep=0,  warning=True):
     mindist = imads.sitewidth - deep
     nrow = om.shape[0]
     iter = 0
-    div = nrow // 100
+    div = 1 if nrow // 100 == 0 else nrow // 100
     for index, row in om.iterrows():
         if iter % div == 0:
             print("Mutating distance, progress {:.2f}% ({}/{})".format(iter*100/nrow,iter,nrow))
         iter += 1
         seq = row["sequence"]
         mutres_cur = []
-        sites = imads.predict_sequence(seq)
-        if len(sites) != 2:
+        sites, sites_specific = DNASequence(seq, imads, escore, escore_cutoff, escore_gap).sites
+        if len(sites) != 2 or len(sites_specific) != 2:
             if warning:
                 print("Found a sequence with number of sites not equal to 2: ",seq,sites)
             continue
@@ -290,9 +292,9 @@ def mutate_dist(seqdf, imads, deep=0,  warning=True):
             s1_end = sites[0]["site_start"]+sites[0]["site_width"]
             s2_start = sites[1]["site_start"]
             curseq = cg.move_single_site(seq, s1_end, s2_start, move, patch=True, can_overlap=True)
-            cursites = imads.predict_sequence(curseq)
+            cursites, cursites_specific = DNASequence(curseq, imads, escore, escore_cutoff, escore_gap).sites
             move += 1
-            if len(cursites) != 2: # we ignore if there are new sites
+            if len(cursites) != 2 or len(cursites_specific) != 2: # we ignore if there are new sites
                 continue
             curdist = cursites[1]["core_mid"] - cursites[0]["core_mid"]
             newori = cg.get_relative_orientation(curseq, imads, htth=True)

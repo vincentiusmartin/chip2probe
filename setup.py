@@ -1,5 +1,7 @@
 from setuptools import setup
 
+# run: python3 setup.py develop
+
 setup(
    name='chip2probe',
    version='1.0',

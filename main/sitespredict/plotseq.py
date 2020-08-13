@@ -18,13 +18,10 @@ if __name__=="__main__":
     escore_pred = escore.predict_sequence(single_sequence)
     escore_pred_list = escore.predict_sequences(many_sequences)
     escore_pred_df = escore.predict_sequences(df, key_colname="key")
-    #print(escore_pred)
-    #print(escore_pred_list)
-    #print(escore_pred_df)
 
     # ========= iMADS =========
     # load imads model, the cores should be loaded in the same order with the model
-    imads_paths = ["input/site_models/imads_model/Ets1_w12_GGAA.model", "input/site_models/imads_model/Ets1_w12_GGAT.model"]
+    imads_paths = ["input/site_models/imads_models/Ets1_w12_GGAA.model", "input/site_models/imads_models/Ets1_w12_GGAT.model"]
     imads_cores = ["GGAA", "GGAT"]
     imads_models = [iMADSModel(path, core, 12, [1, 2, 3]) for path, core in zip(imads_paths, imads_cores)]
     imads = iMADS(imads_models, 0.19) # 0.2128
@@ -38,8 +35,6 @@ if __name__=="__main__":
     # Make the plot objects, make_plot_data accepts prediction result
     escore_plot = escore.make_plot_data(escore_pred_list)
     imads_plot = imads.make_plot_data(imads_pred_list)
-    print(escore_plot)
     # Generate sequence plot
     sp = SitesPlotter()
-    sp.plot_seq_combine([imads_plot,escore_plot],
-                        filepath="plot.pdf")
+    sp.plot_seq_combine([imads_plot,escore_plot], filepath="plot.pdf")

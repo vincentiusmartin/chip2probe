@@ -4,10 +4,13 @@ import pandas as pd
 import pickle
 
 import chip2probe.modeler.mutation as mut
-from chip2probe.probe_generator.probefilter.sitespredict.imads import iMADS
-from chip2probe.probe_generator.probefilter.sitespredict.imadsmodel import iMADSModel
 from chip2probe.modeler.cooptrain import CoopTrain
 from chip2probe.modeler.shapemodel import ShapeModel
+
+from chip2probe.sitespredict.imads import iMADS
+from chip2probe.sitespredict.imadsmodel import iMADSModel
+from chip2probe.sitespredict.pbmescore import PBMEscore
+from chip2probe.sitespredict.dnasequence import DNASequence
 
 if __name__ == "__main__":
     trainingpath = "input/modeler/training_data/training_p01_adjusted.tsv"
@@ -15,23 +18,27 @@ if __name__ == "__main__":
     # select only genomic sequences
     df = df[~df['name'].str.contains("dist|weak")]
 
-    imads12_paths = ["input/modeler/imads_model/Ets1_w12_GGAA.model", "input/modeler/imads_model/Ets1_w12_GGAT.model"]
+    # Load escore object
+    escore = PBMEscore("input/site_models/escores/Ets1_8mers_11111111.txt")
+
+    # Load imads object
+    imads12_paths = ["input/site_models/imads_models/Ets1_w12_GGAA.model", "input/site_models/imads_models/Ets1_w12_GGAT.model"]
     imads12_cores = ["GGAA", "GGAT"]
     imads12_models = [iMADSModel(path, core, 12, [1, 2, 3]) for path, core in zip(imads12_paths, imads12_cores)]
     imads12 = iMADS(imads12_models, 0.19) # 0.2128
 
     print("Number of input rows: %d"%df.shape[0])
-    indf = df[["id","sequence","label"]]
+    indf = pd.DataFrame(df[["id","sequence","label"]])
     indf["label"] = indf["label"].replace({"cooperative":1,"additive":0})
 
     # 1. Mutate based on affinity
-    aff_m = mut.mutate_affinity(indf, imads12, deep=3)
+    aff_m = mut.mutate_affinity(indf, imads12, escore, deep=3)
 
     # 2. Mutate based on orientation
-    ori_m = mut.mutate_orientation(indf, imads12, deep=3)
+    ori_m = mut.mutate_orientation(indf, imads12,  escore, deep=3)
 
     # 3. Mutate based on distance
-    dis_m = mut.mutate_dist(indf, imads12, warning=False, deep=3)
+    dis_m = mut.mutate_dist(indf, imads12, escore, warning=False, deep=3)
     # dm.to_csv("custom_distance.csv", index=False, header=True)
     # dm = pd.read_csv("custom_distance.csv")
     # we need to add the orientation information for the distance
@@ -70,11 +77,12 @@ if __name__ == "__main__":
     mutdf.to_csv("custom_withpred.csv", index=False, header=True)
 
     mutdf = pd.read_csv("custom_withpred.csv")
+
+    # ------ Get statistics of the wild type sequences ------
     wtdf = mutdf.loc[mutdf["comment"] == "wt"][["seqid","sequence","wtlabel","shape_pred","main_pred"]].drop_duplicates()
     main_true = wtdf.loc[wtdf["main_pred"] == wtdf["wtlabel"]]
     shape_true = wtdf.loc[wtdf["shape_pred"] == wtdf["wtlabel"]]
     intersect = main_true.merge(shape_true, on=["seqid","sequence"])
-    print(main_true.shape[0], shape_true.shape[0])
     print("Number of wt sequence: %d" % wtdf.shape[0])
     print(("Number of correctly predicted wt training:\n" +
           "  main_pred : %d\n" +

@@ -141,7 +141,7 @@ class iMADS(basemodel.BaseModel):
         # f(x) = 1 / ( 1 + exp(-x) )  to obtain only values between 0 and 1.
         return 1.0 / (1.0 + math.exp(0.0 - score))
 
-    def predict_sequence(self, sequence, const_intercept=False, transform_scores=True, use_threshold=True):
+    def predict_sequence(self, sequence, const_intercept=False, transform_scores=True):
         """
         Make imads predictions of an input sequence
 
@@ -153,7 +153,6 @@ class iMADS(basemodel.BaseModel):
             dictionary of sequence to E-score
         """
         prediction = []
-        threshold = self.imads_threshold if use_threshold else 0
         for model in self.models:
             for position, core_pos, matching_sequences in self.generate_matching_sequence(sequence, model.core, model.width):
                 # generator returns a position, and a tuple of 1 or 2 sequences
@@ -177,7 +176,7 @@ class iMADS(basemodel.BaseModel):
                 elif len(model.core) % 2 == 1:
                     mid = core_pos + len(model.core) // 2 + 1
                 # only return if score > threshold
-                if best_prediction > threshold:
+                if best_prediction > self.imads_threshold:
                     prediction.append({"site_start": position,
                                        "site_width": model.width,
                                        "best_match": best_match,
@@ -193,7 +192,7 @@ class iMADS(basemodel.BaseModel):
                           transform_scores=True, key_colname="",
                           sequence_colname="sequence", flank_colname="flank",
                           predict_flanks=False, flank_len=0,
-                          only_pred = False, use_threshold=True,
+                          only_pred = False
                           ):
         """
         Do not make this as generator, because we need to use it somewhere else.
@@ -217,7 +216,7 @@ class iMADS(basemodel.BaseModel):
                 sequence = flank_left[key][-flank_len:] + seqdict[key] + flank_right[key][:flank_len]
             else:
                 sequence = seqdict[key]
-            prediction = self.predict_sequence(sequence, const_intercept, transform_scores, use_threshold=use_threshold)
+            prediction = self.predict_sequence(sequence, const_intercept, transform_scores)
 
             # since we use flank, we need to update the result
             for result in prediction:
