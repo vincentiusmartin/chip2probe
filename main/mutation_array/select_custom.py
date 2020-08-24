@@ -11,7 +11,8 @@ def get_shifted_pred(df, printlog=False):
     """
     Get prediction that is shifted from coop->add vice versa
     """
-    grouped = df.groupby('seqid')
+    df_sorted = df.sort_values(by=["seqid","main_prob"])
+    grouped = df_sorted.groupby('seqid')
     shiftcount = 0
     wrongpred_count = 0
     shiftpred = []
@@ -296,6 +297,7 @@ if __name__ == "__main__":
                 "affinity": {},
                 "orientation": {}}
     allpicks = pd.DataFrame()
+
     for mty in muttypes: #muttypes:
         cur_df = df.loc[df["muttype"] == mty]
         sortby = ["seqid",muttypes[mty]["col"]] if muttypes[mty] else ["seqid"]
@@ -310,10 +312,12 @@ if __name__ == "__main__":
                     .sort_values(by=sortby, ascending=sortasc)
         p = pd.concat([p1, p2, p3, posctrl])
         if mty == "affinity":
-            p_s1 = pick_largest_affdif(cur_df, 145, 10, "site1")
-            p_s2 = pick_largest_affdif(cur_df, 145, 10, "site2")
+            p_s1 = pick_largest_affdif(cur_df, 110, 10, "site1")
+            p_s2 = pick_largest_affdif(cur_df, 110, 10, "site2")
             p = pd.concat([p,p_s1,p_s2])
         allpicks = pd.concat([allpicks, p])
+    print(len(allpicks["sequence"].unique()))
+    allpicks = allpicks[~allpicks['sequence'].str.contains('GGGGG') & ~allpicks['sequence'].str.contains('CCCCC')]
     allpicks.to_csv("custom_probes_selected.csv", index=False, header=True)
 
     print("Number of unique sequences %d" % len(allpicks["sequence"].unique()))

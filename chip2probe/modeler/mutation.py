@@ -63,7 +63,7 @@ def mutate_affinity(seqdf, imads, escore, deep=0, escore_cutoff=0.4, escore_gap=
         iter += 1
         mutres_cur = []
         # we use DNASequence object to have overlap with escore
-        sites, sites_specific = DNASequence(row["sequence"], imads, escore, escore_cutoff, escore_gap).sites
+        sites, sites_specific = DNASequence(row["sequence"], imads, escore, escore_cutoff, escore_gap).get_sites()
         if len(sites) != 2 or len(sites_specific) != 2 or sites[1]["core_mid"] - sites[0]["core_mid"] < mindist:
             continue
         mutres_cur.append({
@@ -90,7 +90,7 @@ def mutate_affinity(seqdf, imads, escore, deep=0, escore_cutoff=0.4, escore_gap=
 
         allmt = coremt + flankmt
         for i in range(len(allmt)):
-            newsites, newsites_specific = DNASequence(allmt[i]["sequence"], imads, escore, escore_cutoff, escore_gap).sites
+            newsites, newsites_specific = DNASequence(allmt[i]["sequence"], imads, escore, escore_cutoff, escore_gap).get_sites()
             if len(newsites) != 2 or len(newsites_specific) != 2:
                 continue
             newori = cg.get_relative_orientation(allmt[i]["sequence"], imads, htth=True)
@@ -179,7 +179,7 @@ def mutate_orientation(seqdf, imads, escore, deep=0, escore_cutoff=0.4, escore_g
             print("Mutating orientation, progress {:.2f}% ({}/{})".format(iter*100/nrow,iter,nrow))
         iter += 1
         mutres_cur = []
-        sites, sites_specific = DNASequence(row["sequence"], imads, escore, escore_cutoff, escore_gap).sites
+        sites, sites_specific = DNASequence(row["sequence"], imads, escore, escore_cutoff, escore_gap).get_sites()
         if  len(sites) != 2 or len(sites_specific) != 2 or sites[1]["core_mid"] - sites[0]["core_mid"] < mindist:
             continue
         curdist = sites[1]["core_mid"] - sites[0]["core_mid"]
@@ -203,7 +203,7 @@ def mutate_orientation(seqdf, imads, escore, deep=0, escore_cutoff=0.4, escore_g
                 start,end = sites[i]["site_start"]+adjust, sites[i]["site_start"]+sites[i]["site_width"]-adjust
                 toflip = bio.revcompstr(row["sequence"][start:end])
                 newseq = newseq[:start] + toflip + newseq[end:]
-            newsites, newsites_specific = DNASequence(newseq, imads, escore, escore_cutoff, escore_gap).sites
+            newsites, newsites_specific = DNASequence(newseq, imads, escore, escore_cutoff, escore_gap).get_sites()
             if len(newsites) != 2 or len(newsites_specific) != 2: # we ignore if there are new sites
                 continue
             newori = cg.get_relative_orientation(newseq, imads, htth=False)
@@ -265,7 +265,7 @@ def mutate_dist(seqdf, imads, escore, deep=0, escore_cutoff=0.4, escore_gap=0, w
         iter += 1
         seq = row["sequence"]
         mutres_cur = []
-        sites, sites_specific = DNASequence(seq, imads, escore, escore_cutoff, escore_gap).sites
+        sites, sites_specific = DNASequence(seq, imads, escore, escore_cutoff, escore_gap).get_sites()
         if len(sites) != 2 or len(sites_specific) != 2:
             if warning:
                 print("Found a sequence with number of sites not equal to 2: ",seq,sites)
@@ -292,7 +292,7 @@ def mutate_dist(seqdf, imads, escore, deep=0, escore_cutoff=0.4, escore_gap=0, w
             s1_end = sites[0]["site_start"]+sites[0]["site_width"]
             s2_start = sites[1]["site_start"]
             curseq = cg.move_single_site(seq, s1_end, s2_start, move, patch=True, can_overlap=True)
-            cursites, cursites_specific = DNASequence(curseq, imads, escore, escore_cutoff, escore_gap).sites
+            cursites, cursites_specific = DNASequence(curseq, imads, escore, escore_cutoff, escore_gap).get_sites()
             move += 1
             if len(cursites) != 2 or len(cursites_specific) != 2: # we ignore if there are new sites
                 continue
