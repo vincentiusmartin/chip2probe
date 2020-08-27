@@ -1,6 +1,6 @@
 # iMADS model generator
 
-## Input paramter for inputdict.py
+## Input paramater for inputdict.py
 1. pbmdata: path to the pbm file
 2. column_train: which column has the intensity value (right now we assume the input has been normalized)
 3. kmers: which k to use
@@ -15,7 +15,7 @@
 
 ## Running locally
 1. Edit inputdict.py
-2. `python imdas_main.py`
+2. `python imads_main.py`
 
 ## Running in HARDAC
 1. Edit inputdict.py

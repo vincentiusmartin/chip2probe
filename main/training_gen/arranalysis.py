@@ -25,9 +25,8 @@ def fix_naming(df):
 if __name__ == "__main__":
     pd.set_option('display.max_columns', None)
     basepath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/coop_hetero-PBM_Ets_EtsRunx_v1"
-    df1 = pd.read_csv("%s/Ets1_70.txt"%basepath,sep="\t")
-    df2 = pd.read_csv("%s/Ets1_Runx1_70.txt"%basepath,sep="\t")
-    dflist = [df1, df2]
+    dflist = [pd.read_csv("%s/Ets1_70.txt"%basepath,sep="\t"),
+            pd.read_csv("%s/Ets1_Runx1_70.txt"%basepath,sep="\t")]
 
     # ------- plot negative control -------
     tf_str = "runx1"
@@ -50,12 +49,13 @@ if __name__ == "__main__":
     # ------- labeling sequences, for now only take wt -------
     keyword = "all_clean_seqs"
     df_genomics = []
-    for df in [df1, df2]:
+    for df in dflist:
         df_gen = df[df["Name"].str.contains(keyword,na=False)].sort_values(by=["Name"])
         df_gen[["Name","type","rep","ori"]] = df_gen["Name"].str.rsplit("_", n = 3, expand = True)
         df_gen = df_gen[df_gen["type"] == "wt"] #only take wt
         df_genomics.append(df_gen)
 
     for ori in ["o1","o2"]:
-        df = df_genomics[df_genomics["ori"] == ori]
-        print(df)
+        df1 = df_genomics[0][df_genomics[0]["ori"] == ori]
+        df2 = df_genomics[1][df_genomics[1]["ori"] == ori]
+        break
