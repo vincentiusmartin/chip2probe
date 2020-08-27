@@ -108,6 +108,14 @@ def run_kfold(param_dict, rows, numfold, kmers=[1,2,3]):
     avg_mse = sum(mse_list)/numfold
     return {"params":param_dict, "avg_scc": avg_scc, "avg_mse":avg_mse}
 
+def test_param_comb(traindata, param_dict, numfold=10, kmers=[1,2,3]):
+    param_log = ""
+    run_params = {}
+    for core in traindata:
+        #print("Working for core: %s" % core)
+        run_params[core] = run_kfold(param_dict, rows=traindata[core], numfold=numfold, kmers=kmers)
+    return run_params
+
 def generate_svm_model(rows, param, kmers=[1,2,3]):
     y, x = libsvm_generate_matrix(rows, kmers, dense=True)
     prob  = svmutil.svm_problem(y, x)
@@ -153,6 +161,7 @@ def genmodel_gridsearch(cores_centered, param_dict, numfold=10, kmers=[1,2,3], n
     with open("%s.log" % model_fname, 'w') as f:
         f.write(param_log)
 
+
 def get_weight(libsvm_model, width, kmers=[1,2,3]):
     lendense = count_dense_feat(width, kmers)
     dense_vectors = np.array([sparse_to_dense(v, lendense) for v in mdl.get_SV()])
@@ -181,8 +190,10 @@ def explain_imp(impdf):
     bypos = df.groupby("position")[["weight"]].sum().sort_values("weight", ascending=False)
     print(bypos)
 
+
+"""
 if __name__ == "__main__":
-    pbmdata = "data/Combined_ets1_100nM_elk1_100nM_50nM_gabpa_100nM_log_normalized.txt"
+    pbmdata = "/Users/vincentiusmartin/Research/chip2gcPBM/imads/data/Combined_ets1_100nM_elk1_100nM_50nM_gabpa_100nM_log_normalized.txt"
     # normlized version
     column_train = "Ets1_100nM"
     kmers = [1,2,3]
@@ -214,3 +225,4 @@ if __name__ == "__main__":
     imp.to_csv("Ets1_w12_center_GGAA.model_imp.csv",index=False)
 
     #genmodel_gridsearch(cores_centered, param_dict, numfold, kmers, num_workers, logit=True, suffix=cp)
+"""
