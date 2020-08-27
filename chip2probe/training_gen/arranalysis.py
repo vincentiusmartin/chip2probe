@@ -3,8 +3,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-
 def plot_chamber_corr(dfx, dfy,
                 namecol="Name", valcol="Alexa488Adjusted", repcols="rep", extrajoincols=[],
                 title="",
@@ -61,4 +59,29 @@ def plot_chamber_corr(dfx, dfy,
     plt.text(min(x), max(y), 'R² = %0.2f' % r_squared, color='red')
     plt.text(min(x), 0.9*max(y), 'best fit: y=%0.2fx + %0.2f' % (slope,intercept), color='red')
     plt.legend(loc='lower right')
+    plt.show()
+
+def plot_classified_labels(df):
+    # HARDCODED - FIX
+    # cooperative
+    x = np.log(df[df['label']=='cooperative']['Alexa488Adjusted_x'].values)
+    y = np.log(df[df['label']=='cooperative']['Alexa488Adjusted_y'].values)
+    plt.scatter(x, y, color='blue', s=3)
+
+    #additive
+    x = np.log(df[df['label']=='additive']['Alexa488Adjusted_x'].values)
+    y = np.log(df[df['label']=='additive']['Alexa488Adjusted_y'].values)
+    plt.scatter(x, y, color='gray', s=3)
+
+    # anti-coop
+    x = np.log(df[df['label']=='anticoop']['Alexa488Adjusted_x'].values)
+    y = np.log(df[df['label']=='anticoop']['Alexa488Adjusted_y'].values)
+    plt.scatter(x, y, color='red', s=3)
+
+    plt.xlabel('Chamber 1')
+    plt.ylabel('Chamber 2')
+    x = np.log(df['Alexa488Adjusted_x'].values)
+    y = np.log(df['Alexa488Adjusted_y'].values)
+    plt.plot([min(min(x),min(y)),max(max(x),max(y))], [min(min(x),min(y)),max(max(x),max(y))], color='black')
+    plt.title("")
     plt.show()
