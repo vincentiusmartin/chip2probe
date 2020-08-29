@@ -24,7 +24,8 @@
 1. Need to set things up, using interactive session: `srun -p interactive --mem 32GB --pty /bin/bash`
 2. `module load Anaconda3/4.3.0-gcb01`
 3. `module load gcc/4.7.4-fasrc01`
-4. Install libsvm: `conda install libsvm`
+4. `conda install pip`
+5. Install libsvm: `pip install libsvm`
 5. Install other packages: `conda install [package_name]`
 6. Running in SLURM: `./run_all.sh`
 
