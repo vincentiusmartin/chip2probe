@@ -13,13 +13,15 @@
 10. outdir: output folder
 11. logit: do logistic transformation on the input (True/False)
 
+# Preparing input
+1. Rename inputdict_example.py to `inputdict.py`
+2. Edit `inputdict.py`
+
 ## Running locally
-1. Edit inputdict.py
-2. `python imads_main.py`
+`python imads_main.py`
 
 ## Running in HARDAC
-1. Edit inputdict.py
-2. On SLURM based environment, run: `./run_all.sh`
+On SLURM based environment, run: `./run_all.sh`
 
 ## Output
 The script will output an SVR model file which can be loaded by `svmutil.svm_load_model`.
