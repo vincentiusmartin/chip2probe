@@ -1,5 +1,9 @@
 # iMADS model generator
 
+## Requirement
+Make sure you have libsvm (https://www.csie.ntu.edu.tw/~cjlin/libsvm/) installed
+Installing libsvm with pip: https://pypi.org/project/libsvm/
+
 ## Input paramater for inputdict.py
 1. pbmdata: path to the pbm file
 2. column_train: which column has the intensity value (right now we assume the input has been normalized)
