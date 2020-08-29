@@ -61,7 +61,7 @@ def plot_chamber_corr(dfx, dfy,
     plt.legend(loc='lower right')
     plt.show()
 
-def plot_classified_labels(df):
+def plot_classified_labels(df, filepath=""):
     # HARDCODED - FIX
     # cooperative
     x = np.log(df[df['label']=='cooperative']['Alexa488Adjusted_x'].values)
@@ -83,5 +83,12 @@ def plot_classified_labels(df):
     x = np.log(df['Alexa488Adjusted_x'].values)
     y = np.log(df['Alexa488Adjusted_y'].values)
     plt.plot([min(min(x),min(y)),max(max(x),max(y))], [min(min(x),min(y)),max(max(x),max(y))], color='black')
+    # slope, intercept = np.polyfit(x, y, 1)
+    # # Create a list of values in the best fit line
+    # abline_values = [slope * i + intercept for i in x]
+    # plt.plot(x, abline_values, color='red', label='best fit', linewidth=0.5)
     plt.title("")
-    plt.show()
+    if not filepath:
+        plt.show()
+    else:
+        plt.savefig(filepath)

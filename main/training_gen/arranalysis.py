@@ -41,7 +41,7 @@ if __name__ == "__main__":
         negdf = fix_naming(negdf)
         negdf = pd.DataFrame(negdf[negdf["Name"].str.contains(tf_str)]) #  & (negdf["ori"] == ori)
         neglist.append(negdf)
-    #arr.plot_chamber_corr(neglist[0], neglist[1], median=True, log=True , extrajoincols=["ori"])
+    arr.plot_chamber_corr(neglist[0], neglist[1], median=True, extrajoincols=["ori"], )
 
     # get the negative control cutoff, we do it from first chamber
     cutoff = float(neglist[0][["Alexa488Adjusted"]].quantile(0.95))
@@ -57,6 +57,8 @@ if __name__ == "__main__":
         df_genomics.append(df_gen)
 
     # we filter each group if median intensity is lower than cutoff
+    oris_df = []
+
     for ori in ["o1","o2"]:
         df1 = df_genomics[0][df_genomics[0]["ori"] == ori][["Name","rep","Alexa488Adjusted"]]
         df2 = df_genomics[1][df_genomics[1]["ori"] == ori][["Name","rep","Alexa488Adjusted"]]
@@ -91,7 +93,23 @@ if __name__ == "__main__":
                 axis=1
             )
 
-        median_df.merge(lbled, on="Name").to_csv("test.csv")
+        median_df.merge(lbled, on="Name").to_csv("test_%s.csv"%ori)
         df_lbled = median_df.merge(lbled, on="Name")[["Name","Alexa488Adjusted_x","Alexa488Adjusted_y","label"]]
-        arr.plot_classified_labels(df_lbled)
-        break
+        arr.plot_classified_labels(df_lbled, filepath="%s.png"%ori)
+
+    o1df = pd.read_csv("test_o1.csv")
+    o2df = pd.read_csv("test_o2.csv")
+    olist = [o1df,o2df]
+    both_ori = olist[0].merge(olist[1], on=["Name"])
+    both_ori["Alexa488Adjusted_x"] = (both_ori["Alexa488Adjusted_x_x"] + both_ori["Alexa488Adjusted_x_y"]) / 2
+    both_ori["Alexa488Adjusted_y"] = (both_ori["Alexa488Adjusted_y_x"] + both_ori["Alexa488Adjusted_y_y"]) / 2
+    both_ori["label"] = both_ori.apply(lambda x:
+        "cooperative" if x["label_x"] == "cooperative" and x["label_y"] == "cooperative" else
+        "anticoop" if x["label_x"] == "anticoop" and x["label_y"] == "anticoop" else
+        "additive",
+        axis=1
+    )
+    both_ori = both_ori[["Name","Alexa488Adjusted_x","Alexa488Adjusted_y","label"]]
+    arr.plot_classified_labels(both_ori, filepath="both.png")
+
+    print(o1df[["label","Name"]].groupby("label").count())
