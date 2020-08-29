@@ -9,6 +9,7 @@ import libsvm.svmutil as svmutil
 import os
 import concurrent.futures as cc
 import functools
+import math
 from tqdm import tqdm
 
 #Q: why do we need to separate core?
@@ -62,16 +63,17 @@ def gen_seqwcore(seqintensities, width, corelist, corepos="center"):
     core_dict = {}
     seqlen = len(seqintensities[0][1])
     if corepos == "left":
-        s1 = int(0.5 * seqlen - 0.5 * corelen)
+        s1 = int(math.ceil(0.5 * seqlen) - 0.5 * corelen)
         c1 = s1
     elif corepos == "right":
-        s1 = int(0.5 * seqlen - width + 0.5 * corelen)
+        s1 = int(math.ceil(0.5 * seqlen) - width + 0.5 * corelen)
         c1 = s1 + width - corelen
     else: #center
-        s1 = int(0.5 * seqlen - 0.5 * width)
+        s1 = int(math.ceil(0.5 * seqlen) - 0.5 * width)
         c1 = int(0.5 * seqlen - 0.5 * corelen)
     spos = (s1, s1 + width)
     cpos = (c1, c1 + corelen)
+    print(spos,cpos)
     # process each core separately and make sure that the list is unique
     for core in set(corelist):
         seq_wcore = [(score, seq[spos[0]:spos[1]]) for score, seq in seqintensities if seq[cpos[0]:cpos[1]] == core]
