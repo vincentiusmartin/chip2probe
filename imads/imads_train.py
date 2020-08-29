@@ -73,7 +73,6 @@ def gen_seqwcore(seqintensities, width, corelist, corepos="center"):
         c1 = int(0.5 * seqlen - 0.5 * corelen)
     spos = (s1, s1 + width)
     cpos = (c1, c1 + corelen)
-    print(spos,cpos)
     # process each core separately and make sure that the list is unique
     for core in set(corelist):
         seq_wcore = [(score, seq[spos[0]:spos[1]]) for score, seq in seqintensities if seq[cpos[0]:cpos[1]] == core]
