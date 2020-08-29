@@ -12,10 +12,13 @@ if __name__ == "__main__":
     data = pd.read_csv(param["pbmdata"], sep="\t", index_col="ID_REF")
     num_workers = os.cpu_count()
 
+    # make output directory if not exist
+    if not os.path.exists(param["outdir"]):
+        os.makedirs(param["outdir"])
+
     # just take the bound column, ignore the negative control
     bound_idxs = data[param["column_id"]].str.contains("Bound")
     df = data[bound_idxs].reset_index()[[param["column_train"],"Sequence"]]
-    # 1. Generate training data
 
     cores_centered = mt.gen_seqwcore(df.values.tolist(), param["width"], param["corelist"], corepos=param["corepos"])
 

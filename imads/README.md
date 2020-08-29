@@ -21,7 +21,10 @@
 `python imads_main.py`
 
 ## Running in HARDAC
-On SLURM based environment, run: `./run_all.sh`
+1. Need to set things up: `srun -p interactive --mem 16GB --pty /bin/bash`
+2. `module load Anaconda3/4.3.0-gcb01`
+3. `module load gcc/4.7.4-fasrc01`
+4. Running in SLURM: `./run_all.sh`
 
 ## Output
 The script will output an SVR model file which can be loaded by `svmutil.svm_load_model`.
