@@ -4,7 +4,7 @@
 1. pbmdata: path to the pbm file
 2. column_train: which column has the intensity value (right now we assume the input has been normalized)
 3. kmers: which k to use
-4. width: imdas model width
+4. width: imads model width, usually 20 (not the the sequence length)
 5. corelist: list of the cores for the corresponding tf
 6. tfname: name of the transcription factor, e.g. "Runx1"
 7. grid: SVR parameter grid

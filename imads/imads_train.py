@@ -47,10 +47,10 @@ def libsvm_generate_matrix(seqlist, kmers, dense=False):
             features.append(feat_dict)
     return np.array(scores), np.array(features) # y, x
 
-def gen_seqwcore(seqlist, width, corelist, corepos="center"):
+def gen_seqwcore(seqintensities, width, corelist, corepos="center"):
     """
     Generate core centered sequence and take mediann intensity if there are multiple matches
-    :param seqlist:
+    :param seqintensities: list of list with [intensity, sequence]
     :param width:
     :param corelist:
     :param corepos: left, right, center
@@ -60,7 +60,7 @@ def gen_seqwcore(seqlist, width, corelist, corepos="center"):
     if not all(len(core) == corelen for core in corelist):
         raise ValueError('not all cores have same length!')
     core_dict = {}
-    seqlen = len(seqlist[0][1])
+    seqlen = len(seqintensities[0][1])
     if corepos == "left":
         s1 = int(0.5 * seqlen - 0.5 * corelen)
         c1 = s1
@@ -74,7 +74,7 @@ def gen_seqwcore(seqlist, width, corelist, corepos="center"):
     cpos = (c1, c1 + corelen)
     # process each core separately and make sure that the list is unique
     for core in set(corelist):
-        seq_wcore = [(score, seq[spos[0]:spos[1]]) for score, seq in seqlist if seq[cpos[0]:cpos[1]] == core]
+        seq_wcore = [(score, seq[spos[0]:spos[1]]) for score, seq in seqintensities if seq[cpos[0]:cpos[1]] == core]
         seq_core_df = pd.DataFrame(seq_wcore, columns = ['score', 'seq'])
         agg = seq_core_df.groupby(['seq'], as_index=False).median()
         core_dict[core] = agg[["score","seq"]].values.tolist()
@@ -130,7 +130,9 @@ def logit_score(p):
     # f(x) = 1 / ( 1 + exp(-x) )  to obtain only values between 0 and 1.
     return  np.log(p/(1.0-p))
 
-def genmodel_gridsearch(cores_centered, param_dict, numfold=10, kmers=[1,2,3], numworkers=os.cpu_count(), logit=True, suffix=""):
+def genmodel_gridsearch(cores_centered, param_dict, numfold=10, kmers=[1,2,3],
+                        numworkers=os.cpu_count(), logit=True, tfname="",
+                        modelwidth=20, outdir="", suffix=""):
     if logit:
         cores_cent = {k: [(logit_score(val),seq) for (val, seq) in cores_centered[k]] for k in cores_centered}
     else:
@@ -142,9 +144,10 @@ def genmodel_gridsearch(cores_centered, param_dict, numfold=10, kmers=[1,2,3], n
 
     # ----- RUNNING CROSS VALIDATION -----
     param_log = ""
-    model_fname =  '%s_w%s' % (tfname, width)
+    model_fname =  '%s_w%s' % (tfname, modelwidth)
     if suffix:
         model_fname = "%s_%s" % (model_fname, suffix)
+    outdir = "%s/"%outdir if outdir  else ""
     for core in cores_cent:
         print("Working for core: %s" % core)
         run_kfold_partial = functools.partial(run_kfold, rows=cores_cent[core], numfold=numfold, kmers=kmers)
@@ -155,10 +158,10 @@ def genmodel_gridsearch(cores_centered, param_dict, numfold=10, kmers=[1,2,3], n
         best_dict = max(run_params, key = lambda p:p["avg_scc"])
 
         model = generate_svm_model(cores_cent[core], best_dict["params"], kmers)
-        svmutil.svm_save_model('%s_%s.model' % (model_fname,core), model)
+        svmutil.svm_save_model('%s%s_%s.model' % (outdir,model_fname,core), model)
         param_log += "%s: %s\n" % (core,str(best_dict))
 
-    with open("%s.log" % model_fname, 'w') as f:
+    with open("%s%s.log" % (outdir,model_fname), 'w') as f:
         f.write(param_log)
 
 

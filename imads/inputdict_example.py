@@ -1,5 +1,5 @@
 param = {
-        "pbmdata" : "/Users/vincentiusmartin/Research/chip2gcPBM/imads/data/Combined_ets1_100nM_elk1_100nM_50nM_gabpa_100nM_log_normalized.txt",
+        "pbmdata" : "/path/to/input.txt",
         "column_train" : "Ets1_100nM",
         "kmers" : [1,2,3],
         "width" : 12,
