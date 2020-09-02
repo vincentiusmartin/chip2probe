@@ -3,11 +3,14 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_chamber_corr(dfx, dfy,
+def get_negctrl_cutoff(dfx, dfy, ):
+    return 0
+
+def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
                 namecol="Name", valcol="Alexa488Adjusted", repcols="rep", extrajoincols=[],
                 title="",
                 median=False, log=False,
-                shownames=False):
+                shownames=False, path=""):
     """
     Get correlation between
 
@@ -21,6 +24,7 @@ def plot_chamber_corr(dfx, dfy,
         median: get median between replicates
         log: return result in log scale
         shownames: show names of the probe on the plot, useful for debugging
+        path: if empty then show the plot
     Return:
         Show plot result for correlation between chamber
     """
@@ -41,25 +45,32 @@ def plot_chamber_corr(dfx, dfy,
     slope, intercept = np.polyfit(x, y, 1)
     # Create a list of values in the best fit line
     abline_values = [slope * i + intercept for i in x]
+
+    f = plt.figure()
+    ax = f.add_subplot(111)
     # plot diagonal
     plt.plot([min(min(x),min(y)),max(max(x),max(y))], [min(min(x),min(y)),max(max(x),max(y))], color='black', label='diagonal', linewidth=0.5)
     # plot best fit line
     plt.plot(x, abline_values, color='red', label='best fit', linewidth=0.5)
     r_squared = np.corrcoef(x,y)[0,1]**2
-    plt.scatter(x, y, s=2)
+    plt.scatter(x, y, s=3)
 
     if shownames:
         names = dfcombined[namecol].values
         for i in range(len(names)):
             plt.text(x[i], y[i], names[i], fontsize=3)
 
-    plt.xlabel('Chamber 1')
-    plt.ylabel('Chamber 2')
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
     plt.title(title)
-    plt.text(min(x), max(y), 'R² = %0.2f' % r_squared, color='red')
-    plt.text(min(x), 0.9*max(y), 'best fit: y=%0.2fx + %0.2f' % (slope,intercept), color='red')
+    plt.text(0.02, 0.94, 'R² = %0.2f' % r_squared, color='red', transform = ax.transAxes)
+    plt.text(0.02, 0.9, 'best fit: y=%0.2fx + %0.2f' % (slope,intercept), color='red', transform = ax.transAxes)
     plt.legend(loc='lower right')
-    plt.show()
+
+    if path:
+        plt.savefig(path)
+    else:
+        plt.show()
 
 def plot_classified_labels(df, filepath=""):
     # HARDCODED - FIX

@@ -9,55 +9,11 @@ import libsvm.svmutil as svmutil
 
 
 if __name__ == "__main__":
-    data = pd.read_csv(param["pbmdata"], sep="\t", index_col="ID_REF")
     num_workers = os.cpu_count()
 
-    # make output directory if not exist
-    if not os.path.exists(param["outdir"]):
-        os.makedirs(param["outdir"])
-
-    # just take the bound column, ignore the negative control
-    bound_idxs = data[param["column_id"]].str.contains("Bound")
-    df = data[bound_idxs].reset_index()[[param["column_train"],"Sequence"]]
-
-    cores_centered = mt.gen_seqwcore(df.values.tolist(), param["width"], param["corelist"], corepos=param["corepos"])
+    pd.set_option('display.max_columns', None)
+    cores_centered = mt.gen_train_matrix(param)
 
     mt.genmodel_gridsearch(cores_centered, param["grid"], param["numfold"], param["kmers"], num_workers,
                            logit=param["logit"], tfname=param["tfname"], modelwidth=param["width"],
                            outdir=param["outdir"])
-
-    # # do logitic transformation if needed
-    # if param["logit"]:
-    #     cores_cent = {k: [(mt.logit_score(val),seq) for (val, seq) in cores_centered[k]] for k in cores_centered}
-    # else:
-    #     cores_cent = cores_centered
-    #
-    # # 2. Generate models
-    #
-    # paramkeys = list(param["grid"].keys())
-    # combinations = itertools.product(*param["grid"].values())
-    # combinations = [{paramkeys[i]:c[i] for i in range(len(c))} for c in combinations]
-    #
-    # paramscores = []
-    # for comb in combinations:
-    #     parm = mt.test_param_comb(cores_cent, comb, param["numfold"], param["kmers"])
-    #     paramscores.append(parm)
-    #
-    # # 3. Select best model
-    # allparams = {}
-    # for par in paramscores:
-    #     for core in par:
-    #         if core not in allparams:
-    #             allparams[core] = []
-    #         allparams[core].append(par[core])
-    #
-    # model_fname =  '%s_w%s' % (param["tfname"], param["width"])
-    # param_log = ""
-    # outdir = "%s/"%param["outdir"] if param["outdir"]  else ""
-    # for core in allparams:
-    #     best_dict = max(allparams[core], key = lambda p:p["avg_scc"])
-    #     model = mt.generate_svm_model(cores_cent[core], best_dict["params"], param["kmers"])
-    #     svmutil.svm_save_model('%s%s_%s.model' % (outdir,model_fname,core), model)
-    #     param_log += "%s: %s\n" % (core,str(best_dict))
-    # with open("%s%s.log" % (outdir,model_fname), 'w') as f:
-    #     f.write(param_log)

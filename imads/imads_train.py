@@ -12,7 +12,28 @@ import functools
 import math
 from tqdm import tqdm
 
-#Q: why do we need to separate core?
+# Wrapper function, accept param dictionary
+
+def gen_train_matrix(param):
+    data = pd.read_csv(param["pbmdata"], sep="\t", index_col="ID_REF")
+
+    # make output directory if not exist
+    if not os.path.exists(param["outdir"]):
+        os.makedirs(param["outdir"])
+
+    # just take the bound column, ignore the negative control
+    bound_idxs = data[param["column_id"]].str.contains("Bound")
+    df = data[bound_idxs].reset_index()[[param["column_train"],"Sequence"]]
+
+    cores_centered = gen_seqwcore(df.values.tolist(), param["width"], param["corelist"], corepos=param["corepos"])
+
+    if param["logit"]:
+        cores_cent = {k: [(mt.logit_score(val),seq) for (val, seq) in cores_centered[k]] for k in cores_centered}
+    else:
+        cores_cent = cores_centered
+    return cores_cent
+
+# -----------------
 
 def sparse_to_dense(sparse_matrix, totalfeat):
     dense = [float(sparse_matrix[i+1]) if i + 1 in sparse_matrix else 0.0 for i in range(totalfeat)]
@@ -70,7 +91,7 @@ def gen_seqwcore(seqintensities, width, corelist, corepos="center"):
         c1 = s1 + width - corelen
     else: #center
         s1 = int(math.ceil(0.5 * seqlen) - 0.5 * width)
-        c1 = int(0.5 * seqlen - 0.5 * corelen)
+        c1 = int(math.ceil(0.5 * seqlen - 0.5 * corelen))
     spos = (s1, s1 + width)
     cpos = (c1, c1 + corelen)
     # process each core separately and make sure that the list is unique

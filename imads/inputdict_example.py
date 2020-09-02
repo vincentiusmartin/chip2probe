@@ -15,5 +15,6 @@ param = {
         "numfold" : 5,
         "corepos" : "center",
         "outdir":"",
-        "logit" : True
+        "logit" : True,
+        "normalize": False # normalize the input
     }
