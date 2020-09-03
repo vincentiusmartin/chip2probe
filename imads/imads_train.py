@@ -14,23 +14,25 @@ from tqdm import tqdm
 
 # Wrapper function, accept param dictionary
 
-def gen_train_matrix(param):
-    data = pd.read_csv(param["pbmdata"], sep="\t", index_col="ID_REF")
-
+def init_train_matrix(param):
     # make output directory if not exist
     if not os.path.exists(param["outdir"]):
         os.makedirs(param["outdir"])
 
+    data = pd.read_csv(param["pbmdata"], sep="\t", index_col="ID_REF")
+    df = pd.DataFrame(data[[param["column_id"],param["column_train"],"Sequence"]])
+    if param["normalize"]:
+        maxval, minval = df[param["column_train"]].max(), df[param["column_train"]].min()
+        df[param["column_train"]] = df[param["column_train"]].apply(lambda x : (x - minval) / (maxval-minval))
+    bound_idxs = df[param["column_id"]].str.contains("Bound")
     # just take the bound column, ignore the negative control
-    bound_idxs = data[param["column_id"]].str.contains("Bound")
-    df = data[bound_idxs].reset_index()[[param["column_train"],"Sequence"]]
+    df = df[bound_idxs].reset_index()[[param["column_train"],"Sequence"]]
 
     cores_centered = gen_seqwcore(df.values.tolist(), param["width"], param["corelist"], corepos=param["corepos"])
 
-    if param["logit"]:
-        cores_cent = {k: [(mt.logit_score(val),seq) for (val, seq) in cores_centered[k]] for k in cores_centered}
-    else:
-        cores_cent = cores_centered
+    # do the logistic transformation
+    cores_cent = {k: [(logit_score(val),seq) for (val, seq) in cores_centered[k]] for k in cores_centered}
+
     return cores_cent
 
 # -----------------

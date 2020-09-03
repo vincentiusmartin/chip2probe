@@ -26,8 +26,5 @@ if __name__ == "__main__":
     #     cores_cent = {k: [(mt.logit_score(val),seq) for (val, seq) in cores_centered[k]] for k in cores_centered}
     # else:
     #     cores_cent = cores_centered
-    cores_centered = mt.gen_train_matrix(param)
-
-    if not os.path.exists(param["outdir"]):
-        os.makedirs(param["outdir"])
+    cores_centered = mt.init_train_matrix(param)
     pickle.dump(cores_centered, open('%s/imadstrain_w%d.pickle' % (param["outdir"],param["width"]), 'wb'))
