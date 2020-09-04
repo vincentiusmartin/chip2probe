@@ -16,7 +16,7 @@ result
 input
 output
 workspace
-*outdir/*
+outdir
 test.py
 
 
