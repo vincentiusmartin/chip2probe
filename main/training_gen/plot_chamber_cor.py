@@ -5,7 +5,6 @@ import pandas as pd
 
 import chip2probe.training_gen.arranalysis as arr
 import matplotlib.pyplot as plt
-import chip2probe.util.stats_r as st
 import statsmodels.stats.multitest as sm
 from chip2probe.sitespredict.kompas import Kompas
 from chip2probe.sitespredict.imads import iMADS
@@ -35,9 +34,7 @@ def get_seq_wsite(df, predictor):
 
 
 if __name__ == "__main__":
-    pd.set_option('display.max_columns', None)
     basepath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/coop_hetero-PBM_Ets_EtsRunx_v1"
-    faricadir = ""
     dflist = [pd.read_csv("%s/Ets1_70.txt"%basepath,sep="\t"),
             pd.read_csv("%s/Ets1_Runx1_70.txt"%basepath,sep="\t")]
 
@@ -48,7 +45,7 @@ if __name__ == "__main__":
     tf_str = "runx1"
     #ori = "o1"
     filteredlist = []
-    pattern = "negative_control" #"m1|m2" # negative_control,
+    pattern = "m1|m2" #"m1|m2" # negative_control,
 
     # get sequence with the site we want, just need to run this once
     # get_seq_wsite(filtdf, kompas)
@@ -61,12 +58,12 @@ if __name__ == "__main__":
         if i == 1:
             df["Alexa488Adjusted"] = (df["Alexa488Adjusted"] - 107.4) / 0.82
         # fix the naming error
-        filtdf = pd.DataFrame(df[df["Name"].str.contains(tf_str) & df["Name"].str.contains(pattern)]) # for negctrl
-        #filtdf = pd.DataFrame(df[df["Name"].str.contains(pattern)])
-        filtdf = fix_naming(filtdf) #.merge(tf_bound, on=["Sequence"])
-        #filtdf = filtdf[filtdf["has_site"] == True]
+        #filtdf = pd.DataFrame(df[df["Name"].str.contains(tf_str) & df["Name"].str.contains(pattern)]) # for negctrl
+        filtdf = pd.DataFrame(df[df["Name"].str.contains(pattern)])
+        filtdf = fix_naming(filtdf).merge(tf_bound, on=["Sequence"])
+        filtdf = filtdf[filtdf["has_site"] == True]
         filteredlist.append(filtdf)
-    arr.plot_chamber_corr(filteredlist[0], filteredlist[1], median=True, extrajoincols=["ori"], path="negctrl_normalized.png", log=False, title="Ets1 negative control (normalized)")
+    arr.plot_chamber_corr(filteredlist[0], filteredlist[1], median=True, extrajoincols=["ori"], path="negctrl_normalized.png", log=True, title="")
 
     # get the negative control cutoff, we do it from first chamber
     cutoff = float(filteredlist[0][["Alexa488Adjusted"]].quantile(0.95))

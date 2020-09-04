@@ -1,6 +1,6 @@
 #!/bin/env python
 
-#SBATCH --mem=5G  
+#SBATCH --mem=5G
 #SBATCH --mail-type=END
 #SBATCH --mail-user=vm76@duke.edu
 
@@ -24,12 +24,20 @@ if __name__ == "__main__":
                 allparams[core] = []
             allparams[core].append(par[core])
 
-    model_fname =  '%s_w%s' % (param["tfname"], param["width"])
-    param_log = ""
-    for core in allparams:
-        best_dict = max(allparams[core], key = lambda p:p["avg_scc"])
-        model = mt.generate_svm_model(train[core], best_dict["params"], param["kmers"])
-        svmutil.svm_save_model('%s/%s_%s.model' % (param["outdir"],model_fname,core), model)
-        param_log += "%s: %s\n" % (core,str(best_dict))
-    with open("%s/%s.log" % (param["outdir"],model_fname), 'w') as f:
-        f.write(param_log)
+    mt.write_result(allparams, train, param)
+    # model_fname =  '%s_w%s' % (param["tfname"], param["width"])
+    # param_log = ""
+    # for core in allparams:
+    #     best_dict = max(allparams[core], key = lambda p:p["avg_scc"])
+    #
+    #     # get predicted vs measured
+    #     pm = predict_kfold(best_dict['params'], rows=cores_centered[core], numfold=numfold, kmers=kmers)
+    #     pm = pd.DataFrame(pm)
+    #     pm["core"] = core
+    #     pmlist.append(pm)
+    #
+    #     model = mt.generate_svm_model(train[core], best_dict["params"], param["kmers"])
+    #     svmutil.svm_save_model('%s/%s_%s.model' % (param["outdir"],model_fname,core), model)
+    #     param_log += "%s: %s\n" % (core,str(best_dict))
+    # with open("%s/%s.log" % (param["outdir"],model_fname), 'w') as f:
+    #     f.write(param_log)

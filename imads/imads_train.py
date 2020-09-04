@@ -31,9 +31,38 @@ def init_train_matrix(param):
     cores_centered = gen_seqwcore(df.values.tolist(), param["width"], param["corelist"], corepos=param["corepos"])
 
     # do the logistic transformation
-    cores_cent = {k: [(logit_score(val),seq) for (val, seq) in cores_centered[k]] for k in cores_centered}
+    if param['logit']:
+        cores_centered = {k: [(logit_score(val),seq) for (val, seq) in cores_centered[k]] for k in cores_centered}
 
-    return cores_cent
+    return cores_centered
+
+def write_result(core_params, cores_centered, user_param):
+    model_fname =  '%s_w%s' % (user_param['tfname'], user_param['width'])
+    outdir = "%s/"%user_param['outdir'] if user_param['outdir']  else ""
+    # if suffix:
+    #     model_fname = "%s_%s" % (model_fname, suffix)
+    param_log = ""
+    pmlist = []
+    for core in core_params:
+        # Save the best model
+        best_dict = max(core_params[core], key = lambda p:p["avg_scc"])
+
+        # get predicted vs measured
+        pm = predict_kfold(best_dict['params'], rows=cores_centered[core], numfold=user_param['numfold'], kmers=user_param['kmers'])
+        pm = pd.DataFrame(pm)
+        pm["core"] = core
+        pmlist.append(pm)
+
+        model = generate_svm_model(cores_centered[core], best_dict["params"], user_param['kmers'])
+        svmutil.svm_save_model('%s%s_%s.model' % (outdir,model_fname,core), model)
+        param_log += "%s: %s\n" % (core,str(best_dict))
+
+    pm_df = pd.concat(pmlist)
+    rsq_all = pm_df["measured"].corr(pm_df["predicted"])**2
+    param_log += "R²: %s\n" % rsq_all
+
+    with open("%s%s.log" % (outdir,model_fname), 'w') as f:
+        f.write(param_log)
 
 # -----------------
 
@@ -104,14 +133,61 @@ def gen_seqwcore(seqintensities, width, corelist, corepos="center"):
         core_dict[core] = agg[["score","seq"]].values.tolist()
     return core_dict
 
+def benchmark_kfold(param_dict, rows, numfold, kmers=[1,2,3]):
+    """
+    run_kfold wrapper for benchmarking per fold
+    """
+    scc_list = [] # r squared
+    mse_list = []
+
+    kf = run_kfold(param_dict, rows, numfold, kmers=[1,2,3])
+
+    for i in range(len(kf)):
+        p_label, p_acc, p_val = kf[i]["svmpred"]
+        acc, mse, scc = p_acc
+        scc_list.append(scc)
+        mse_list.append(mse)
+
+    avg_scc = sum(scc_list)/numfold
+    avg_mse = sum(mse_list)/numfold
+
+    return {"params":param_dict, "avg_scc": avg_scc, "avg_mse":avg_mse}
+
+def predict_kfold(param_dict, rows, numfold, kmers=[1,2,3]):
+    """
+    run_kfold wrapper for predictions per fold
+    """
+    dflist = []
+    kf = run_kfold(param_dict, rows, numfold, kmers=[1,2,3])
+    for i in range(len(kf)):
+        predicted = kf[i]["svmpred"][0]
+        seqs = [x[1] for x in kf[i]["test"]]
+        measured = [x[0] for x in kf[i]["test"]]
+        ldict = [{"sequence":seqs[i],"measured":measured[i],"predicted":predicted[i], "fold":i+1} for i in range(len(seqs))]
+        dflist.extend(ldict)
+    return dflist
+
 def run_kfold(param_dict, rows, numfold, kmers=[1,2,3]):
+    """
+    Run k KFold
+
+    Args:
+        param_dict: dictionary mapping param string to its value
+        rows: input rows
+        numfold: k for cross validation
+        kmers: list of kmers, default [1,2,3]
+    Return:
+        dictionary of model performance (SCC, MSE) if benchmark is True, else
+        return predictions for each fold
+    """
     kf = KFold(numfold, shuffle=True)
     splitted = kf.split(rows)
     param_str = "-s 3 -b 1 -q " # epsilon-SVR, prob estimate true, quiet mode
     param_str += " ".join(["-{} {}".format(k,v) for k,v in param_dict.items()])
     params = svmutil.svm_parameter(param_str)
-    scc_list = [] # r squared
-    mse_list = []
+
+    foldidx = 1
+    fold_results = []
     for train_idx, test_idx in splitted:
         train_list = [rows[i] for i in train_idx]
         test_list = [rows[i] for i in test_idx]
@@ -124,20 +200,16 @@ def run_kfold(param_dict, rows, numfold, kmers=[1,2,3]):
         model = svmutil.svm_train(train_prob, params)
         #svmutil.svm_save_model('model_name.model', m)
         # y is only needed when we need the model performance
-        p_label, p_acc, p_val = svmutil.svm_predict(y_test, x_test, model, options="-q")
-        acc, mse, scc = p_acc
-        scc_list.append(scc)
-        mse_list.append(mse)
-    avg_scc = sum(scc_list)/numfold
-    avg_mse = sum(mse_list)/numfold
-    return {"params":param_dict, "avg_scc": avg_scc, "avg_mse":avg_mse}
+        svmpred = svmutil.svm_predict(y_test, x_test, model, options="-q")
+        fold_results.append({"test":test_list, "svmpred":svmpred})
+    return fold_results
 
 def test_param_comb(traindata, param_dict, numfold=10, kmers=[1,2,3]):
     param_log = ""
     run_params = {}
     for core in traindata:
         #print("Working for core: %s" % core)
-        run_params[core] = run_kfold(param_dict, rows=traindata[core], numfold=numfold, kmers=kmers)
+        run_params[core] = benchmark_kfold(param_dict, rows=traindata[core], numfold=numfold, kmers=kmers)
     return run_params
 
 def generate_svm_model(rows, param, kmers=[1,2,3]):
@@ -154,39 +226,28 @@ def logit_score(p):
     # f(x) = 1 / ( 1 + exp(-x) )  to obtain only values between 0 and 1.
     return  np.log(p/(1.0-p))
 
-def genmodel_gridsearch(cores_centered, param_dict, numfold=10, kmers=[1,2,3],
-                        numworkers=os.cpu_count(), logit=True, tfname="",
-                        modelwidth=20, outdir="", suffix=""):
-    if logit:
-        cores_cent = {k: [(logit_score(val),seq) for (val, seq) in cores_centered[k]] for k in cores_centered}
-    else:
-        cores_cent = cores_centered
+def genmodel_gridsearch(cores_centered, user_param, numworkers):
+    # get all user params needed. We use this instead of direct input functions
+    # to make integration with the SLURM version easier
+    param_dict = user_param["grid"]
+    numfold = user_param["numfold"]
+    kmers = user_param["kmers"]
+
     # Make list of params for grid search
     params = list(param_dict.keys())
     combinations = itertools.product(*param_dict.values())
     combinations = [{params[i]:c[i] for i in range(len(c))} for c in combinations]
 
     # ----- RUNNING CROSS VALIDATION -----
-    param_log = ""
-    model_fname =  '%s_w%s' % (tfname, modelwidth)
-    if suffix:
-        model_fname = "%s_%s" % (model_fname, suffix)
-    outdir = "%s/"%outdir if outdir  else ""
-    for core in cores_cent:
+    core_params = {}
+    for core in cores_centered:
         print("Working for core: %s" % core)
-        run_kfold_partial = functools.partial(run_kfold, rows=cores_cent[core], numfold=numfold, kmers=kmers)
+        benchmark_kfold_partial = functools.partial(benchmark_kfold, rows=cores_centered[core], numfold=numfold, kmers=kmers)
         with cc.ProcessPoolExecutor(max_workers = numworkers) as executor:
             # TODO: update input to combinations to dictionary
-            run_params = list(tqdm(executor.map(run_kfold_partial, combinations), total=len(combinations)))
-        # Save the best model
-        best_dict = max(run_params, key = lambda p:p["avg_scc"])
-
-        model = generate_svm_model(cores_cent[core], best_dict["params"], kmers)
-        svmutil.svm_save_model('%s%s_%s.model' % (outdir,model_fname,core), model)
-        param_log += "%s: %s\n" % (core,str(best_dict))
-
-    with open("%s%s.log" % (outdir,model_fname), 'w') as f:
-        f.write(param_log)
+            run_params = list(tqdm(executor.map(benchmark_kfold_partial, combinations), total=len(combinations)))
+        core_params[core] = run_params
+    write_result(core_params, cores_centered, user_param)
 
 
 def get_weight(libsvm_model, width, kmers=[1,2,3]):
@@ -216,40 +277,3 @@ def explain_imp(impdf):
     df["weight"] = abs(df["weight"])
     bypos = df.groupby("position")[["weight"]].sum().sort_values("weight", ascending=False)
     print(bypos)
-
-
-"""
-if __name__ == "__main__":
-    pbmdata = "/Users/vincentiusmartin/Research/chip2gcPBM/imads/data/Combined_ets1_100nM_elk1_100nM_50nM_gabpa_100nM_log_normalized.txt"
-    # normlized version
-    column_train = "Ets1_100nM"
-    kmers = [1,2,3]
-    width = 20
-    corelist = ["GGAA", "GGAT"] #, "GGAT"]
-    tfname = "Ets1"
-    param_dict = { #SVR feature
-        "c": [0.05, 0.5, 1], # cost
-        "g": [0.0005, 0.005, 0.01], # gamma for epsilon SVR
-        "p": [0.01, 0.02, 0.1], # epsilon, linear don't use: 0.01
-        "t": [2] # kernel type: 0:linear, 1: polynomial, 2: radial, 3: sigmoid, 4: precomputed
-    }
-    num_workers = os.cpu_count()
-    numfold = 5
-
-    # First, read pbmdata and generate kmer with their score to cross_centered
-    data = pd.read_csv(pbmdata, sep="\t", index_col="ID_REF")
-    df = data.loc[data["ID"] == "Bound"][[column_train,"Sequence"]]
-
-    #for cp in ["center", "left", "right"]:
-    cp="center"
-    cores_centered = gen_seqwcore(df.values.tolist(), width, corelist, corepos=cp)
-
-    mdl = svmutil.svm_load_model("model/w12/Ets1_w12_center_GGAA.model")
-    # # mdl = generate_svm_model(cores_centered["GGAA"], {'c': 0.01, 'p': 0.1, 't': 0})
-    w = get_weight(mdl, width, kmers)
-    imp = get_feature_imp(w, width)
-    explain_imp(imp)
-    imp.to_csv("Ets1_w12_center_GGAA.model_imp.csv",index=False)
-
-    #genmodel_gridsearch(cores_centered, param_dict, numfold, kmers, num_workers, logit=True, suffix=cp)
-"""

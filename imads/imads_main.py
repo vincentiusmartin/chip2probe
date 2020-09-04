@@ -14,6 +14,4 @@ if __name__ == "__main__":
     pd.set_option('display.max_columns', None)
     cores_centered = mt.init_train_matrix(param)
 
-    mt.genmodel_gridsearch(cores_centered, param["grid"], param["numfold"], param["kmers"], num_workers,
-                           logit=param["logit"], tfname=param["tfname"], modelwidth=param["width"],
-                           outdir=param["outdir"])
+    mt.genmodel_gridsearch(cores_centered, param, num_workers)

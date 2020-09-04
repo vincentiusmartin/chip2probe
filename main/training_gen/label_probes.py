@@ -1,18 +1,34 @@
+import pandas as pd
+import chip2probe.util.stats_r as st
+
+import chip2probe.training_gen.arranalysis as arr
 
 if __name__ == "__main__":
+    pd.set_option('display.max_columns', None)
+    basepath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/coop_hetero-PBM_Ets_EtsRunx_v1"
+    dflist = [pd.read_csv("%s/Ets1_70.txt"%basepath,sep="\t"),
+            pd.read_csv("%s/Ets1_Runx1_70.txt"%basepath,sep="\t")]
+    cutoff = 651.4 # from plot_chamber_corr.py
+
+    name_map = ""
     # ------- labeling sequences, for now only take wt -------
     keyword = "all_clean_seqs"
     df_genomics = []
-    for df in dflist:
+    for i in range(len(dflist)):
+        df = dflist[i]
         df_gen = df[df["Name"].str.contains(keyword,na=False)].sort_values(by=["Name"])
         df_gen[["Name","type","rep","ori"]] = df_gen["Name"].str.rsplit("_", n = 3, expand = True)
         df_gen = df_gen[df_gen["type"] == "wt"] #only take wt
+        if not isinstance(name_map, pd.DataFrame): # make mapping between name and sequence in o1
+            name_map = df_gen[df_gen["ori"] == "o1"][["Name", "Sequence"]].drop_duplicates()
+        if i == 1:
+           df_gen["Alexa488Adjusted"] = (df_gen["Alexa488Adjusted"] - 107.74) / 0.82 # normalize
         df_genomics.append(df_gen)
 
     # we filter each group if median intensity is lower than cutoff
-    oris_df = []
-
+    olist = []
     for ori in ["o1","o2"]:
+        print("checking orientation %s" % ori)
         df1 = df_genomics[0][df_genomics[0]["ori"] == ori][["Name","rep","Alexa488Adjusted"]]
         df2 = df_genomics[1][df_genomics[1]["ori"] == ori][["Name","rep","Alexa488Adjusted"]]
         df_comb = df1.merge(df2, on=["Name","rep"])
@@ -45,14 +61,10 @@ if __name__ == "__main__":
                 "additive",
                 axis=1
             )
-
-        median_df.merge(lbled, on="Name").to_csv("test_%s.csv"%ori)
         df_lbled = median_df.merge(lbled, on="Name")[["Name","Alexa488Adjusted_x","Alexa488Adjusted_y","label"]]
-        arr.plot_classified_labels(df_lbled, filepath="%s.png"%ori)
+        olist.append(df_lbled)
+        arr.plot_classified_labels(df_lbled, filepath="%s.png"%ori, title="Cooperative plot, orientation %s" % ori)
 
-    o1df = pd.read_csv("test_o1.csv")
-    o2df = pd.read_csv("test_o2.csv")
-    olist = [o1df,o2df]
     both_ori = olist[0].merge(olist[1], on=["Name"])
     both_ori["Alexa488Adjusted_x"] = (both_ori["Alexa488Adjusted_x_x"] + both_ori["Alexa488Adjusted_x_y"]) / 2
     both_ori["Alexa488Adjusted_y"] = (both_ori["Alexa488Adjusted_y_x"] + both_ori["Alexa488Adjusted_y_y"]) / 2
@@ -63,6 +75,12 @@ if __name__ == "__main__":
         axis=1
     )
     both_ori = both_ori[["Name","Alexa488Adjusted_x","Alexa488Adjusted_y","label"]]
-    arr.plot_classified_labels(both_ori, filepath="both.png")
+    arr.plot_classified_labels(both_ori, filepath="both.png", title="Cooperative plot, both orientations")
 
-    print(o1df[["label","Name"]].groupby("label").count())
+    print(olist[0][["label","Name"]].groupby("label").count())
+    print(olist[1][["label","Name"]].groupby("label").count())
+    print(both_ori[["label","Name"]].groupby("label").count())
+
+    both_ori_mapped = both_ori.merge(name_map, on="Name")[["Name", "Sequence", "label"]]
+    both_ori_mapped["Sequence"] = both_ori_mapped["Sequence"].str[0:36]
+    both_ori_mapped.to_csv("sequence_labeled_normalized.tsv", sep="\t", index=False)

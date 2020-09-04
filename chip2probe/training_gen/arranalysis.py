@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -57,7 +56,7 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
 
     if shownames:
         names = dfcombined[namecol].values
-        for i in range(len(names)):
+        for i in ranplot_classified_labelsge(len(names)):
             plt.text(x[i], y[i], names[i], fontsize=3)
 
     plt.xlabel(xlab)
@@ -71,35 +70,44 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
         plt.savefig(path)
     else:
         plt.show()
+    plt.clf()
 
-def plot_classified_labels(df, filepath=""):
+def plot_classified_labels(df, filepath="", col1="Alexa488Adjusted_x", col2="Alexa488Adjusted_y",
+                           xlab="Chamber1", ylab="Chamber2", log=True, title=""):
+    """
+    Desc
+
+    Args:
+
+    Return:
+
+    """
     # HARDCODED - FIX
     # cooperative
-    x = np.log(df[df['label']=='cooperative']['Alexa488Adjusted_x'].values)
-    y = np.log(df[df['label']=='cooperative']['Alexa488Adjusted_y'].values)
+    x = np.log(df[df['label']=='cooperative'][col1].values)
+    y = np.log(df[df['label']=='cooperative'][col2].values)
     plt.scatter(x, y, color='blue', s=3)
 
     #additive
-    x = np.log(df[df['label']=='additive']['Alexa488Adjusted_x'].values)
-    y = np.log(df[df['label']=='additive']['Alexa488Adjusted_y'].values)
+    x = np.log(df[df['label']=='additive'][col1].values)
+    y = np.log(df[df['label']=='additive'][col2].values)
     plt.scatter(x, y, color='gray', s=3)
 
     # anti-coop
-    x = np.log(df[df['label']=='anticoop']['Alexa488Adjusted_x'].values)
-    y = np.log(df[df['label']=='anticoop']['Alexa488Adjusted_y'].values)
+    x = np.log(df[df['label']=='anticoop'][col1].values)
+    y = np.log(df[df['label']=='anticoop'][col2].values)
     plt.scatter(x, y, color='red', s=3)
 
-    plt.xlabel('Chamber 1')
-    plt.ylabel('Chamber 2')
-    x = np.log(df['Alexa488Adjusted_x'].values)
-    y = np.log(df['Alexa488Adjusted_y'].values)
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
+    if log:
+        x = np.log(df[col1].values)
+        y = np.log(df[col2].values)
     plt.plot([min(min(x),min(y)),max(max(x),max(y))], [min(min(x),min(y)),max(max(x),max(y))], color='black')
-    # slope, intercept = np.polyfit(x, y, 1)
-    # # Create a list of values in the best fit line
-    # abline_values = [slope * i + intercept for i in x]
-    # plt.plot(x, abline_values, color='red', label='best fit', linewidth=0.5)
-    plt.title("")
+
+    plt.title(title)
     if not filepath:
         plt.show()
     else:
         plt.savefig(filepath)
+    plt.clf()
