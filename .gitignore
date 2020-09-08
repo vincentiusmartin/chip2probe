@@ -15,6 +15,7 @@ libsvm*
 result
 output
 workspace
+input/array_design_files 
 outdir
 test.py
 
