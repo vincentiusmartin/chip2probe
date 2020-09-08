@@ -13,7 +13,6 @@
 __pycache__
 libsvm*
 result
-input
 output
 workspace
 outdir

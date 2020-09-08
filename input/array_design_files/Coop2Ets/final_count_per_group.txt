@@ -1,0 +1,33 @@
+----------Number of sequences per group----------
+select                 muttype    
+consecutive_preddif    affinity        965
+                       distance       1307
+                       orientation     408
+incos_pred             affinity       1053
+                       distance        463
+                       orientation     168
+largest_affdiff_site1  affinity        840
+largest_affdiff_site2  affinity        828
+largest_probdif        affinity        974
+                       distance       1432
+                       orientation     414
+positive_ctrl          affinity        831
+                       distance        423
+                       orientation      80
+Name: seqid, dtype: int64
+----------Number of wt per group----------
+select                 muttype    
+consecutive_preddif    affinity        75
+                       distance       139
+                       orientation    137
+incos_pred             affinity        30
+                       distance        25
+                       orientation     18
+largest_affdiff_site1  affinity       101
+largest_affdiff_site2  affinity       104
+largest_probdif        affinity        75
+                       distance       139
+                       orientation    140
+positive_ctrl          affinity        76
+                       distance        74
+                       orientation     64
