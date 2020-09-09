@@ -224,7 +224,8 @@ def generate_svm_model(rows, param, kmers=[1,2,3]):
 
 def logit_score(p):
     # f(x) = 1 / ( 1 + exp(-x) )  to obtain only values between 0 and 1.
-    return  np.log(p/(1.0-p))
+    p_use = 0.999 if p == 1 else p # to avoid division by zero
+    return  np.log(p_use/(1.0-p_use))
 
 def genmodel_gridsearch(cores_centered, user_param, numworkers):
     # get all user params needed. We use this instead of direct input functions
