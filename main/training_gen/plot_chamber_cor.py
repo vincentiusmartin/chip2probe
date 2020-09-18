@@ -42,28 +42,31 @@ if __name__ == "__main__":
                     core_start = 11, core_end = 15, core_center = 12)
 
     # ------- plot negative control -------
-    tf_str = "runx1"
     #ori = "o1"
     filteredlist = []
-    pattern = "m1|m2" #"m1|m2" # negative_control,
 
     # get sequence with the site we want, just need to run this once
     # get_seq_wsite(filtdf, kompas)
     tf_bound = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/output/heterotypic/EtsRunx_v1/seq_w1_ets_site.csv")
 
+    tf_str = "runx1"
+    pattern = "m1|m2" # negative_control
     for i in range (0,len(dflist)):
         df = dflist[i]
         df = df[df["Name"].str.contains("seq",na=False)] \
                 .sort_values(by=["Name"])
+        # filtdf = pd.DataFrame(df[df["Name"].str.contains(tf_str) & df["Name"].str.contains(pattern)]) #for negctrl
+        # filtdf = fix_naming(filtdf) # to fix the naming error
+        # normalization
         if i == 1:
-            df["Alexa488Adjusted"] = (df["Alexa488Adjusted"] - 107.4) / 0.82
-        # fix the naming error
-        #filtdf = pd.DataFrame(df[df["Name"].str.contains(tf_str) & df["Name"].str.contains(pattern)]) # for negctrl
-        filtdf = pd.DataFrame(df[df["Name"].str.contains(pattern)])
-        filtdf = fix_naming(filtdf).merge(tf_bound, on=["Sequence"])
-        filtdf = filtdf[filtdf["has_site"] == True]
+           df["Alexa488Adjusted"] = (df["Alexa488Adjusted"] - 107.4) / 0.82
+        filtdf = pd.DataFrame(df[df["Name"].str.contains(pattern)]) # for  non negctrl
+        filtdf = fix_naming(filtdf).merge(tf_bound, on=["Sequence"]) # for  non negctrl
+        filtdf = filtdf[filtdf["has_site"] == True] # for non negctrl
         filteredlist.append(filtdf)
-    arr.plot_chamber_corr(filteredlist[0], filteredlist[1], median=True, extrajoincols=["ori"], path="negctrl_normalized.png", log=True, title="")
+    arr.plot_chamber_corr(filteredlist[0], filteredlist[1], median=True,
+                           extrajoincols=["ori"], path="%s.png"%pattern, log=True,
+                           title="Probes with Ets1 sites (using m1/m2) in log value", cutoff=651.398)
 
     # get the negative control cutoff, we do it from first chamber
     cutoff = float(filteredlist[0][["Alexa488Adjusted"]].quantile(0.95))

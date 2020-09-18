@@ -35,6 +35,8 @@ def plot_stacked_categories(df, x, y="label", path="stackedbar.png",
 
     Returns:
         (NA)
+
+    Example:
     """
 
     cat_df = df[[x] + [y]]
@@ -60,6 +62,9 @@ def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", 
 
     Returns:
         (NA)
+
+    Example:
+        plot_box_categories(df, incols=["distance", "site_str_score", "site_wk_score"])
     """
     if incols == "default":
         cols = list(set(df.columns) - set(by))
