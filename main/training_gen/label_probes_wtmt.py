@@ -51,39 +51,41 @@ def assign_class(p, prevlbl):
 
 if __name__ == "__main__":
     basepath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/coop_hetero-PBM_Ets_EtsRunx_v1"
-    df = pd.read_csv("%s/Ets1_70.txt"%basepath,sep="\t") # Ets1_Runx1_70.txt
-    cutoff = 651.4 # from plot_chamber_corr.py
+    df = pd.read_csv("%s/Ets1_Runx1_70.txt"%basepath,sep="\t") # Ets1_Runx1_70.txt
+    cutoff = 568.11 # from plot_chamber_corr.py
 
     kompas_ets = Kompas("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/input/site_models/kompas/Ets1_kmer_alignment.txt",
                     core_start = 11, core_end = 15, core_center = 12)
     kompas_runx = Kompas("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/input/site_models/kompas/Runx1_kmer_alignment.txt",
                     core_start = 12, core_end = 17, core_center = 14)
 
-    pd.set_option("display.max_columns",None)
-
     # read the csv
-    """
+
     keyword = "all_clean_seqs"
+
     print("Read probe data")
+    """
     df = read_probe_data(df, keyword, kompas_ets, kompas_runx)
     df.astype({'ets_pos': 'int32','runx_pos': 'int32'}).to_csv("df_wtmt_wpos.csv", index=False, float_format='%.3f')
+    df.to_csv("df_wtmt_wpos.csv", index=False)
     """
-    # dflblpath = "/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/output/heterotypic/EtsRunx_v1/df_labeled/wt_vs_mt/df_wtmt_wpos.csv"
-    df = pd.read_csv("df_wtmt_wpos.csv")
-    median_dict = df.groupby(["Name", "ori", "type"])["affinity"].median().to_dict()
 
+    df = pd.read_csv("df_wtmt_wpos.csv")
+    print("Making replicas")
     indivsum, twosites = arr.make_replicas_permutation(df)
     pickle.dump( indivsum, open( "indivsum.p", "wb" ) )
     pickle.dump( twosites, open( "twosites.p", "wb" ) )
-    # indivsum = pickle.load( open( "indivsum.p", "rb" ) )
-    # twosites = pickle.load( open( "twosites.p", "rb" ) )
 
+    indivsum = pickle.load( open( "indivsum.p", "rb" ) )
+    twosites = pickle.load( open( "twosites.p", "rb" ) )
+
+    median_dict = df.groupby(["Name", "ori", "type"])["affinity"].median().to_dict()
     labeled_dict = {}
     for ori in ["er", "re"]:
         orilbls = []
         for k in indivsum[ori]:
             rowdict = {}
-            if median_dict[(k,ori,'m3')] > cutoff or median_dict[(k,ori,'wt')] < cutoff:
+            if median_dict[(k,ori,'wt')] < cutoff: # median_dict[(k,ori,'m3')] > cutoff or
                 rowdict['label'], rowdict['p'] = "below_cutoff", 1
             else:
                 rowdict['label'], rowdict['p'] =  arr.create_cooplbl(twosites[ori][k], indivsum[ori][k])
@@ -91,8 +93,8 @@ if __name__ == "__main__":
             rowdict['two_median'] = median_dict[(k,ori,'wt')] - median_dict[(k,ori,'m3')]
             rowdict['Name'] = k
             orilbls.append(rowdict)
+        #print(orilbls)
         labeled_dict[ori] = pd.DataFrame(orilbls)
-        print(labeled_dict[ori])
         labeled_dict[ori]['p'] = sm.fdrcorrection(labeled_dict[ori]['p'])[1]
         labeled_dict[ori]['label'] = labeled_dict[ori].apply(lambda row: assign_class(row['p'],row['label']),axis=1)
         print(ori, labeled_dict[ori]["label"].value_counts())
@@ -101,7 +103,6 @@ if __name__ == "__main__":
         arr.plot_classified_labels(labeled_dict[ori], col1="indiv_median", col2="two_median", log=False,
                         xlab="wt-m3", ylab="m1-m3+m2-m3", path="coop_%s.eps"%ori, title="Cooperative plot, ori %s"%ori)
 
-    labeled_dict = pickle.load( open( "labeled.p", "rb" ) )
     df_er = labeled_dict['er'][labeled_dict['er']["label"] != "below_cutoff"]
     df_re = labeled_dict['re'][labeled_dict['re']["label"] != "below_cutoff"]
     labeled_joined = labeled_dict['er'].merge(labeled_dict['re'], on="Name", suffixes=('_er', '_re'))
@@ -112,9 +113,9 @@ if __name__ == "__main__":
     arr.plot_classified_labels(ori_match, col1="indiv_median", col2="two_median", log=False,
                     xlab="wt-m3", ylab="m1-m3+m2-m3", path="coop_both.eps", title="Cooperative plot, both ori")
     arr.plot_classified_labels(ori_match, col1="indiv_median", col2="two_median", log=True,
-                    xlab="wt-m3", ylab="m1-m3+m2-m3", path="coop_both_log.eps", title="Cooperative plot, both ori (log val)")
+                    xlab="log(wt-m3)", ylab="log(m1-m3+m2-m3)", path="coop_both_log.eps", title="Cooperative plot, both ori (log val)")
 
-    #ori_match[["Name","label"]].to_csv("name_labeled.csv", index=False)
+    ori_match[["Name","label"]].to_csv("name_labeled.csv", index=False)
     labeled_per_ori = labeled_joined[["Name","label_er", "label_re"]]
     labeled_per_ori = labeled_per_ori[(labeled_per_ori["label_er"] != "below_cutoff") & (labeled_per_ori["label_re"] != "below_cutoff")] \
             .rename(columns={"label_er":"er","label_re":"re" })
@@ -122,4 +123,12 @@ if __name__ == "__main__":
     indivsum_df = pd.DataFrame(indivsum_ld)
     twosites_ld = [{"Name":k, "ori": ori, "affinity":aff} for ori in twosites for k in twosites[ori] for aff in twosites[ori][k]]
     twosites_df = pd.DataFrame(twosites_ld)
-    arr.plot_ori_incosistency2(indivsum_df, twosites_df, labeled_per_ori, log=True, fixed_ax=True)
+
+    # pickle.dump( indivsum_df, open( "indivsum_df.p", "wb" ) )
+    # pickle.dump( twosites_df, open( "twosites_df.p", "wb" ) )
+    # pickle.dump( labeled_per_ori, open( "labeled_per_ori.p", "wb" ) )
+    #
+    # indivsum_df = pickle.load( open( "indivsum_df.p", "rb" ) )
+    # twosites_df = pickle.load( open( "twosites_df.p", "rb" ) )
+    # labeled_per_ori = pickle.load( open( "labeled_per_ori.p", "rb" ) )
+    arr.plot_ori_inconsistency(indivsum_df, twosites_df, labeled_per_ori, log=True, fixed_ax=True)

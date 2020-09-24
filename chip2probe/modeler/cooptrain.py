@@ -14,7 +14,7 @@ from chip2probe.util import bio
 from chip2probe.modeler.features import *
 
 class CoopTrain:
-    def __init__(self, trainingdata, corelen, sep="\t", flip_th=False,
+    def __init__(self, trainingdata, corelen=0, sep="\t", flip_th=False,
                 positive_cores=[], imads=None, ignore_sites_err=False):
         """
         Cooperative Training class constructor

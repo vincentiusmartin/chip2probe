@@ -1,0 +1,3 @@
+Mean accuracy: {'distance': 0.686829268292683, 'strength': 0.6741463414634147, 'distace,strength': 0.7326829268292683}
+Mean auc: {'distance': 0.6635351440841886, 'strength': 0.7018182637773335, 'distace,strength': 0.754835589941973}
+Confusion_matrix (tn,fp,fn,tp): {'distance': array([502, 147, 174, 202]), 'strength': array([571,  78, 256, 120]), 'distace,strength': array([555,  94, 180, 196])}

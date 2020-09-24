@@ -21,7 +21,6 @@ def make_replicas_permutation(df, oricol="ori", namecol="Name", affcol="affinity
             if set(curdf[typecol].unique()) != {"wt", "m1", "m2", "m3"}:# skip if incomplete
                 continue
             g = curdf.set_index([repcol,typecol]).to_dict()[affcol]
-            print(g)
             reps = curdf.groupby(typecol)[repcol].apply(list).to_dict()
 
             indivreps = list(itertools.product(*[reps[t] for t in ['m1','m2','m3']]))
@@ -37,8 +36,6 @@ def make_replicas_permutation(df, oricol="ori", namecol="Name", affcol="affinity
                 t_s = g[(r[0], 'wt')]
                 twosites_list.append(t_s)
             twosites[ori][key] = twosites_list
-            break
-        break
     return indivsum, twosites
 
 def create_cooplbl(twosites, indivsum, pcutoff = 0.05):
@@ -56,7 +53,7 @@ def create_cooplbl(twosites, indivsum, pcutoff = 0.05):
 # --------
 
 def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
-                namecol="Name", valcol="Alexa488Adjusted", repcol="rep", extrajoincols=[],
+                namecol="Name", valcol="Alexa488Adjusted", extrajoincols=[],
                 title="", cutoff="",
                 median=False, log=False,
                 shownames=False, path=""):
@@ -77,9 +74,10 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
     Return:
         Show plot result for correlation between chamber
     """
+    print("here")
     # correlation plot of negative controls in chamber 1 vs chamber 2
 
-    joincols = [namecol, repcol] + extrajoincols
+    joincols = [namecol] + extrajoincols
     dfcombined = dfx.merge(dfy, on=joincols)[joincols + ["%s_x"%valcol, "%s_y"%valcol]]
 
     if median:
@@ -87,7 +85,6 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
     if log:
         dfcombined["%s_x"%valcol] = np.log(dfcombined["%s_x"%valcol])
         dfcombined["%s_y"%valcol] = np.log(dfcombined["%s_y"%valcol])
-        cutoff = np.log(cutoff)
 
     x = dfcombined["%s_x"%valcol].values
     y = dfcombined["%s_y"%valcol].values
@@ -102,6 +99,7 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
     plt.plot([min(min(x),min(y)),max(max(x),max(y))], [min(min(x),min(y)),max(max(x),max(y))], color='black', label='diagonal', linewidth=0.5)
 
     if cutoff:
+        c = np.log(cutoff) if log else cutoff
         plt.axhline(cutoff, color='black', linewidth=0.5, linestyle=":")
         plt.axvline(cutoff, color='black', linewidth=0.5, linestyle=":")
 
@@ -130,7 +128,7 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
     plt.clf()
 
 def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa488Adjusted_y",
-                           xlab="Chamber1", ylab="Chamber2", log=True, title=""):
+                           xlab="Chamber1", ylab="Chamber2", log=True, title="", axes=None):
     """
     Desc
 
@@ -139,6 +137,8 @@ def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa48
     Return:
 
     """
+    ax = axes if axes else plt.axes()
+
     lblclr = [("below_cutoff","yellow", 0.7), ("additive","gray",1), ("cooperative","blue",1),("anticoop","red",1)]
     newdf = df.copy()
     if log:
@@ -150,20 +150,21 @@ def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa48
             x = newdf[newdf['label']==lc[0]][col1].values
             y = newdf[newdf['label']==lc[0]][col2].values
             label = lc[0] if lc[0] != "below_cutoff" else None
-            plt.scatter(x, y, color=lc[1], s=3, alpha=lc[2], label=label)
+            ax.scatter(x, y, color=lc[1], s=3, alpha=lc[2], label=label)
 
-    plt.xlabel(xlab)
-    plt.ylabel(ylab)
+    ax.set_xlabel(xlab)
+    ax.set_ylabel(ylab)
     x,y = newdf[col1].values, newdf[col2].values
-    plt.plot([min(min(x),min(y)),max(max(x),max(y))], [min(min(x),min(y)),max(max(x),max(y))], color='black')
-    plt.legend(loc="lower right")
+    ax.plot([min(min(x),min(y)),max(max(x),max(y))], [min(min(x),min(y)),max(max(x),max(y))], color='black')
+    ax.legend(loc="lower right")
 
-    plt.title(title)
-    if not path:
-        plt.show()
-    else:
-        plt.savefig(path)
-    plt.clf()
+    ax.set_title(title)
+    if not axes:
+        if not path:
+            plt.show()
+        else:
+            plt.savefig(path)
+        plt.clf()
 
 def scatter_boxplot(input_df, cols=[], log=False,
                     ax=None, path = "box.png", repcol="rep",
@@ -199,6 +200,8 @@ def scatter_boxplot(input_df, cols=[], log=False,
         p.clf() # clear canvas
 
 def scatter_boxplot_col(input_df, coltype, colval, plotorder=[], ax=None, path = "box.png", title=""):
+    """
+    """
     plotlist = []
     for po in plotorder:
         plotlist.append(input_df[input_df[coltype] == po][colval].tolist())
@@ -223,18 +226,21 @@ def scatter_boxplot_col(input_df, coltype, colval, plotorder=[], ax=None, path =
         plt.savefig(path)
         plt.clf() # clear canvas
 
-def plot_ori_incosistency2(indivsum_df, twosites_df, lbldf, namecol="Name",
+def plot_ori_inconsistency(indivsum_df, twosites_df, lbldf, namecol="Name", oricol='ori',
                 affcol="affinity", log=False, fixed_ax=False):
     """
-    labels: data frame
+    Args:
+        indivsum_df: data frame of Name, orientation, affinity of the individual sites sum
+        twosites_df: data frame of Name, orientation, affinity of the two sites
+        lbldf: data frame of Name, label in first orientation, label in second orientation
     """
     o1, o2 = set(lbldf.columns) - {namecol}
     indivsum, twosites = indivsum_df.copy(), twosites_df.copy()
     if log:
         indivsum[affcol] = np.log(indivsum[affcol])
         twosites[affcol] = np.log(twosites[affcol])
-    indivsum["type"] = "one_" + indivsum["ori"]
-    twosites["type"] = "two_" + twosites["ori"]
+    indivsum["type"] = "one_" + indivsum[oricol]
+    twosites["type"] = "two_" + twosites[oricol]
 
     numcol = 4
     numrow = 4
@@ -245,8 +251,8 @@ def plot_ori_incosistency2(indivsum_df, twosites_df, lbldf, namecol="Name",
         cur_lbls = lbldf[(lbldf[o1] == perm[0]) & (lbldf[o2] == perm[1])]
         if cur_lbls.empty:
             continue
-        cur_indiv = indivsum.merge(cur_lbls[["Name"]], on="Name")
-        cur_two = twosites.merge(cur_lbls[["Name"]], on="Name")
+        cur_indiv = indivsum.merge(cur_lbls[[namecol]], on=namecol)
+        cur_two = twosites.merge(cur_lbls[[namecol]], on=namecol)
         curdf = pd.concat([cur_indiv, cur_two])
         print(perm, curdf["Name"].unique().shape[0])
         min_y = min(curdf[affcol].tolist())
@@ -261,15 +267,15 @@ def plot_ori_incosistency2(indivsum_df, twosites_df, lbldf, namecol="Name",
             fig.subplots_adjust(hspace=0.4,wspace=0.2)
             i = 1 # start from 1 for the all plot
             cur_ax = fig.add_subplot(numcol,numrow,i)
-            df_median = curdf.groupby(["Name","type","ori"]).median().reset_index()
-            scatter_boxplot_col(df_median, "type", "affinity" , plotorder=po, title=all_lbl, ax=cur_ax)
+            df_median = curdf.groupby([namecol,"type",oricol]).median().reset_index()
+            scatter_boxplot_col(df_median, "type", affcol , plotorder=po, title=all_lbl, ax=cur_ax)
             for n in curdf["Name"].drop_duplicates().tolist():
                 if i == 0:
                     fig = plt.figure(figsize=(25,14))
                     fig.subplots_adjust(hspace=0.4,wspace=0.2)
                 i += 1
                 cur_ax = fig.add_subplot(numcol,numrow,i)
-                scatter_boxplot_col(curdf[curdf["Name"] == n], "type", "affinity", plotorder=po, title=n, ax=cur_ax)
+                scatter_boxplot_col(curdf[curdf[namecol] == n], "type", affcol, plotorder=po, title=n, ax=cur_ax)
                 if fixed_ax:
                     cur_ax.set_ylim([min_y, max_y])
                 if i == numcol*numrow:
@@ -280,56 +286,3 @@ def plot_ori_incosistency2(indivsum_df, twosites_df, lbldf, namecol="Name",
     plt.clf()
     plt.close()
     return 0
-
-def plot_ori_inconsistency(df1, df2, cols, orinames=["o1","o2"], log=False, fixed_ax=True):
-    """
-    Desc
-
-    Args:
-        fixed_ax: have to lower and upper y axis value to be the same for all plots
-    Return:
-
-    """
-    o1,o2 = orinames
-    df = df1.merge(df2, on=["Name", "rep"], suffixes=('_%s'%o1, '_%s'%o2))
-    oricols = ["%s_%s" % (c,o) for o in orinames for c in cols ]
-    if log:
-        for c in oricols:
-            df[c] = np.log(df[c])
-
-    numcol = 4
-    numrow = 4
-    labels =  ["cooperative", "additive", "anticoop"]
-    perms = [(x,y) for x in labels for y in labels]
-
-    for perm in perms:
-        curdf = df[(df["label_%s"%o1] == perm[0]) & (df["label_%s"%o2] == perm[1])]
-        print(perm, curdf["Name"].unique().shape[0])
-        min_y, max_y = min(df.loc[:,oricols].min().tolist()), max(df.loc[:,oricols].max().tolist())
-        all_lbl = "%s_%s_%s_%s" % (perm[0],o1,perm[1],o2)
-        fig, ax = plt.subplots(numrow, numcol, figsize=(25, 5))
-        plt.subplots_adjust(hspace = 0.4, wspace=0.2)
-        with PdfPages("%s.pdf" % all_lbl) as pdf:
-            fig = plt.figure(figsize=(25,14))
-            fig.subplots_adjust(hspace=0.4,wspace=0.2)
-            i = 1 # start from 1 for the all plot
-            cur_ax = fig.add_subplot(numcol,numrow,i)
-            dfall_median = curdf.groupby("Name").median().reset_index()
-            print(dfall_median)
-            scatter_boxplot(dfall_median, cols=oricols, title=all_lbl, ax=cur_ax)
-            for n in curdf["Name"].drop_duplicates().tolist():
-                if i == 0:
-                    fig = plt.figure(figsize=(25,14))
-                    fig.subplots_adjust(hspace=0.4,wspace=0.2)
-                i += 1
-                cur_ax = fig.add_subplot(numcol,numrow,i)
-                scatter_boxplot(curdf[curdf["Name"] == n], cols=oricols, log=True, title=n, ax=cur_ax)
-                if fixed_ax:
-                    cur_ax.set_ylim([min_y, max_y])
-                if i == numcol*numrow:
-                    pdf.savefig(fig)
-                    plt.close()
-                    i = 0
-            pdf.savefig(fig)
-        plt.clf()
-        plt.close()

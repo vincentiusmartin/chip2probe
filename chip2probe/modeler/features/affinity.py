@@ -10,28 +10,33 @@ class Affinity(basefeature.BaseFeature):
             traindf: dataframe containing the site_wk_score and site_str_score columns
                      if imadsmodel is None
             params:
-                - imadsmodel: imadsmodel,
-                - modelwidth: width
+                - imads
 
          Returns:
             NA
         """
         default_args = {
-            "imads" : None
+            "imads" : None,
+            "colnames":("site_wk_score", "site_str_score")
         }
         self.df = traindf
         self.set_attrs(params, default_args)
 
+        if len(self.colnames) != 2:
+            raise Exception("there should be only 2 columns")
+        self.col1, self.col2 = self.colnames[0],self.colnames[1]
 
+
+    # TODO: make prediction can do without str weak
     def get_feature(self):
         """Get a dictionary of binding site preference scores."""
         rfeature = []
         # if imadsmodel is not provided, we assume the weak and strong site position is provided
         # TODO: make general column name
         for idx, row in self.df.iterrows():
-            if not self.imads:
-                f = {"site_wk_score": row["site_wk_score"],
-                     "site_str_score": row["site_str_score"]}
+            if self.colnames:
+                f = {self.col1: row[self.col1],
+                     self.col2: row[self.col2]}
             else: # imads model is provided
                 pr = self.imads.predict_sequence(row["sequence"])
                 if len(pr) != 2:
@@ -39,7 +44,7 @@ class Affinity(basefeature.BaseFeature):
                     newpr = []
                     # if we suddenly have > 2 predictions, try using position in the training
                     for p in pr:
-                        if p["core_mid"] == row["site_str_pos"] or p["core_mid"] == row["site_wk_pos"]:
+                        if p["core_mid"] == row["%s_pos"%col2] or p["core_mid"] == row["%s_pos"%col1]:
                             newpr.append(p)
                     if len(newpr) != 2:
                         print("Error on row:\n", row, "with prediction\n", pr)

@@ -58,6 +58,7 @@ def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", 
     desc
 
     Args:
+        alternative: "smaller" whichever less or greater that is smaller
 
 
     Returns:
@@ -99,14 +100,19 @@ def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", 
             max1 = max(data[x1])
             max2 = max(data[x2])
             mval = max1 if max1 > max2 else max2
-            p_gr = st.wilcox(data[x1],data[x2],alternative=alternative)
+            if alternative == "smaller":
+                p_gr = st.wilcox(data[x1],data[x2],alternative="greater")
+                p_ls = st.wilcox(data[x1],data[x2],alternative="less")
+                p = p_gr if p_gr < p_ls else p_ls
+            else:
+                p = st.wilcox(data[x1],data[x2],alternative=alternative)
             hfrac = -1 if mval < 0 else 1
             hfactor = (max2 - max1)**1.5
             pline_h = mval * 0.05
             pline_pos = mval * 0.2
             y, h, col = df[colname].max() + hfactor * pline_pos, pline_h, 'k'
-            logstr += "%s, %s > %s: %4E\n" % (colname, labels[0], labels[1], Decimal(p_gr))
-            pstr = "%.2E" % Decimal(p_gr) if p_gr < 0.001 else "%.4f" % p_gr
+            logstr += "%s, %s > %s: %4E\n" % (colname, labels[0], labels[1], Decimal(p))
+            pstr = "%.2E" % Decimal(p) if p < 0.001 else "%.4f" % p
             cur_ax.plot([x1, x1, x2, x2], [1.01*y, y+h, y+h, 1.01*y], lw=1, c=col)
             cur_ax.text((x1+x2)*.5, y + h, "p = %s"%(pstr), ha='center', va='bottom', color="red")
 

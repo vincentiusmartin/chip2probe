@@ -9,7 +9,7 @@ import pandas as pd
 from chip2probe.sitespredict.sitesplotter import SitesPlotter
 
 if __name__=="__main__":
-    single_sequence = "TTACGGCAAGCGGGCCGGAAGCCACTCCTCGAGTCT"
+    single_sequence = "GAGGCATTATAGAAAACCGCAAGATTTTAGTCTGAGGTCTTGATTCGCTTGACGCTGCTG"
     many_sequences = ["ACTGGCAGGAAGGGCAGTTTTGGCAGGAAAAGCCAT", "CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC"]
     df = pd.DataFrame(list(zip(many_sequences, ['seq1','seq2'])), columns=['sequence', 'key'])
 
@@ -28,6 +28,7 @@ if __name__=="__main__":
     imads = iMADS(imads_models, 0.19) # 0.2128
 
     imads_pred = imads.predict_sequence(single_sequence)
+    print(imads_pred)
     imads_pred_list = imads.predict_sequences(many_sequences)
     imads_pred_df = imads.predict_sequences(df, key_colname="key")
 
@@ -35,12 +36,14 @@ if __name__=="__main__":
     kompas = Kompas("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/input/site_models/kompas/Ets1_kmer_alignment.txt",
                     core_start = 11, core_end = 15, core_center = 12)
     kompas_pred = kompas.predict_sequence(single_sequence)
+    print(kompas_pred)
 
     # ========= Plot the sequence =========
 
     # Make the plot objects, make_plot_data accepts prediction result
     escore_plot = escore.make_plot_data(escore_pred_list)
     imads_plot = imads.make_plot_data(imads_pred_list)
+    kompaas_plot = imads.make_plot_data(imads_pred_list)
     # Generate sequence plot
     sp = SitesPlotter()
     sp.plot_seq_combine([imads_plot,escore_plot], filepath="plot.pdf")
