@@ -133,6 +133,8 @@ def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa48
     Desc
 
     Args:
+        df: with "Name", "Intensity_one", "Intensity_two", "label".
+            Label -> cooperative, additive, anticoop, below_cutoff
 
     Return:
 
