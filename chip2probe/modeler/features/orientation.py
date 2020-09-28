@@ -15,23 +15,30 @@ class Orientation(basefeature.BaseFeature):
                 - positive_cores: list of string of positive cores
                 - relative: use site orientation relative to each other (HH, HT/TH, TT)
                 - one_hot: use one_hot representation
-
+                - pos_cols: the name of position columns. If there is only one tf,
+                    use list. If the position and ori is known, use dictionary;
+                    e.g. {"ets_pos":"ets_ori", "runx_pos":"runx_ori"}
          Returns:
             NA
         """
 
-        # Make positive cores as mandatory
-        if "positive_cores" not in params or not params["positive_cores"]:
-            raise Exception("Positive cores are needed")
-
         default_args = {
             "positive_cores":[],
             "relative": True,
-            "one_hot": False
+            "one_hot": False,
+            "pos_cols": ("site_wk_pos", "site_str_pos")
         }
         self.df = traindf
         self.set_attrs(params, default_args)
-        self.motiflen = len(self.positive_cores[0])
+        self.motiflen = len(self.positive_cores[0]) if self.positive_cores else 0
+
+        # if pos cols is dict then we have orientation already
+        if isinstance(self.pos_cols, dict):
+            pc = [*self.pos_cols] # get only the keys
+            self.ori_cols = [self.pos_cols[k] for k in pc]
+            self.pos_cols = pc
+        else: # then we need to determine ori from positive cores
+            self.ori_cols = []
 
     def get_feature(self):
         """
@@ -41,28 +48,33 @@ class Orientation(basefeature.BaseFeature):
         rfeature = []
         for idx,row in self.df.iterrows():
             # get the binding sites
-            if row["site_wk_pos"] > row["site_str_pos"]:
-                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+            if row[self.pos_cols[0]] < row[self.pos_cols[1]]:
+                site1, site2 = row[self.pos_cols[0]], row[self.pos_cols[1]]
             else:
-                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
-            seq = row["sequence"]
-            p1 = seq[site1 - self.motiflen//2:site1 + self.motiflen//2]
-            p2 = seq[site2 - self.motiflen//2:site2 + self.motiflen//2]
-            if p1 in self.positive_cores:
-                s1 = 1
-            elif p1 in negative_cores:
-                s1 = -1
+                site1, site2 = row[self.pos_cols[1]], row[self.pos_cols[0]]
+            if self.ori_cols: # we know the orientation already
+                if row[self.pos_cols[0]] < row[self.pos_cols[1]]:
+                    s1, s2 = row[self.ori_cols[0]], row[self.ori_cols[1]]
+                else:
+                    s1, s2 = row[self.ori_cols[1]], row[self.ori_cols[0]]
             else:
-                s1 = 0
-                print("couldn't find the first site %s in %s in the core list" % (p1,seq))
-
-            if p2 in self.positive_cores:
-                s2 = 1
-            elif p2 in negative_cores:
-                s2 = -1
-            else:
-                s2 = 0
-                print("couldn't find the second site %s in %s in the core list" % (p2,seq))
+                seq = row["sequence"]
+                p1 = seq[site1 - self.motiflen//2:site1 + self.motiflen//2]
+                p2 = seq[site2 - self.motiflen//2:site2 + self.motiflen//2]
+                if p1 in self.positive_cores:
+                    s1 = 1
+                elif p1 in negative_cores:
+                    s1 = -1
+                else:
+                    s1 = 0
+                    print("couldn't find the first site %s in %s in the core list" % (p1,seq))
+                if p2 in self.positive_cores:
+                    s2 = 1
+                elif p2 in negative_cores:
+                    s2 = -1
+                else:
+                    s2 = 0
+                    print("couldn't find the second site %s in %s in the core list" % (p2,seq))
             if self.relative:
                 if s1 == 1 and s2 == 1:
                     ori = 'HT/TH'
@@ -77,6 +89,7 @@ class Orientation(basefeature.BaseFeature):
                 rfeature.append({"ori":ori})
             else:
                 rfeature.append({"ori1":s1, "ori2":s2})
+            print(site1,site2)
         if self.relative and self.one_hot:
             dum_df = pd.DataFrame(rfeature)
             notfound = {"HH","HT/TH","TT"} - set(dum_df["ori"].unique())

@@ -1,3 +1,3 @@
-Mean accuracy: {'distance': 0.686829268292683, 'strength': 0.6741463414634147, 'distace,strength': 0.7326829268292683}
-Mean auc: {'distance': 0.6635351440841886, 'strength': 0.7018182637773335, 'distace,strength': 0.754835589941973}
-Confusion_matrix (tn,fp,fn,tp): {'distance': array([502, 147, 174, 202]), 'strength': array([571,  78, 256, 120]), 'distace,strength': array([555,  94, 180, 196])}
+Mean accuracy: {'distance': 0.6683385579937304, 'strength': 0.7780564263322884, 'distace,strength': 0.799373040752351}
+Mean auc: {'distance': 0.6633788792933475, 'strength': 0.8583228176715696, 'distace,strength': 0.8772764764646346}
+Confusion_matrix (tn,fp,fn,tp): {'distance': array([775, 188, 341, 291]), 'strength': array([813, 150, 204, 428]), 'distace,strength': array([834, 129, 191, 441])}
