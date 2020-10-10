@@ -9,7 +9,7 @@ Pick the best model
 import pandas as pd
 import os, sys
 import pickle
-from sklearn import ensemble
+from sklearn import ensemble, tree
 os.chdir("../..")
 
 from chip2probe.modeler.cooptrain import CoopTrain
@@ -40,11 +40,9 @@ if __name__ == "__main__":
     train = ct.get_feature_all(feature_dict, aslist=True)
     label = ct.get_numeric_label({'cooperative': 1, 'additive': 0})
 
-    
-
-    # This is usually made based on the best model
-    # rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=15, min_samples_leaf=10, min_samples_split=10)
-    # rf.fit(train,label)
-    # model_name = "dist_ori_12merimads.sav"
-    # pickle.dump(rf, open(model_name, 'wb'))
-    # print("Model saved in %s" % model_name)
+    tree.export_graphviz(m.estimators_[5], out_file='tree.dot',
+            feature_names = xt_df.columns,
+            class_names = ['additive','cooperative'],
+            rounded = True, proportion = False,
+            precision = 2, filled = True)
+    subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])

@@ -1,9 +1,6 @@
 """This file contains functions used in preprocessing of sequences."""
 import pandas as pd
-
-# all permutations are already reverse-deleted
-# all sequences are represented in binary
-
+import random
 
 def revcompstr(seq):
     """Return the reverse complement of the given sequence."""
@@ -56,6 +53,8 @@ def get_seqdict(sequence_tbl, sequence_col="sequence", keycol="",
     # return the dictionary representation of the sequences
     return {str(k + 1): v for k, v in enumerate(seqlist)}
 
+def gen_randseq(n):
+    return''.join(random.choices('ACGT', k=n))
 
 def itoseq(seqint, kmer):
     """Generate the sequence as a string from its integer representation."""

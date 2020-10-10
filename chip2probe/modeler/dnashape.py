@@ -1,9 +1,11 @@
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
 import string, random
 import pathlib
+import operator
 
 from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
@@ -53,13 +55,12 @@ class DNAShape:
                 p.unlink()
 
     def get_shape_names():
-        return ["ProT","MGW","Roll","HelT"]
+        return self.shapetypes
 
     def get_sequence_count(self, seqlist, avg=True):
-        it = iter(seqlist)
-        seqlen = len(next(it))
-        if not all(len(l) == seqlen for l in it):
-            raise ValueError('not all lists have same length!')
+        seqlen = len(seqlist[0])
+        if not all(len(l) == seqlen for l in seqlist):
+            raise ValueError('not all sequences have same length!')
         counter = []
         for i in range(0,seqlen):
             nuc_ct = {"A":0, "C":0, "G": 0, "T":0}
@@ -72,62 +73,76 @@ class DNAShape:
 
     # hard coded for coop
     # assume: seq same length, same site position
-    def plot_average(self, labels, site1list, site2list, sequences, pthres=0.05, path="shape.pdf", plotlabel="Average DNA shape"):
-        plt.clf()
-        #colors = ['orangered','dodgerblue','lime']
-        s1 = int(sum(site1list.values()) / len(site1list.values()))
-        s2 = int(sum(site2list.values()) / len(site2list.values()))
+    #def plot_average(self, labels, site1list, site2list, sequences, pthres=0.05, path="shape.pdf", plotlabel="Average DNA shape"):
+    def plot_average(self, df, linemarks=[], path="shape.pdf", lblcol="label", seqcol="sequence",
+             pthres=0.01, pltlabel=""):
+        """
+        Plot average DNA shape
 
-        shapes = {"Minor Groove Width":self.mgw}
-        keystolabel = {"additive":"ã","cooperative":"ç"} # ã ç
+        Args:
+            labels: list
+            sites_per_tf:
+            pthres: p-value threshold for difference between label
+         Returns:
+            NA
+        TODO:
+            label is still hardcoded, make it general?
+        """
+        plt.style.use('seaborn-whitegrid')
+        # when the sequence is not aligned, we get the most frequent s1 and do
+        # alignment according to this
 
-        if "cooperative" in labels:
-            cooperative_list = [sequences[idx] for idx in labels["cooperative"]]
-            nuc_ct_coop = self.get_sequence_count(cooperative_list, avg=False) #self.get_sequence_count(list(sequences.values()), avg=True)
-        if "additive" in labels:
-            additive_list = [sequences[idx] for idx in labels["additive"]]
-            nuc_ct_add = self.get_sequence_count(additive_list, avg=False)
+        shapes = {s:getattr(self,s.lower()) for s in self.shapetypes}
 
+        # lblidxs.get(l, 0)
 
-        # get the maximum seq length
+        # get the index of each label
+        lblidxs = {}
+        # get the count of the nucleotide for the mini subplot
+        seqlen = len(df['sequence'].iloc[0])
+        base_ct = {}
+        for l in df[lblcol].unique():
+            seqlist = df[df[lblcol]==l]["sequence"].tolist()
+            base_ct[l] = self.get_sequence_count(seqlist, avg=False)
+
         fig = plt.figure(figsize=(12,12))
+        labels = df[lblcol].unique()
         n = 0 # for the subplot
-        colors = {"additive":'orangered',"cooperative":'dodgerblue'}
-        for sh in shapes: # shapes
+        colors = {"additive":'orangered',"cooperative":'dodgerblue'} # TODO: make this general
+
+        keystolabel = {"additive":"ã","cooperative":"ç"}
+        for sh in shapes:
             n += 1
             ax = fig.add_subplot(2,2,n)
-            yall = {}
             lshift_dict = {}
-            flen = int(np.mean([len(x) for x in shapes[sh].values()]))
-
+            flen = len(next(iter(shapes[sh].values())))
+            xlist = list(range(seqlen-flen,seqlen))
             # ==== Plotting part using 25, 50, and 75 percentiles ====
-            # labels = cooperative or additive
-            miny = float("inf")
+            min_y = float("inf")
+            yall = {}
             for label in labels:
-                indexes = labels[label]
-                curlist = []
-                for key in indexes:
-                    shape = shapes[sh][str(key+1)]
-                    curlist.append(shape)
-                yall[label] = curlist
-                seqlen = len(curlist[0])
-                if not all(len(l) == seqlen for l in curlist):
+                curnames = df[df["label"] == label]["Name"].tolist()
+                shapes_lbl = operator.itemgetter(*curnames)(shapes[sh])
+                if not all(len(l) == flen for l in shapes_lbl):
                     raise ValueError('not all lists have same length!')
-
-                ylist = np.median(curlist, axis=0)
-                xlist = [i+1 for i in range(0,seqlen)]
-                y25p = np.percentile(curlist, 25, axis=0)
-                y75p = np.percentile(curlist, 75, axis=0)
+                ylist = np.median(shapes_lbl, axis=0)
+                y25p = np.percentile(shapes_lbl, 25, axis=0)
+                y75p = np.percentile(shapes_lbl, 75, axis=0)
                 ax.plot(xlist, ylist, alpha=0.8, label=label, c=colors[label], marker='o')
                 ax.fill_between(xlist, y75p, y25p, alpha=0.15, facecolor=colors[label])
+                yall[label] = shapes_lbl # save the y to do hypothesis testing later
+
+            # ==== Mark binding sites as given from the input ====
+            for m in linemarks:
+                ax.axvline(x=m,linewidth=1, color='g',linestyle='--')
 
             # ==== Hypothesis testing to mark significant binding sites ====
-            signiflabel = []
+            signiflabel = ['']*(seqlen-flen)
             if "cooperative" in labels and "additive" in labels:
                 for i in range(0,flen):
                     # for now assume yall is of size 2
-                    arr_coop = [seq[i] for seq in yall['cooperative']]
-                    arr_add = [seq[i] for seq in yall['additive']]
+                    arr_coop = [y[i] for y in yall['cooperative']]
+                    arr_add = [y[i] for y in yall['additive']]
                     if not any(np.isnan(x) for x in arr_coop) and not any(np.isnan(x) for x in arr_add):
                         p1 = st.wilcox(arr_coop,arr_add,"greater")
                         p2 = st.wilcox(arr_coop,arr_add,"less")
@@ -140,71 +155,46 @@ class DNAShape:
                     else:
                         signiflabel.append('')
 
-            # ==== Mark binding sites as given from the input ====
-            for m in [s1,s2]:
-                ax.axvline(x=m,linewidth=1, color='g',linestyle='--')
-
-            ax.set_xlim(1,seqlen)
-            xi = [x for x in range(1,seqlen+1)]
-            #label = ['' if x not in signiflist else '*' for x in xi]
-            ax.set_xticks(xi)
+            # #label = ['' if x not in signiflist else '*' for x in xi]
+            ax.set_xticks(list(range(seqlen)))
             ax.set_xticklabels(signiflabel)
             ax.yaxis.set_label_text(sh)
             ax.xaxis.set_label_text('Sequence position')
             ax.legend(loc="upper right")
-            ax.set_title(plotlabel)
+            ax.set_title(pltlabel if pltlabel else sh)
             low_y = ax.get_ylim()[0]
             hfactor = ax.get_ylim()[1] -  ax.get_ylim()[0]
             ax.set_ylim(bottom = low_y - np.abs(0.35 * hfactor))
             for i in range(0,4): # low_y here?
                 ax.yaxis.get_major_ticks()[i].label1.set_visible(False)
 
-            #for ymaj in ax.yaxis.get_major_ticks():
-            #    print(ymaj.label2)
-            #    ymaj.label1.set_visible(False)
-
             base_color = {'A': "red", 'C': "green" , 'G': "orange", 'T': "blue"}
             bot_anchor = 0
-
-            nuc_dict = {}
-            if "cooperative" in labels:
-                nuc_dict["co"] = nuc_ct_coop
-            if "additive" in labels:
-                nuc_dict["ad"] = nuc_ct_add
-
-            #lv = []
-            #for key in nuc_dict:
-            #    for i in range(0,len(nuc_dict[key])):
-            #        lv.extend(list(nuc_dict["co"][0].values()))
-            maxct = len(site1list)
-
             for base in base_color:
-                for key in nuc_dict:
-                    nuc_ct = nuc_dict[key]
+                for key in base_ct:
                     inset_ax = inset_axes(ax,
                                   height="5%",
                                   width="100%",
                                   bbox_to_anchor= (0, bot_anchor, 1, 1),
                                   bbox_transform=ax.transAxes,
                                   loc=8)
-                    inl = [elm[base] for elm in nuc_ct]
+                    inl = [elm[base] for elm in base_ct[key]]
                     # also add 0.5 here to center
                     xbar = [i+0.5 for i in range(0,len(inl))] # should use the same axis with ax but this works...
                     sns.barplot(x = xbar, y = inl, color = base_color[base], ax=inset_ax)
                     inset_ax.get_xaxis().set_visible(False)
-                    inset_ax.set_ylim(top=maxct)
+                    # inset_ax.set_ylim(top=max)
                     inset_ax.set_yticklabels([])
                     inset_ax.patch.set_visible(False)
-                    inset_ax.set_ylabel("%s_%s"%(base,key),rotation=0)
+                    inset_ax.set_ylabel("%s_%s"%(base,key[:2]),rotation=0)
                     inset_ax.yaxis.label.set_color(base_color[base])
                     bot_anchor += 0.05
-            # (A, green), thymine (T, red), cytosine (C, orange), and guanine (G, blue).
-
         with PdfPages(path) as pdf:
             pdf.savefig(fig)
 
 # ============== This is a separate class to contain everything ==============
 
+"""
 class DNAShapes:
 
     def __init__(self, path, bsites):
@@ -267,3 +257,4 @@ class DNAShapes:
             return df_ret
         else:
             return df_ret.to_dict('records')
+"""

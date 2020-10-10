@@ -110,7 +110,7 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
 
     if shownames:
         names = dfcombined[namecol].values
-        for i in ranplot_classified_labelsge(len(names)):
+        for i in range(len(names)):
             plt.text(x[i], y[i], names[i], fontsize=3)
 
     plt.xlabel(xlab)
@@ -128,13 +128,15 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
     plt.clf()
 
 def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa488Adjusted_y",
-                           xlab="Chamber1", ylab="Chamber2", log=True, title="", axes=None):
+                           xlab="Chamber1", ylab="Chamber2", log=True, title="", axes=None,
+                           shownames=False, namecol="Name"):
     """
     Desc
 
     Args:
         df: with "Name", "Intensity_one", "Intensity_two", "label".
             Label -> cooperative, additive, anticoop, below_cutoff
+            shownames: show names of the probe on the plot, useful for debugging. Names are obtained from namecol.
 
     Return:
 
@@ -153,6 +155,10 @@ def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa48
             y = newdf[newdf['label']==lc[0]][col2].values
             label = lc[0] if lc[0] != "below_cutoff" else None
             ax.scatter(x, y, color=lc[1], s=3, alpha=lc[2], label=label)
+            if shownames:
+                names = newdf[newdf['label']==lc[0]][namecol].values
+                for i in range(len(names)):
+                    plt.text(x[i], y[i], names[i], fontsize=5)
 
     ax.set_xlabel(xlab)
     ax.set_ylabel(ylab)
@@ -236,7 +242,7 @@ def plot_ori_inconsistency(indivsum_df, twosites_df, lbldf, namecol="Name", oric
         twosites_df: data frame of Name, orientation, affinity of the two sites
         lbldf: data frame of Name, label in first orientation, label in second orientation
     """
-    o1, o2 = set(lbldf.columns) - {namecol}
+    o1, o2 = sorted(set(lbldf.columns) - {namecol})
     indivsum, twosites = indivsum_df.copy(), twosites_df.copy()
     if log:
         indivsum[affcol] = np.log(indivsum[affcol])
@@ -246,7 +252,7 @@ def plot_ori_inconsistency(indivsum_df, twosites_df, lbldf, namecol="Name", oric
 
     numcol = 4
     numrow = 4
-    label_names =  ["cooperative", "additive", "anticoop"]
+    label_names = set(lbldf[o1]) | set(lbldf[o2])
     perms = [(x,y) for x in label_names for y in label_names]
 
     for perm in perms:
@@ -257,6 +263,8 @@ def plot_ori_inconsistency(indivsum_df, twosites_df, lbldf, namecol="Name", oric
         cur_two = twosites.merge(cur_lbls[[namecol]], on=namecol)
         curdf = pd.concat([cur_indiv, cur_two])
         print(perm, curdf["Name"].unique().shape[0])
+        if len(curdf[affcol].tolist()) == 0:
+            continue
         min_y = min(curdf[affcol].tolist())
         max_y = max(curdf[affcol].tolist())
 

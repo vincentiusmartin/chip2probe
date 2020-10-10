@@ -9,16 +9,23 @@ from chip2probe.sitespredict.kompas import Kompas
 import pandas as pd
 from chip2probe.sitespredict.sitesplotter import SitesPlotter
 
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
 if __name__=="__main__":
     single_sequence = "CTGTGTAAATAAAGCCACAGACTTCCGCCTACAGGT"
-    many_sequences = ["ACTGGCAGGAAGGGCAGTTTTGGCAGGAAAAGCCAT", "CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC"]
+    many_sequences = ["GAACCTGGGAGGCGGAAGTTGCGGTTAGCCGAGATC"] #, "CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC"]
     df = pd.DataFrame(list(zip(many_sequences, ['seq1','seq2'])), columns=['sequence', 'key'])
 
     # ========= PWM =========
-    pwm = PWM("input/site_models/pwm/runx1.txt", 7, 18, False)
-    pwm_pred = pwm.predict_sequence(single_sequence)
-    pwm_pred_list = pwm.predict_sequences(many_sequences)
+    pwmr = PWM("input/site_models/pwm/runx1.txt", 6, 16)
+    pwme = PWM("input/site_models/pwm/ets1.txt")
+    pwm_prede = pwme.predict_sequence(single_sequence)
+    pwm_pred_listr = pwmr.predict_sequences(many_sequences)
+    pwm_pred_liste = pwme.predict_sequences(many_sequences)
+    print(pwm_prede)
 
+    """
     # ========= Escore =========
     escore = PBMEscore("input/site_models/escores/Ets1_8mers_11111111.txt")
 
@@ -45,10 +52,13 @@ if __name__=="__main__":
     # ========= Plot the sequence =========
 
     # Make the plot objects, make_plot_data accepts prediction result
-    pwm_plot = pwm.make_plot_data(pwm_pred_list)
+    pwm_plotr = pwmr.make_plot_data(pwm_pred_listr)
+    pwm_plote = pwme.make_plot_data(pwm_pred_liste, color="green")
     escore_plot = escore.make_plot_data(escore_pred_list)
     imads_plot = imads.make_plot_data(imads_pred_list)
     kompas_plot = imads.make_plot_data(imads_pred_list)
+
     # Generate sequence plot
     sp = SitesPlotter()
-    sp.plot_seq_combine([imads_plot,escore_plot], filepath="plot.pdf")
+    sp.plot_seq_combine([pwm_plote, pwm_plotr], filepath="plot.pdf")
+    """

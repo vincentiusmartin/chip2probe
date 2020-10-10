@@ -89,7 +89,6 @@ class Orientation(basefeature.BaseFeature):
                 rfeature.append({"ori":ori})
             else:
                 rfeature.append({"ori1":s1, "ori2":s2})
-            print(site1,site2)
         if self.relative and self.one_hot:
             dum_df = pd.DataFrame(rfeature)
             notfound = {"HH","HT/TH","TT"} - set(dum_df["ori"].unique())

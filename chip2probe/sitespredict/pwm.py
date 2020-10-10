@@ -40,6 +40,8 @@ class PWM(basemodel.BaseModel):
                     pwm_fwd[base] = [float(score) for score in scores]
         bases_rev = bases[::-1]
         pwm_rev = {bases[i] : pwm_fwd[bases_rev[i]][::-1] for i in range(len(bases))}
+        # for a in pwm_rev:
+        #     print(a,"\t".join(map(str,pwm_rev[a])))
         return pwm_fwd, pwm_rev
 
     def predict_sequence(self, sequence, zero_thres=True):
@@ -88,12 +90,18 @@ class PWM(basemodel.BaseModel):
             sequence = predictions_dict[key].sequence
             sites_prediction = predictions_dict[key].predictions
             func_pred = []
+            max_y = 1
             for pred in sites_prediction:
                 core_rect = patches.Rectangle((pred["site_start"],0),pred["site_width"] - 1,pred["score"],
                                  facecolor=color,alpha=0.9,edgecolor='black')
                 func_pred.append({"func": "add_patch",
                                   "args": [core_rect],
                                   "kwargs": {}})
+                if pred["score"] > max_y:
+                    max_y = pred["score"]
+            func_pred.append({"func": "set_ylim",
+                              "args": [],
+                              "kwargs": {"top":max_y+1}})
             func_dict[key] = {"sequence": sequence,
                               "plt": func_pred}
         return func_dict

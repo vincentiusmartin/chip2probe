@@ -42,17 +42,17 @@ def read_probe_data(df, keyword, kompas_ets, kompas_runx):
 def assign_class(p, prevlbl):
     if prevlbl == "below_cutoff":
         return 'below_cutoff'
-    elif prevlbl == 'anticoop' and p < 0.05:
+    elif prevlbl == 'anticoop' and p < 0.01:
         return 'anticoop'
-    elif prevlbl == 'cooperative' and p < 0.05:
+    elif prevlbl == 'cooperative' and p < 0.01:
         return 'cooperative'
     else:
         return 'additive'
 
 if __name__ == "__main__":
     basepath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/coop_hetero-PBM_Ets_EtsRunx_v1"
-    df = pd.read_csv("%s/Ets1_Runx1_70.txt"%basepath,sep="\t") # Ets1_Runx1_70.txt
-    cutoff = 568.11 # from plot_chamber_corr.py
+    df = pd.read_csv("%s/Runx1_Ets1_80.txt"%basepath,sep="\t") # Ets1_Runx1_70.txt
+    cutoff = 1196.98 # from plot_chamber_corr.py
 
     kompas_ets = Kompas("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/input/site_models/kompas/Ets1_kmer_alignment.txt",
                     core_start = 11, core_end = 15, core_center = 12)
@@ -99,9 +99,9 @@ if __name__ == "__main__":
         labeled_dict[ori]['label'] = labeled_dict[ori].apply(lambda row: assign_class(row['p'],row['label']),axis=1)
         print(ori, labeled_dict[ori]["label"].value_counts())
         arr.plot_classified_labels(labeled_dict[ori], col1="indiv_median", col2="two_median", log=True,
-                        xlab="log(wt-m3)", ylab="log(m1-m3+m2-m3)", path="coop_log_%s.eps"%ori, title="Cooperative plot (in log), ori %s"%ori)
+                        xlab="log(wt-m3)", ylab="log(m1-m3+m2-m3)", path="coop_log_%s.png"%ori, title="Cooperative plot (in log), ori %s"%ori)
         arr.plot_classified_labels(labeled_dict[ori], col1="indiv_median", col2="two_median", log=False,
-                        xlab="wt-m3", ylab="m1-m3+m2-m3", path="coop_%s.eps"%ori, title="Cooperative plot, ori %s"%ori)
+                        xlab="wt-m3", ylab="m1-m3+m2-m3", path="coop_%s.png"%ori, title="Cooperative plot, ori %s"%ori)
 
     df_er = labeled_dict['er'][labeled_dict['er']["label"] != "below_cutoff"]
     df_re = labeled_dict['re'][labeled_dict['re']["label"] != "below_cutoff"]
@@ -111,9 +111,9 @@ if __name__ == "__main__":
     ori_match['indiv_median'] = (ori_match['indiv_median_er'] + ori_match['indiv_median_re'])/2
     ori_match['two_median'] = (ori_match['two_median_er'] + ori_match['two_median_re'])/2
     arr.plot_classified_labels(ori_match, col1="indiv_median", col2="two_median", log=False,
-                    xlab="wt-m3", ylab="m1-m3+m2-m3", path="coop_both.eps", title="Cooperative plot, both ori")
+                    xlab="wt-m3", ylab="m1-m3+m2-m3", path="coop_both.png", title="Cooperative plot, both ori")
     arr.plot_classified_labels(ori_match, col1="indiv_median", col2="two_median", log=True,
-                    xlab="log(wt-m3)", ylab="log(m1-m3+m2-m3)", path="coop_both_log.eps", title="Cooperative plot, both ori (log val)")
+                    xlab="log(wt-m3)", ylab="log(m1-m3+m2-m3)", path="coop_both_log.png", title="Cooperative plot, both ori (log val)")
 
     ori_match[["Name","label"]].to_csv("name_labeled.csv", index=False)
     labeled_per_ori = labeled_joined[["Name","label_er", "label_re"]]
