@@ -2,6 +2,7 @@ from chip2probe.modeler.features import basefeature
 import chip2probe.util.bio as bio
 import chip2probe.modeler.dnashape as ds
 import string, random
+import math
 
 from chip2probe.modeler.features.orientation import Orientation
 
@@ -32,7 +33,9 @@ class Shape(basefeature.BaseFeature):
             "seqin": 0,
             "smode": "positional", #site mode
             "direction": "inout",
-            "positive_cores" : []
+            "positive_cores" : [],
+            "poscols": [],
+            "namecol":"Name"
         }
         self.df = traindf
         self.set_attrs(params, default_args)
@@ -43,16 +46,16 @@ class Shape(basefeature.BaseFeature):
         if self.direction == "orientation" and ("positive_cores" not in params or not params["positive_cores"]):
             raise TypeError("Positive cores are needed when direction is 'orientation'")
 
-        if "name" in self.df:
-            fastadict = dict(zip(self.df["name"], self.df["sequence"]))
+        if self.namecol in self.df:
+            fastadict = dict(zip(self.df[self.namecol], self.df["sequence"]))
             shapeobj = ds.DNAShape(fastadict)
         else:
             shapeobj = ds.DNAShape(self.df["sequence"].tolist())
         self.shapes = {k:getattr(shapeobj,k.lower()) for k in shapeobj.shapetypes}
         # make a dictionary of list instead of nested dictionary since we use this
         # as features
-        if "name" in self.df:
-            namelist = self.df["name"].tolist()
+        if self.namecol in self.df:
+            namelist = self.df[self.namecol].tolist()
         else:
             namelist = next(iter(self.shapes.values())).keys()
         self.shapes = {k:[v[n] for n in namelist] for k, v in self.shapes.items()}
@@ -72,7 +75,9 @@ class Shape(basefeature.BaseFeature):
         rfeature = []
         for idx,row in self.df.iterrows():
             # first get which site is on the left (site1) and on the right (site2)
-            if row["site_wk_pos"] > row["site_str_pos"]:
+            if self.poscols:
+                site1, site2 = row[self.poscols[0]], row[self.poscols[1]]
+            elif row["site_wk_pos"] > row["site_str_pos"]:
                 site1, site2 = row["site_str_pos"], row["site_wk_pos"]
                 if self.smode == "strength":
                     s1type, s2type = "str", "wk"
@@ -104,8 +109,8 @@ class Shape(basefeature.BaseFeature):
                 type = "outer"
             start = 1 if self.seqin < 0 else 0 # if outer, we start from 1
             for i in range(start, abs(self.seqin) + start):
-                dfeature["%s_%s_%s_pos_%d" % (s,type,s1type,i)] = flank1[i-start]
-                dfeature["%s_%s_%s_pos_%d" % (s,type,s2type,i)] = flank2[i-start]
+                dfeature["%s_%s_%s_pos_%d" % (s,type,s1type,i)] = flank1[i-start] if not math.isnan(flank1[i-start]) else -999
+                dfeature["%s_%s_%s_pos_%d" % (s,type,s2type,i)] = flank2[i-start] if not math.isnan(flank2[i-start]) else -999
         return dfeature
 
     def get_shape_orientation(self, idx, site1, site2, s1type, s2type, orientation):

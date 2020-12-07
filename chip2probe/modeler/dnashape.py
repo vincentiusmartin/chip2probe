@@ -35,6 +35,7 @@ class DNAShape:
             NA
         """
         self.shapetypes = ["ProT" , "MGW", "Roll", "HelT"]
+        self.fullnames = {"ProT":"Propeler twist", "MGW":"Minor groove width", "Roll":"Roll", "HelT":"Helical twist"}
         if isinstance(fasta, dict) or isinstance(fasta, list):
             # need to make fasta file first because DNAShapeR only accepts filepath
             tmpstr = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
@@ -74,8 +75,10 @@ class DNAShape:
     # hard coded for coop
     # assume: seq same length, same site position
     #def plot_average(self, labels, site1list, site2list, sequences, pthres=0.05, path="shape.pdf", plotlabel="Average DNA shape"):
-    def plot_average(self, df, linemarks=[], path="shape.pdf", lblcol="label", seqcol="sequence",
-             pthres=0.01, pltlabel=""):
+    def plot_average(self, df, linemarks=[], path="", lblcol="label",
+            seqcol="sequence", pthres=0.01, pltlabel="", in_fig=None,
+            lblnames=["cooperative","additive"], base_count=True,
+            label_title=False):
         """
         Plot average DNA shape
 
@@ -88,7 +91,8 @@ class DNAShape:
         TODO:
             label is still hardcoded, make it general?
         """
-        plt.style.use('seaborn-whitegrid')
+        #plt.style.use('seaborn-whitegrid')
+        cooplbl, addlbl = lblnames
         # when the sequence is not aligned, we get the most frequent s1 and do
         # alignment according to this
 
@@ -105,12 +109,15 @@ class DNAShape:
             seqlist = df[df[lblcol]==l]["sequence"].tolist()
             base_ct[l] = self.get_sequence_count(seqlist, avg=False)
 
-        fig = plt.figure(figsize=(12,12))
         labels = df[lblcol].unique()
         n = 0 # for the subplot
-        colors = {"additive":'orangered',"cooperative":'dodgerblue'} # TODO: make this general
+        #colors = {addlbl:'orangered',cooplbl:'dodgerblue'} # TODO: make this general
+        colors = {addlbl:'#FFA07A',cooplbl:'#b22222'}
 
-        keystolabel = {"additive":"ã","cooperative":"ç"}
+        fig = plt.figure(figsize=(12,12)) if in_fig is None else in_fig
+
+        #keystolabel = {addlbl:"ã",cooplbl:"ç"}
+        keystolabel = {addlbl:"*",cooplbl:"*"}
         for sh in shapes:
             n += 1
             ax = fig.add_subplot(2,2,n)
@@ -122,7 +129,7 @@ class DNAShape:
             yall = {}
             for label in labels:
                 curnames = df[df["label"] == label]["Name"].tolist()
-                shapes_lbl = operator.itemgetter(*curnames)(shapes[sh])
+                shapes_lbl = [shapes[sh][cn] for cn in curnames]
                 if not all(len(l) == flen for l in shapes_lbl):
                     raise ValueError('not all lists have same length!')
                 ylist = np.median(shapes_lbl, axis=0)
@@ -138,18 +145,18 @@ class DNAShape:
 
             # ==== Hypothesis testing to mark significant binding sites ====
             signiflabel = ['']*(seqlen-flen)
-            if "cooperative" in labels and "additive" in labels:
+            if cooplbl in labels and addlbl in labels:
                 for i in range(0,flen):
                     # for now assume yall is of size 2
-                    arr_coop = [y[i] for y in yall['cooperative']]
-                    arr_add = [y[i] for y in yall['additive']]
+                    arr_coop = [y[i] for y in yall[cooplbl]]
+                    arr_add = [y[i] for y in yall[addlbl]]
                     if not any(np.isnan(x) for x in arr_coop) and not any(np.isnan(x) for x in arr_add):
                         p1 = st.wilcox(arr_coop,arr_add,"greater")
                         p2 = st.wilcox(arr_coop,arr_add,"less")
                         if p1 <= pthres:
-                            signiflabel.append(keystolabel["cooperative"])
+                            signiflabel.append(keystolabel[cooplbl])
                         elif p2 <= pthres:
-                            signiflabel.append(keystolabel["additive"])
+                            signiflabel.append(keystolabel[addlbl])
                         else:
                             signiflabel.append('')
                     else:
@@ -158,39 +165,46 @@ class DNAShape:
             # #label = ['' if x not in signiflist else '*' for x in xi]
             ax.set_xticks(list(range(seqlen)))
             ax.set_xticklabels(signiflabel)
-            ax.yaxis.set_label_text(sh)
-            ax.xaxis.set_label_text('Sequence position')
-            ax.legend(loc="upper right")
-            ax.set_title(pltlabel if pltlabel else sh)
-            low_y = ax.get_ylim()[0]
-            hfactor = ax.get_ylim()[1] -  ax.get_ylim()[0]
-            ax.set_ylim(bottom = low_y - np.abs(0.35 * hfactor))
-            for i in range(0,4): # low_y here?
-                ax.yaxis.get_major_ticks()[i].label1.set_visible(False)
+            ax.legend(loc="upper right", prop={'size': 11})
 
-            base_color = {'A': "red", 'C': "green" , 'G': "orange", 'T': "blue"}
-            bot_anchor = 0
-            for base in base_color:
-                for key in base_ct:
-                    inset_ax = inset_axes(ax,
-                                  height="5%",
-                                  width="100%",
-                                  bbox_to_anchor= (0, bot_anchor, 1, 1),
-                                  bbox_transform=ax.transAxes,
-                                  loc=8)
-                    inl = [elm[base] for elm in base_ct[key]]
-                    # also add 0.5 here to center
-                    xbar = [i+0.5 for i in range(0,len(inl))] # should use the same axis with ax but this works...
-                    sns.barplot(x = xbar, y = inl, color = base_color[base], ax=inset_ax)
-                    inset_ax.get_xaxis().set_visible(False)
-                    # inset_ax.set_ylim(top=max)
-                    inset_ax.set_yticklabels([])
-                    inset_ax.patch.set_visible(False)
-                    inset_ax.set_ylabel("%s_%s"%(base,key[:2]),rotation=0)
-                    inset_ax.yaxis.label.set_color(base_color[base])
-                    bot_anchor += 0.05
-        with PdfPages(path) as pdf:
-            pdf.savefig(fig)
+            label = pltlabel if pltlabel else sh
+            if label_title:
+                label = "%s, %s" % (self.fullnames[sh], label)
+            else:
+                ax.yaxis.set_label_text(sh)
+            ax.set_title(label)
+
+            if base_count:
+                ax.xaxis.set_label_text('Sequence position')
+                low_y = ax.get_ylim()[0]
+                hfactor = ax.get_ylim()[1] -  ax.get_ylim()[0]
+                ax.set_ylim(bottom = low_y - np.abs(0.35 * hfactor))
+                for i in range(0,4): # low_y here?
+                    ax.yaxis.get_major_ticks()[i].label1.set_visible(False)
+                base_color = {'A': "red", 'C': "green" , 'G': "orange", 'T': "blue"}
+                bot_anchor = 0
+                for base in base_color:
+                    for key in base_ct:
+                        inset_ax = inset_axes(ax,
+                                      height="5%",
+                                      width="100%",
+                                      bbox_to_anchor= (0, bot_anchor, 1, 1),
+                                      bbox_transform=ax.transAxes,
+                                      loc=8)
+                        inl = [elm[base] for elm in base_ct[key]]
+                        # also add 0.5 here to center
+                        xbar = [i+0.5 for i in range(0,len(inl))] # should use the same axis with ax but this works...
+                        sns.barplot(x = xbar, y = inl, color = base_color[base], ax=inset_ax)
+                        inset_ax.get_xaxis().set_visible(False)
+                        # inset_ax.set_ylim(top=max)
+                        inset_ax.set_yticklabels([])
+                        inset_ax.patch.set_visible(False)
+                        inset_ax.set_ylabel("%s_%s"%(base,key[:2]),rotation=0)
+                        inset_ax.yaxis.label.set_color(base_color[base])
+                        bot_anchor += 0.05
+        if path:
+            with PdfPages(path) as pdf:
+                pdf.savefig(fig)
 
 # ============== This is a separate class to contain everything ==============
 

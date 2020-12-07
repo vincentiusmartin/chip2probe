@@ -19,7 +19,7 @@ from sklearn import model_selection, metrics
 import chip2probe.util.stats as st
 
 def plot_stacked_categories(df, x, y="label", path="stackedbar.png",
-                           avg=False, legend=True):
+                           ratio=False, legend=True, title=""):
     """
     Plot a stacked bar graph for each label.
 
@@ -38,16 +38,31 @@ def plot_stacked_categories(df, x, y="label", path="stackedbar.png",
 
     Example:
     """
-
+    params = {'axes.labelsize': 23,
+          'axes.titlesize': 30,
+          "xtick.labelsize" : 25, "ytick.labelsize" : 22 , "axes.labelsize" : 22}
+    plt.rcParams.update(params)
     cat_df = df[[x] + [y]]
     group = [x] + [y]
     df2 = cat_df.groupby(group)[y].count() # .unstack(x).fillna(0)
-    if avg:
+    all_count = df2.groupby(x).agg('sum').tolist()
+    if ratio:
         df2 = df2.groupby(level=0).apply(lambda x: x / float(x.sum()))
+    # ["#0343df","#75bbfd"] ["#b22222","#FFA07A"]
     ax = df2.unstack(x).fillna(0).T.plot(kind='bar', stacked=True,
-                                         legend=legend, rot=0)
-    ylabel = "ratio" if avg else "count"
-    ax.set_ylabel(ylabel)
+                                         legend=legend, rot=0, color=["#b22222","#FFA07A"],width=0.8 , figsize=(8,4))
+    ylabel = "Ratio" if ratio else "count"
+    #ax.set_ylabel(ylabel)
+    #ax.set_xlabel(x)
+    #ax.set_title(title)
+    ax.set_ylabel("")
+    ax.set_xlabel("")
+    ax.set_title("")
+    if ratio:
+        for i in range(len(all_count)):
+            ax.annotate(str(all_count[i]), xy=(i,0.90), ha='center', va='bottom', fontsize=17)
+    plt.legend(loc='center left', bbox_to_anchor=(1.0, 0.5), prop={'size': 20})
+    plt.tight_layout()
     plt.savefig(path)
     plt.clf()
 
@@ -75,7 +90,11 @@ def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", 
     numcol = 4
     numrow = math.ceil(len(cols) / numcol)
     # to make axis with different y-scale
-    fig, ax = plt.subplots(numrow, numcol, figsize=(14, 5))
+    params = {'axes.labelsize': 22,
+          'axes.titlesize': 18,
+          "xtick.labelsize" : 15, "ytick.labelsize" : 15 , "axes.labelsize" : 20}
+    plt.rcParams.update(params)
+    fig, ax = plt.subplots(numrow, numcol, figsize=(25, 5))
     plt.subplots_adjust(hspace =0.4, wspace=0.6)
     grouped = df.groupby(by=by)
     # need to sort to keep the order consistent
@@ -86,7 +105,8 @@ def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", 
         cur_group = {elm[0]:list(elm[1]) for elm in grouped[colname]}
         labels, data = [*zip(*cur_group.items())]
         cur_ax = ax.flatten()[i]
-        sns.boxplot(data=data, width=.5, ax=cur_ax)
+        # ["#0343df","#75bbfd"] ["#b22222","#FFA07A"] , palette=["#b22222","#FFA07A"]
+        sns.boxplot(data=data, width=.6, ax=cur_ax)
         # sns.stripplot(data=data, jitter=True, ax=cur_ax, size=1, color='k')
         cur_ax.set_xticklabels(labels)
         cur_ax.set_title(colname)
@@ -114,21 +134,21 @@ def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", 
             logstr += "%s, %s > %s: %4E\n" % (colname, labels[0], labels[1], Decimal(p))
             pstr = "%.2E" % Decimal(p) if p < 0.001 else "%.4f" % p
             cur_ax.plot([x1, x1, x2, x2], [1.01*y, y+h, y+h, 1.01*y], lw=1, c=col)
-            cur_ax.text((x1+x2)*.5, y + h, "p = %s"%(pstr), ha='center', va='bottom', color="red")
+            cur_ax.text((x1+x2)*.5, y + h, "p = %s"%(pstr), ha='center', va='bottom', color="red", fontsize=14)
 
             adj_ylim = (y+h) * 1.1
             if adj_ylim > ylim: ylim = adj_ylim
-        cur_ax.set_ylim(top=ylim)
+        #cur_ax.set_ylim(top=ylim)
     for d in range(len(cols),numrow*numcol):
         fig.delaxes(ax.flatten()[d])
-    plt.savefig(path)
+    plt.savefig(path, figsize=(8,4))
     plt.clf()
     # also write the log file
     basepath = os.path.splitext(path)[0]
     with open("%s.log" % basepath, 'w') as f:
         f.write(logstr)
 
-def display_output(xy, score_dict, path, title, score_type="auc", varyline=False):
+def display_output(xy, score_dict, path, title, score_type="auc", varyline=False, max_x=1):
     """
     Display output
 
@@ -148,20 +168,29 @@ def display_output(xy, score_dict, path, title, score_type="auc", varyline=False
     """
     plt.clf() # first, clear the canvas
     plt.plot([0, 1], [0, 1], color="gray", alpha=0.5, lw=0.3)#linestyle="--",
+    i = 0
     for key in  xy:
         score = score_dict[key]
         if varyline:
             ln = key.split(",")
-            if len(ln) >= 3:
+            if len(ln) > 3 or key == "distance,orientation,strength" :#len(ln) >= 4:
                 lw, ls = 2, "-"
-            elif len(ln) == 2:
+            elif len(ln) == 3:
                 lw, ls = 1, "-"
             else:
                 lw, ls = 1, "--"
         else:
             lw, ls = 1, "-"
 
-        plt.plot(xy[key]['x'], xy[key]['y'], lw=lw, linestyle=ls , label='%s: %.2f' % (key,score))
+        if key == "distance,orientation,strength": # len(ln) == 3:
+            plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="brown") # color="brown",
+        elif len(ln) > 3:
+            plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="m")
+        elif len(ln) == 1:
+            plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score)) # color="orange",
+        else:
+            plt.plot(xy[key]['x'], xy[key]['y'], lw=lw, linestyle=ls, label='%s: %.2f' % (key,score)) # color=["red", "blue"][i]
+            #i += 1
 
         # Show the ROC curves for all classifiers on the same plot
         if score_type == "pr":
@@ -171,6 +200,7 @@ def display_output(xy, score_dict, path, title, score_type="auc", varyline=False
             plt.xlabel('False Positive Rate')
             plt.ylabel('True Positive Rate')
 
+    plt.xlim(right=max_x)
     plt.title(title)
     leg = plt.legend(loc="lower right",title="%s for each combination:"%str.upper(score_type))
     leg._legend_box.align = "left"
@@ -178,8 +208,9 @@ def display_output(xy, score_dict, path, title, score_type="auc", varyline=False
 
 
 def plot_model_metrics(modeldict, plotname="auc.png",
-                 title="Average ROC Curves", cvfold=10, score_type="auc",
-                 interp=False, writelog=True, varyline = False):
+                 title="", cvfold=10, score_type="auc",
+                 interp=False, writelog=True, varyline = False,
+                 max_fpr=1):
     """
     Make boxplot.
 
@@ -224,10 +255,7 @@ def plot_model_metrics(modeldict, plotname="auc.png",
 
             model = modeldict[key][1]
             model = model.fit(x_train, y_train)
-            # if key == "Lasso" or key == "Elastic Net":
-            #     y_score = model.predict(x_test)
-            #     y_label = [1 if i >= 0.5 else 0 for i in y_score]
-            # else:
+
             y_score = model.predict_proba(x_test)[:,1]
             y_label = model.predict(x_test)
 
@@ -246,7 +274,7 @@ def plot_model_metrics(modeldict, plotname="auc.png",
                 # we calculate the auc and pr score before interpolation for better representation
                 if score_type == "auc":
                     x, y, _ = metrics.roc_curve(ytrue_dict[k][i], yprob_dict[k][i]) #fpr, tpr, threshold
-                    scores.append(metrics.auc(x, y))
+                    scores.append(metrics.roc_auc_score(ytrue_dict[k][i], yprob_dict[k][i],max_fpr=max_fpr)) #(metrics.auc(x, y))
                 elif score_type == "pr":
                     y, x, _ = metrics.precision_recall_curve(ytrue_dict[k][i], yprob_dict[k][i]) # precision, recall, threshold
                     scores.append(metrics.average_precision_score(x, y))
@@ -265,7 +293,8 @@ def plot_model_metrics(modeldict, plotname="auc.png",
             mets = {k: metrics.roc_curve(ytrue_dict[k], yprob_dict[k]) for k in ytrue_dict} #fpr, tpr, threshold
             for k in mets:
                 mets[k] = {"x":mets[k][0], "y":mets[k][1]} #"fpr, tpr"
-            scoreval = {k:metrics.auc(mets[k]['x'],mets[k]['y']) for k in ytrue_dict} #{k:np.array(auc_dict[k]).mean(axis=0) for k in auc_dict}
+            scoreval = {k:metrics.roc_auc_score(ytrue_dict[k], yprob_dict[k],max_fpr=max_fpr) for k in ytrue_dict}
+            #.auc(mets[k]['x'],mets[k]['y'],max_fpr=max_fpr) for k in ytrue_dict} #{k:np.array(auc_dict[k]).mean(axis=0) for k in auc_dict}
         elif score_type == "pr":
             mets = {k: metrics.precision_recall_curve(ytrue_dict[k], yprob_dict[k]) for k in ytrue_dict} # precision, recall, threshold
             for k in mets:
@@ -288,4 +317,5 @@ def plot_model_metrics(modeldict, plotname="auc.png",
         logpath = "%s.log" % os.path.splitext(plotname)[0]
         with open(logpath, 'w') as f:
             f.write(logstr)
-    display_output(mets, scoreval, path=plotname, title=title, score_type=score_type, varyline=varyline)
+
+    display_output(mets, scoreval, path=plotname, title=title, score_type=score_type, varyline=varyline, max_x=max_fpr)

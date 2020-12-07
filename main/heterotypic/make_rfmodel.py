@@ -9,20 +9,29 @@ import chip2probe.modeler.plotlib as pl
 from sklearn import ensemble, tree
 import subprocess
 
+
 if __name__ == "__main__":
-    trainingpath = "output/heterotypic/EtsRunx_v1/ch1_ch2/training_pwm.tsv"
+    trainingpath = "output/heterotypic/EtsRunx_v1/ch3_ch4/training_pwm.tsv"
     df = pd.read_csv(trainingpath, sep="\t")
+    df['label'] = df['label'].replace('independent', 'additive')
     ct = CoopTrain(df)
     pd.set_option("display.max_columns",None)
 
     rf_param_grid = {
-        'n_estimators': [500],
-        'max_depth':[5],
-        "min_samples_leaf" : [10],
-        "min_samples_split" :[10]
+        'n_estimators': [500], #[500,750,1000],
+        'max_depth': [5], #[5,10,15],
+        "min_samples_leaf": [5], #[5,10,15],
+        "min_samples_split" : [5]#[5,10,15]
     }
 
     best_models = {
+        "strength":
+            BestModel(clf="sklearn.ensemble.RandomForestClassifier",
+              param_grid=rf_param_grid,
+              train_data=ct.get_training_df({
+                    "affinity": {"colnames": ("ets_score","runx_score")}
+                })
+            ).run_all(),
         "distance":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
@@ -37,22 +46,15 @@ if __name__ == "__main__":
                     "orientation": {"relative":False, "pos_cols": {"ets_pos":"ets_ori", "runx_pos":"runx_ori"}}
                 })
             ).run_all(),
-        "strength":
+        "strength,orientation":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
               train_data=ct.get_training_df({
-                    "affinity": {"colnames": ("ets_score","runx_score")}
-                })
-            ).run_all(),
-        "distace,orientation":
-            BestModel(clf="sklearn.ensemble.RandomForestClassifier",
-              param_grid=rf_param_grid,
-              train_data=ct.get_training_df({
-                    "distance":{"type":"numerical"},
+                    "affinity": {"colnames": ("ets_score","runx_score")},
                     "orientation": {"relative":False, "pos_cols": {"ets_pos":"ets_ori", "runx_pos":"runx_ori"}}
                 })
             ).run_all(),
-        "distance,strength":
+        "strength,distance":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
               train_data=ct.get_training_df({
@@ -70,7 +72,8 @@ if __name__ == "__main__":
                 })
             ).run_all(),
     }
-    pl.plot_model_metrics(best_models, cvfold=10, score_type="auc", varyline=True)
+
+    pl.plot_model_metrics(best_models, cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Runx1-Ets1")
 
     feature_dict = {
         "distance":{"type":"numerical"},

@@ -32,6 +32,8 @@ class iMADSModel(object):
 
         filename = os.path.basename(model_path)
         print("Loading imads model: %s" % filename)
+        if not os.path.exists(model_path):
+            raise Exception("File %s doesn't exist" % model_path)
         self.modeldict = self.load_model(model_path)
 
         self.core = core

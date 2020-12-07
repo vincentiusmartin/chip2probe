@@ -13,17 +13,18 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 if __name__=="__main__":
-    single_sequence = "CTGTGTAAATAAAGCCACAGACTTCCGCCTACAGGT"
-    many_sequences = ["GAACCTGGGAGGCGGAAGTTGCGGTTAGCCGAGATC"] #, "CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC"]
+    single_sequence = "CGGCTGTTTTCCAGGATGTTGTGGTCATGGCGGTGT"
+    many_sequences = ["CGGCTGTTTTCCAGGATGTTGTGGTCATGGCGGTGT"] #, "CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC"]
     df = pd.DataFrame(list(zip(many_sequences, ['seq1','seq2'])), columns=['sequence', 'key'])
 
     # ========= PWM =========
     pwmr = PWM("input/site_models/pwm/runx1.txt", 6, 16)
     pwme = PWM("input/site_models/pwm/ets1.txt")
     pwm_prede = pwme.predict_sequence(single_sequence)
+    pwm_predr = pwmr.predict_sequence(single_sequence)
     pwm_pred_listr = pwmr.predict_sequences(many_sequences)
     pwm_pred_liste = pwme.predict_sequences(many_sequences)
-    print(pwm_prede)
+    print(pwm_predr)
 
     """
     # ========= Escore =========

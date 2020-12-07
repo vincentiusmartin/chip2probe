@@ -42,7 +42,7 @@ class CoopTrain:
             self.df = trainingdata.copy().reset_index(drop=True)
         elif isinstance(trainingdata, str):
             self.df = pd.read_csv(trainingpath, sep=sep)
-        elif isinstance(trainingdata, list):
+        elif isinstance(trainingdata, list): # input is list of string
             if imads is None:
                 raise Exception("imads must be provided when input is list")
             self.df = self.make_train(trainingdata, imads)
@@ -138,6 +138,7 @@ class CoopTrain:
                 2. orientation: {"positive_cores:[]", relative:Bool, one_hot:Bool}
                 3. affinity: {imads: sitespredict.imads instance}
                 4. shape: {"seqin": int, "smode": "positional/strength", "direction": "inout/orientation", "positive_cores" : []}
+                5. sequence:
             rettype: dict, list, df
          Returns:
             ldict: list of dictionary of features or list of list if 'aslist' is True
