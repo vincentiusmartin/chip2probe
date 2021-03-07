@@ -54,6 +54,7 @@ class CoopTrain:
         if flip_th:
             self.df = self.flip_th2ht(positive_cores)
 
+    """
     def make_train(self, seqs, imads):
         trainlist = []
         idx = 1
@@ -81,6 +82,7 @@ class CoopTrain:
                 row["site_str_pos"] = preds[1]["core_mid"]
             trainlist.append(row)
         return pd.DataFrame(trainlist)
+    """
 
     def validate_cols(self):
         """
@@ -90,6 +92,7 @@ class CoopTrain:
         if not required_cols.issubset(self.df.columns):
             raise Exception("Missing columns, required columns are: {}".format(required_cols))
 
+    """
     def flip_th2ht(self,positive_cores):
         # flip if orientation one
         ori = self.get_feature("orientation", {"positive_cores":positive_cores, "relative":True, "one_hot":False})
@@ -106,6 +109,7 @@ class CoopTrain:
                     records[i]["site_str_pos"] = len(records[i]["sequence"]) - wk_pos
                     records[i]["site_wk_pos"] = len(records[i]["sequence"]) - str_pos
         return pd.DataFrame(records)
+    """
 
     # ---------- GETTING FEATURE ----------
     def get_feature(self, feature, params):

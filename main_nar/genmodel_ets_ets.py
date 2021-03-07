@@ -11,17 +11,19 @@ import pickle
 
 pd.set_option("display.max_columns",None)
 if __name__ == "__main__":
-    trainingpath = "output/Ets1Ets1/training/train_ets_ets.csv"
-    df = pd.read_csv(trainingpath)
+    trainingpath = "output/Ets1Ets1/training/train_ets1_ets1.tsv"
+    df = pd.read_csv(trainingpath,sep="\t")
     ct = CoopTrain(df)
     pd.set_option("display.max_columns",None)
 
     rf_param_grid = {
         'n_estimators': [500], #[500,750,1000],
-        'max_depth': [5], #[5,10,15],
-        "min_samples_leaf": [5], #[5,10,15],
-        "min_samples_split" : [5]#[5,10,15]
+        'max_depth': [10], #[5,10,15],
+        "min_samples_leaf": [10], #[5,10,15],
+        "min_samples_split" : [20], #[5,10,15]
     }
+
+    # {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}}
 
     best_models = {
         "distance":
@@ -42,18 +44,18 @@ if __name__ == "__main__":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
               train_data=ct.get_training_df({
-                    "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+                    "orientation": {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}}
                 }, label_map={'cooperative': 1, 'independent': 0})
             ).run_all(),
-        "distace,orientation":
+        "distance,orientation":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
               train_data=ct.get_training_df({
                     "distance":{"type":"numerical"},
-                    "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+                    "orientation": {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}}
                 }, label_map={'cooperative': 1, 'independent': 0})
             ).run_all(),
-        "distace,strength":
+        "distance,strength":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
               train_data=ct.get_training_df({
@@ -67,24 +69,24 @@ if __name__ == "__main__":
               train_data=ct.get_training_df({
                     "distance":{"type":"numerical"},
                     "affinity": {"colnames": ("site_str_score","site_wk_score")},
-                    "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+                    "orientation": {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}}
                 }, label_map={'cooperative': 1, 'independent': 0})
             ).run_all()
     }
 
-    pl.plot_model_metrics(best_models, cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Ets1-Ets1")
+    pl.plot_model_metrics(best_models, path="output/Ets1Ets1/model/auc_all.png", cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Ets1-Ets1")
 
     rf = best_models["distance,orientation,strength"][1]
 
     train = ct.get_feature_all({
         "distance":{"type":"numerical"},
         "affinity": {"colnames": ("site_str_score","site_wk_score")},
-        "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True}
+        "orientation": {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}}
     })
     label = ct.get_numeric_label({'cooperative': 1, 'independent': 0})
 
     rf.fit(train,label)
-    model_name = "ets1_ets1_rfmodel.sav"
+    model_name = "output/Ets1Ets1/model/ets1_ets1_rfmodel.sav"
     pickle.dump(rf, open(model_name, 'wb'))
     print("Model saved in %s" % model_name)
 

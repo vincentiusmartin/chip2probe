@@ -1,11 +1,14 @@
 import os
-os.chdir("../..")
+os.chdir("../../../..")
 import pandas as pd
 
+import numpy as np
 import chip2probe.modeler.mutation as mut
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import matplotlib.pyplot as plt
+import chip2probe.training_gen.arranalysis as arr
 
 def get_shifted_pred(df, printlog=False):
     """
@@ -275,11 +278,50 @@ def pick_positive_ctrl(df, m, n, col1, col2, mincoop=0.5 , coopthres = 0.6, addt
     selected["select"] = "positive_ctrl"
     return selected
 
+def get_selected_nm(df, namemap):
+    dfsub = df[df["comment"] == "wt"][["sequence"]].drop_duplicates()
+    print("Number of wt sequences %d" % dfsub.shape[0])
+    return dfsub.merge(namemap, on="sequence")[["Name","sequence"]].drop_duplicates()
+
+def plot_coop(df, namemap,lo1,lo2,lb,suffix):
+    dfnm = get_selected_nm(df,namemap)
+    oris = {"o1":lo1, "o2":lo2, "both":lb}
+    # lbnm = lb[lb["label"] != "fail_cutoff"][["Name"]].drop_duplicates()
+    for o in ["o1","o2","both"]:
+        ax = plt.axes()
+        arr.plot_classified_labels(oris[o], col1="indiv_median", col2="two_median", log=True,
+            xlab="log(m1-m3+m2-m3)", ylab="log(wt-m3)", path="labeled_log_%s.png" % o,
+            title="Cooperative plot, %s" % o, axes=ax)
+        wtavail = oris[o].merge(dfnm[["Name"]])
+        ax.scatter(np.log(wtavail["indiv_median"]), np.log(wtavail["two_median"]), color="cyan", s=1, label="wt_selected")
+        plt.savefig("in_ori_%s_%s.png" % (o,suffix))
+        plt.clf()
+
+def filter_by_delta(df, namemap,lb,ncoop=300,nadd=300):
+    dfnm = get_selected_nm(df,namemap)
+    wtavail = lb.merge(dfnm[["Name"]])
+    wtavail["delta"] = abs(wtavail["two_median"] - wtavail["indiv_median"]) / np.sqrt(2)
+    wtcoop = wtavail[wtavail["label"] == "cooperative"].nlargest(330,'two_median')[["Name"]]
+    wtadd = wtavail[wtavail["label"] == "additive"].nsmallest(300,'delta')[["Name"]]
+    selected = pd.concat([wtcoop,wtadd])
+    seqids_sel = selected.merge(dfnm)[["sequence"]].merge(df)[["seqid"]]
+    return df.merge(seqids_sel, on="seqid")
+
+
 if __name__ == "__main__":
     df = pd.read_csv("custom_withpred.csv")
-    plt.scatter(df['main_prob'], df['shape_prob'],s=1, c='blue')
-    plt.savefig("corr.eps")
-    r = df['main_prob'].corr(df['shape_prob'])
+    #df = pd.read_csv("output/homotypic/training/training.csv")
+    # df = pd.read_csv("seqs.csv")
+    nm = pd.read_csv("output/homotypic/training/seqnamemap.csv")
+    lo1 = pd.read_csv("output/homotypic/training/lbled_o1.csv")
+    lo2 = pd.read_csv("output/homotypic/training/lbled_o2.csv")
+    lb = pd.read_csv("output/homotypic/training/lbled_both.csv")
+
+    # plt.scatter(df['main_prob'], df['shape_prob'], s=1, c='blue')
+    # plt.savefig("corr.png")
+    # plt.clf()
+    # r = df['main_prob'].corr(df['shape_prob'])
+    plot_coop(df,nm,lo1,lo2,lb,"all")
     # TODO: remove duplicates
 
     # First we select only groups where predictions and wtlabel are the same
@@ -290,8 +332,11 @@ if __name__ == "__main__":
     print("Number of correct predicted wt groups %d" % match_wt.shape[0])
     print("Number of incorrect predicted wt groups %d" % mismatch_wt.shape[0])
 
+    pd.set_option("display.max_columns",None)
     # filter the data frame to take only where wt matches
     df = df.merge(match_wt, on="seqid")
+    df = filter_by_delta(df,nm,lb)
+    print("wt filtered",df.loc[df["comment"] == "wt"][["sequence"]].drop_duplicates().shape[0])
 
     muttypes = {"distance": {"ascending":False, "col":"distance"},
                 "affinity": {},
@@ -302,13 +347,13 @@ if __name__ == "__main__":
         cur_df = df.loc[df["muttype"] == mty]
         sortby = ["seqid",muttypes[mty]["col"]] if muttypes[mty] else ["seqid"]
         sortasc = [True,muttypes[mty]["ascending"]] if muttypes[mty] else True
-        posctrl = pick_positive_ctrl(cur_df, 80, 10, "shape", "main") \
+        posctrl = pick_positive_ctrl(cur_df, 70, 10, "shape", "main") \
                     .sort_values(by=sortby, ascending=sortasc)
-        p1 = pick_largest_probdif(cur_df, 145, 10) \
+        p1 = pick_largest_probdif(cur_df, 140, 10) \
                     .sort_values(by=["seqid","main_prob"])
-        p2 = pick_consecutive_preddif(cur_df, 145, 10) \
+        p2 = pick_consecutive_preddif(cur_df, 140, 10) \
                     .sort_values(by=["seqid","main_prob"])
-        p3 = pick_incos_pred(cur_df, 145, 10, "shape", "main") \
+        p3 = pick_incos_pred(cur_df, 140, 10, "shape", "main") \
                     .sort_values(by=sortby, ascending=sortasc)
         p = pd.concat([p1, p2, p3, posctrl])
         if mty == "affinity":
@@ -321,11 +366,12 @@ if __name__ == "__main__":
     allpicks.to_csv("custom_probes_selected.csv", index=False, header=True)
 
     print("Number of unique sequences %d" % len(allpicks["sequence"].unique()))
-    print(len(allpicks["sequence"].unique()) * 24)
+    print("Total array spots",len(allpicks["sequence"].unique()) * 24)
 
     # # Analysis part:
-    # allpicks = pd.read_csv("custom_probes_selected.csv")
-    # dist_df = allpicks.loc[allpicks["muttype"] == "distance"]
+    allpicks = pd.read_csv("custom_probes_selected.csv")
+    plot_coop(allpicks,nm,lo1,lo2,lb,"after")
+
     #
     # # get the farthest distance from each group
     # dmax = dist_df \

@@ -35,22 +35,23 @@ class Shape(basefeature.BaseFeature):
             "direction": "inout",
             "positive_cores" : [],
             "poscols": [],
-            "namecol":"Name"
+            "namecol":"Name",
+            "seqcol":"Sequence",
         }
         self.df = traindf
         self.set_attrs(params, default_args)
-        if self.smode != "strength" and self.smode != "positional":
-            raise TypeError("Smode can only be 'strength' or 'positional'")
+        if self.smode != "relative" and self.smode != "positional":
+            raise TypeError("Smode can only be 'relative' or 'positional'")
         if self.direction != "inout" and self.direction != "orientation":
             raise TypeError("Direction can only be 'inout' or 'orientation'")
         if self.direction == "orientation" and ("positive_cores" not in params or not params["positive_cores"]):
             raise TypeError("Positive cores are needed when direction is 'orientation'")
 
         if self.namecol in self.df:
-            fastadict = dict(zip(self.df[self.namecol], self.df["sequence"]))
+            fastadict = dict(zip(self.df[self.namecol], self.df[self.seqcol]))
             shapeobj = ds.DNAShape(fastadict)
         else:
-            shapeobj = ds.DNAShape(self.df["sequence"].tolist())
+            shapeobj = ds.DNAShape(self.df[self.seqcol].tolist())
         self.shapes = {k:getattr(shapeobj,k.lower()) for k in shapeobj.shapetypes}
         # make a dictionary of list instead of nested dictionary since we use this
         # as features
@@ -74,20 +75,17 @@ class Shape(basefeature.BaseFeature):
         """
         rfeature = []
         for idx,row in self.df.iterrows():
-            # first get which site is on the left (site1) and on the right (site2)
-            if self.poscols:
-                site1, site2 = row[self.poscols[0]], row[self.poscols[1]]
-            elif row["site_wk_pos"] > row["site_str_pos"]:
-                site1, site2 = row["site_str_pos"], row["site_wk_pos"]
-                if self.smode == "strength":
-                    s1type, s2type = "str", "wk"
-            else:
-                site1, site2 = row["site_wk_pos"], row["site_str_pos"]
-                if self.smode == "strength":
-                    s1type, s2type = "wk", "str"
             # if site mode is positional, we use the position instead
             if self.smode == "positional":
+                site1, site2 = row[self.poscols[0]], row[self.poscols[1]]
                 s1type, s2type = "s1", "s2"
+            else:
+                if row["site_wk_pos"] > row["site_str_pos"]:
+                    site1, site2 = row["site_str_pos"], row["site_wk_pos"]
+                    s1type, s2type = "str", "wk"
+                else:
+                    site1, site2 = row["site_wk_pos"], row["site_str_pos"]
+                    s1type, s2type = "wk", "str"
             # get flanking shape based on direction
             if self.direction == "inout":
                 rfeature.append(self.get_shape_inout(idx, site1, site2, s1type, s2type))

@@ -1,5 +1,5 @@
 import os
-os.chdir("../..")
+os.chdir("../../../..")
 import pandas as pd
 from chip2probe.sitespredict.imads import iMADS
 from chip2probe.sitespredict.imadsmodel import iMADSModel
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     group_sample = df.drop_duplicates(subset=['sequence']).groupby(["select","muttype"]) \
         .apply(lambda x: x.sample(10)).reset_index(drop=True) \
         .sort_values(by=["select","muttype","seqid"])
-    group_sample["type"] = group_sample.apply(lambda x: "%d_%s_%s" % (x["seqid"], x["select"], x["muttype"]),axis=1)
+    group_sample["type"] = group_sample.apply(lambda x: "%s_%s_%s" % (x["seqid"], x["select"], x["muttype"]),axis=1)
     gs = group_sample[["type","sequence"]].to_dict(orient="records")
 
     # Get unique samples from each group
@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     # Generate sequence plot
     sp = SitesPlotter()
-    sp.plot_seq_combine([imads_plot,escore_plot, mutplots], filepath="plot.pdf")
+    #sp.plot_seq_combine([imads_plot,escore_plot, mutplots], filepath="plot.pdf")
 
     # --------- make wt m1 m2 m3 for all sequences ---------
     allseqlist = list(df["sequence"].unique())

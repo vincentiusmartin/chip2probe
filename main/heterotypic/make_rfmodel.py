@@ -11,7 +11,7 @@ import subprocess
 
 
 if __name__ == "__main__":
-    trainingpath = "output/heterotypic/EtsRunx_v1/ch3_ch4/training_pwm.tsv"
+    trainingpath = "output/heterotypic/EtsRunx_v1/ch1_ch2/training_pwm.tsv"
     df = pd.read_csv(trainingpath, sep="\t")
     df['label'] = df['label'].replace('independent', 'additive')
     ct = CoopTrain(df)
@@ -73,7 +73,7 @@ if __name__ == "__main__":
             ).run_all(),
     }
 
-    pl.plot_model_metrics(best_models, cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Runx1-Ets1")
+    pl.plot_model_metrics(best_models, cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Ets1-Runx1")
 
     feature_dict = {
         "distance":{"type":"numerical"},
@@ -85,9 +85,9 @@ if __name__ == "__main__":
     rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=5, min_samples_leaf=10, min_samples_split=10)
     m = rf.fit(train.values.tolist(),label)
 
-    tree.export_graphviz(m.estimators_[5], out_file='tree.dot',
-            feature_names = train.columns,
-            class_names = ['additive','cooperative'],
-            rounded = True, proportion = False,
-            precision = 2, filled = True)
-    subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])
+    # tree.export_graphviz(m.estimators_[5], out_file='tree.dot',
+    #         feature_names = train.columns,
+    #         class_names = ['additive','cooperative'],
+    #         rounded = True, proportion = False,
+    #         precision = 2, filled = True)
+    # subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])

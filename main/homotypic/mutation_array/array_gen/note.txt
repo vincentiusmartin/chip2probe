@@ -1,0 +1,19 @@
+E-score filter removes cooperative probes
+
+Number of input rows: 1254
+
+Without e-score filtering:
+Number of wt sequence: 1040
+Number of correctly predicted wt training:
+  main_pred : 933
+  shape_pred: 892
+Number of correctly predicted wt intersection main vs shape: 860
+
+--> we lost some because of the distance cutoff
+
+All
+Number of wt sequence: 1219
+Number of correctly predicted wt training:
+  main_pred : 1075
+  shape_pred: 1027
+Number of correctly predicted wt intersection main vs shape: 971

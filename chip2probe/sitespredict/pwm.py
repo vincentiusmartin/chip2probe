@@ -16,12 +16,15 @@ Some start end data:
 
 # TODO: handle palindrome
 class PWM(basemodel.BaseModel):
-    def __init__(self, pwm_path, startidx=0, endidx=-1, log=True):
-        self.pwm_fwd, self.pwm_rev = self.read_pwm(pwm_path, startidx, endidx, log)
+    def __init__(self, pwm_path, startidx=0, endidx=-1, log=True, reverse=False):
+        """
+        if reverse is True then use the reverse complement as the forward
+        """
+        self.pwm_fwd, self.pwm_rev = self.read_pwm(pwm_path, startidx, endidx, log, reverse)
         self.length = len(self.pwm_fwd['A'])
         self.log = log
 
-    def read_pwm(self, pwmfile, startidx=0, endidx=-1, log=True):
+    def read_pwm(self, pwmfile, startidx=0, endidx=-1, log=True, reverse=False):
         with open(pwmfile,'r') as f:
             end = len(f.readline().split(":")[1].split("\t")) if endidx == -1 else endidx
         pwm_fwd = {}
@@ -39,10 +42,15 @@ class PWM(basemodel.BaseModel):
                 else:
                     pwm_fwd[base] = [float(score) for score in scores]
         bases_rev = bases[::-1]
-        pwm_rev = {bases[i] : pwm_fwd[bases_rev[i]][::-1] for i in range(len(bases))}
+        if not reverse: # just take the rc as the reverse
+            pwm_rev = {bases[i] : pwm_fwd[bases_rev[i]][::-1] for i in range(len(bases))}
+        else:
+            pwm_rev = dict(pwm_fwd)
+            pwm_fwd = {bases[i] : pwm_rev[bases_rev[i]][::-1] for i in range(len(bases))}
         # for a in pwm_rev:
         #     print(a,"\t".join(map(str,pwm_rev[a])))
         return pwm_fwd, pwm_rev
+
 
     def predict_sequence(self, sequence, zero_thres=True):
         """

@@ -22,6 +22,7 @@ if __name__ == "__main__":
     pd.set_option("display.max_columns",None)
     df, negdf = pd.read_csv("input/probefiles/Ets1_Ets1_pr_clean.csv"), pd.read_csv("input/probefiles/Ets1_Ets1_neg_clean.csv")
     df = df[df["Name"] != "ets1_GM23338_seq16_0"] # err
+    print("Number of distinct names %d" % df["Name"].nunique())
 
     # Get the negative control cutoff
     cutoff = float(negdf.groupby(["Name","ori"]).median().reset_index()[["intensity"]].quantile(neg_percentile))

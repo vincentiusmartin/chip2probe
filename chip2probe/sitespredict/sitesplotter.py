@@ -60,7 +60,7 @@ class SitesPlotter(object):
             lenall = len(plotlist[0])
             iter = 1
             for key in plotlist[0]:
-                print("Processing %d/%d" % (iter,lenall))
+                #print("Processing %d/%d" % (iter,lenall))
                 iter += 1
                 if n == 0:
                     fig = plt.figure(figsize=(18,18))
@@ -86,7 +86,7 @@ class SitesPlotter(object):
                         for cmd in cmds:
                             getattr(ax,cmd["func"])(*cmd["args"],**cmd["kwargs"])
                     ax.axhline(y=0,color='gray')
-                    ax.set_ylim(bottom=bottom_cutoff) # this is based on the pwm
+                    ax.set_ylim(bottom=bottom_cutoff, top=0.55) # this is based on the pwm
 
                     # custom the first x axis, we put negative axis if one sequence is longer
                     # that other

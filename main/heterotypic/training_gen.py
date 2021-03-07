@@ -30,8 +30,8 @@ from chip2probe.sitespredict.pwm import PWM
 # imads_runx_models = [iMADSModel(path, core, 12, [1, 2, 3]) for path, core in zip(imads_runx_paths, imads_runx_cores)]
 # imads_runx = iMADS(imads_runx_models, 0.3) # 0.2128 0.3061
 
-pwm_ets = PWM("input/site_models/pwm/ets1.txt", log=True)
-pwm_runx = PWM("input/site_models/pwm/runx1.txt", 8, 17, log=True)
+pwm_ets = PWM("input/site_models/pwm/ets1.txt", log=True, reverse=False)
+pwm_runx = PWM("input/site_models/pwm/runx1.txt", 8, 17, log=True, reverse=True)
 
 def predict_strength(df, pred, tfname, flanklen=0):
     afflist = []
@@ -48,12 +48,12 @@ def predict_strength(df, pred, tfname, flanklen=0):
     return afflist
 
 def pwm_score(dfpos, pwm, startcol, corelen, flanklen):
-    core_start = pwm.length // 2 - corelen // 2
-    core_end = core_start + corelen
     res = []
     ori = []
+    core = []
     for idx, row in dfpos.iterrows():
         seq = row["sequence"][row[startcol]-flanklen:row[startcol]+corelen+flanklen]
+        core.append(row['sequence'][row[startcol]:row[startcol]+corelen])
         if len(seq) < (corelen + 2*flanklen): # error
             res.append(-999)
             ori.append(-999)
@@ -62,7 +62,7 @@ def pwm_score(dfpos, pwm, startcol, corelen, flanklen):
             res.append(pred["score"])
             cur_ori = 0 if pred["orientation"] == -1 else 1
             ori.append(cur_ori)
-    return res, ori
+    return res, ori, core
 
 
 if __name__ == "__main__":
@@ -70,37 +70,33 @@ if __name__ == "__main__":
     basepath = "/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/output/heterotypic/EtsRunx_v1"
     train1_path = "%s/ch1_ch2/coop_ch1_vs_ch2/tables/sequence_labeled_normalized.tsv" % basepath
     dftrain = pd.read_csv(train1_path, sep="\t").drop_duplicates(subset=["Name"], keep="first")
-    dftrain = dftrain[(dftrain["label"] == "cooperative") | (dftrain["label"] == "independent")][["Name","sequence","label"]]
+    dftrain = dftrain[(dftrain["label"] == "cooperative") | (dftrain["label"] == "independent")][["Name","sequence","label","distance"]]
     fullpos = pd.read_csv("output/heterotypic/EtsRunx_v1/seqpositions.csv")[["sequence", "ets_start", "ets_pos", "runx_start", "runx_pos"]]
     dft = dftrain.merge(fullpos, on="sequence").drop_duplicates()
+    #dft = dft[dft["distance"] > 4]
+    #dft = dft[dft["Name"] == "seq1005_all_clean_seqs_gap0_no20_0.4"]
 
     # flip pos
     for index, row in dft.iterrows():
-        if row['ets_pos'] > row['runx_pos']:
+        if row['ets_pos'] > row['runx_pos']: # CHANGE THIS DEPENDING ON WHICH CHAMBER
             plus_runx = 1 if row['runx_pos'] - row['runx_start'] == 2 else 2
             dft.at[index,'sequence'] = bio.revcompstr(row["sequence"])
             dft.at[index,'ets_start'] = len(row["sequence"]) - row["ets_start"] - 4
             dft.at[index,'runx_start'] = len(row["sequence"]) - row["runx_start"] - 5
             dft.at[index,'ets_pos'] = dft.at[index,'ets_start'] + 1
             dft.at[index,'runx_pos'] = dft.at[index,'runx_start'] + plus_runx
-    dft.to_csv("test.csv")
-    dft["ets_score"], dft["ets_ori"] = pwm_score(dft, pwm_ets, "ets_start", 4, 3)
-    dft["runx_score"], dft["runx_ori"] = pwm_score(dft, pwm_runx, "runx_start", 5, 2)
-    dft['distance'] = dft["runx_pos"] - dft["ets_pos"]
+    print("ets")
+    dft["ets_score"], dft["ets_ori"], dft['ets_core'] = pwm_score(dft, pwm_ets, "ets_start", 4, 3)
+    print("runx")
+    dft["runx_score"], dft["runx_ori"], dft['runx_core'] = pwm_score(dft, pwm_runx, "runx_start", 5, 2)
+    #dft['distance'] = dft["runx_pos"] - dft["ets_pos"]
 
     orimap = {0:"-",1:"+"}
     #dft["orientation"] = dft.apply(lambda x: "%s%s" % (str(x["ets_ori"]), str(x["runx_ori"])),axis=1)
     dft["orientation"] = dft.apply(lambda x: "%s/%s" % (orimap[int(x["ets_ori"])], orimap[int(x["runx_ori"])]),axis=1)
     dft.to_csv("training_pwm.tsv",sep="\t", index=False, float_format='%.3f')
+
     dft.rename(columns={'runx_score': 'Runx1 strength\n(cooperator TF)', 'ets_score': 'Ets1 strength\n(main TF)'}, inplace=True)
     plot.plot_stacked_categories(dft, "distance", path="distance_bar.png", title="Distance distribution", ratio=True)
     plot.plot_stacked_categories(dft, "orientation", path="ori_bar.png", title="Relative sites orientation\ndistribution", ratio=True)
-    plot.plot_box_categories(dft, incols=["Runx1 strength\n(cooperator TF)", "Ets1 strength\n(main TF)"], alternative="smaller")
-
-    # dft["runx_score"] = predict_strength(dft, pwm_runx, "runx", flanklen)
-    # dft["ets_score"] = predict_strength(dft, pwm_ets, "ets", flanklen)
-    # dft = dft.drop(["fullseq"], axis=1)
-    # dft = dft[dft['ets_score'].notnull() & dft['runx_score'].notnull()]
-    # dft.to_csv("training.tsv",sep="\t",index=False)
-    # plot.plot_stacked_categories(dft, "distance")
-    # plot.plot_box_categories(dft, incols=["distance","runx_score", "ets_score"], alternative="smaller")
+    plot.plot_box_categories(dft, incols=["Ets1 strength\n(main TF)", "Runx1 strength\n(cooperator TF)"], alternative="smaller")

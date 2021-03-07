@@ -15,6 +15,8 @@ def wilcox(x, y, alternative="two.sided"):
     :param x,y
     :param alternative: "two.sided", "less", "greater"
     """
+    if all(r==x[0] for r in x) or all(r==y[0] for r in y):
+        return 1
     x_num = numeric(x)
     y_num = numeric(y)
     return wilcox_r(x_num, y_num, alternative=alternative).rx("p.value")[0][0]

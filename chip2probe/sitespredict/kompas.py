@@ -209,9 +209,7 @@ class Kompas(basemodel.BaseModel):
         '''This is a temporary function that makes predictions dict
            using the dataframe'''
 
-        seqdict = self.pred_input_todict(sequence_df,
-                                         sequence_colname=sequence_colname,
-                                         key_colname=key_colname)
+        seqdict = bio.get_seqdict(sequence_df, sequence_col=sequence_colname, keycol=key_colname)
         if predict_flanks:
             flank_left = bio.get_seqdict(sequence_df,"%s_left" % flank_colname,
                                          ignore_missing_colname=True,
@@ -219,19 +217,13 @@ class Kompas(basemodel.BaseModel):
             flank_right = bio.get_seqdict(sequence_df,"%s_right" % flank_colname,
                                           ignore_missing_colname=True,
                                           keycolname=key_colname)
-        if self.protein == 'ets1':
-            core = (11,15)
-            centerPos = 12
-        if self.protein == 'runx1':
-            core = (12, 17)
-            centerPos = 14
         predictions = {}
         # for each sequence we want to predict
         for key in seqdict:
             sequence = seqdict[key]
             if predict_flanks:
                 sequence = flank_left[key][-10:] + seqdict[key] + flank_right[key][:10]
-            prediction = self.predict_sequence(sequence, core, centerPos, self.threshold, self.protein)
+            prediction = self.predict_sequence(sequence)
             if predict_flanks:
                 for result in prediction:
                     result['site_start'] = result['site_start'] - flank_len
@@ -256,6 +248,8 @@ class Kompas(basemodel.BaseModel):
                 continue
             # otherwise, set the appropriate dictionary as value for this key
             func_pred = []
+            #i = 0
+            #cs = ["#F7A091","red"]
             for pred in sites_prediction:
                 # first argument is x,y and y is basically just starts at 0
                 # first plot the binding site

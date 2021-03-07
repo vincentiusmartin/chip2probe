@@ -34,7 +34,6 @@ if __name__ == "__main__":
     ax = plt.axes()
     arr.plot_classified_labels(df1, path="both.png",
                 title="Cooperative plot, both orientations", col1="ch1", col2="ch2", axes=ax)
-    #
     x, y = np.log(df1_in_df2["ch1"].values), np.log(df1_in_df2["ch2"].values)
     ax.scatter(x, y, color="cyan", s=3, label="overlap coop ch1ch2 ch3ch4")
     ax.legend(loc="lower right")

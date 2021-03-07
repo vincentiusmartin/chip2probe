@@ -1,0 +1,71 @@
+Homotypic
+
+Number of distinct names 5093
+Negative control cutoff 179.5349642857141
+
+Label count 
+fail_cutoff        3290
+independent        1188
+cooperative         611
+anticooperative       4
+
+Traingen:
+independent    918
+cooperative    510
+
+--------------------------------------
+
+Heterotypic
+
+EtsRunx
+
+Number of distinct names 3197
+
+Normalization using y = 0.82x + 123.36
+Negative control cutoff 412.568
+Orientation er
+Number of distinct names before filtering 3197
+Number of distinct names after filtering 2934
+Orientation re
+Number of distinct names before filtering 3192
+Number of distinct names after filtering 2663
+
+Count per label               Name
+label             
+ambiguous      159
+below_cutoff   667
+cooperative   1006
+independent   1358
+
+Traingen:
+independent    1358
+cooperative    1005
+
+Distance 5 orientation count:
++/+           339
++/-            88
+-/+            84
+-/-            34
+
+--------------------------------------
+
+RunxEts
+
+Normalization using y = 0.86x + 122.21
+Negative control cutoff 877.753
+Orientation er
+Number of distinct names before filtering 3197
+Number of distinct names after filtering 2383
+Orientation re
+Number of distinct names before filtering 3192
+Number of distinct names after filtering 2293
+Count per label               Name
+label             
+ambiguous       92
+below_cutoff  1406
+cooperative   1406
+independent    288
+
+Traingen:
+cooperative    1406
+independent     288

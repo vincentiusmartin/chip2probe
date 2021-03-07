@@ -8,18 +8,19 @@ Make some plots for analysis
 
 import pandas as pd
 import os
-os.chdir("../..")
+os.chdir("../../..")
 
 import chip2probe.modeler.plotlib as pl
 from chip2probe.modeler.cooptrain import CoopTrain
 
 if __name__ == "__main__":
-    trainingpath = "input/modeler/training_data/training_p01_adjusted.tsv"
-    df = pd.read_csv(trainingpath, sep="\t")
+    trainingpath = "output/homotypic/training/training_pwm.csv"
+    df = pd.read_csv(trainingpath) # , sep="\t")
+    df['label'] = df['label'].replace({"additive":"independent"})
     train = CoopTrain(df, corelen=4)
 
     # make distace stacked bar
-    pl.stacked_bar_categories(train.df, "distance", path="dist_stackedbar.png")
+    pl.plot_stacked_categories(train.df, "orientation", path="dist_stackedbar.png")
 
     # get stacked bar of ratio between different distance
-    pl.stacked_bar_categories(train.df, "distance", path="dist_stackedbar_avg.png", avg=True)
+    pl.plot_stacked_categories(train.df, "distance", path="distance_ets_ets.png", ratio=True)

@@ -4,18 +4,40 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import itertools
 import statsmodels.stats.multitest as sm
+import os
 
 import chip2probe.util.stats_r as st
+
+def read_chamber_file(path, includekey, excludekey=None, seqcols=["Name","type","ori","rep"], negcols=["Name","ori","rep"],
+                     negkey="NegativeCtrl"):
+    """
+    the ori, rep order might be different
+    """
+    df = pd.read_csv(path, sep="\t")[["Name", "Sequence", "Alexa488Adjusted"]]
+    df["Sequence"] = df["Sequence"].str[:36]
+
+    # get negctrl
+    negdf = df[df["Name"].str.contains(negkey, na=False)]
+    print(negdf["Name"])
+    negdf[negcols] =  negdf["Name"].str.rsplit("_", n = 2, expand = True)
+
+    df = df[~df["Name"].str.contains("NegativeCtrl", na=False) & df["Name"].str.contains(includekey, na=False)]
+    if excludekey != None:
+        df = df[~df['Name'].str.contains(excludekey, na=False)]
+
+
+    df[seqcols] = df["Name"].str.rsplit("_", n = 3, expand = True)
+    return df.sort_values(["Name","ori","type","rep"]), negdf
 
 def assign_fdrcor_class(p, prevlbl, pcut=0.05):
     if prevlbl == "fail_cutoff":
         return 'fail_cutoff'
-    elif prevlbl == 'anticoop' and p < pcut:
-        return 'anticoop'
+    elif prevlbl == 'anticooperative' and p < pcut:
+        return 'anticooperative'
     elif prevlbl == 'cooperative' and p < pcut:
         return 'cooperative'
     else:
-        return 'additive'
+        return 'independent'
 
 def create_cooplbl(indivsum, twosites, pcutoff = 0.05):
     """
@@ -25,11 +47,11 @@ def create_cooplbl(indivsum, twosites, pcutoff = 0.05):
     if p_coop < pcutoff:
         return "cooperative", p_coop
     elif p_anti < pcutoff:
-        return "anticoop", p_anti
+        return "anticooperative", p_anti
     else:
-        return 'additive', p_coop
+        return 'independent', p_coop
 
-def label_replicas_permutation(indiv, two, arrdf, cutoff=0, oricol="ori", namecol="Name", affcol="affinity", typecol="type", pcut = 0.05):
+def label_replicas_permutation(indiv, two, arrdf, cutoff=0, oricol="ori", namecol="Name", affcol="affinity", typecol="type", pcut = 0.05, fdrcor=True):
     median_dict = arrdf.groupby([namecol, oricol, typecol])[affcol].median().to_dict()
     labeled_dict = {}
     for ori in list(indiv.keys()):
@@ -46,50 +68,50 @@ def label_replicas_permutation(indiv, two, arrdf, cutoff=0, oricol="ori", nameco
             orilbls.append(rowdict)
         labeled_dict[ori] = pd.DataFrame(orilbls)
         labeled_dict[ori].to_csv("%s.csv"%ori,index=False)
-        labeled_dict[ori]['p'] = sm.fdrcorrection(labeled_dict[ori]['p'])[1]
+        if fdrcor:
+            labeled_dict[ori]['p'] = sm.fdrcorrection(labeled_dict[ori]['p'])[1]
         labeled_dict[ori]['label'] = labeled_dict[ori].apply(lambda row: assign_fdrcor_class(row['p'],row['label'],pcut),axis=1)
     return labeled_dict
 
-def make_replicas_permutation(df, oricol="ori", namecol="Name", affcol="affinity", typecol="type", repcol="rep"):
+def make_replicas_permutation(indf, oricol="ori", namecol="Name", affcol="affinity", typecol="type"):
     """
     Make permutation across replicas
 
     Args:
         type: wt,m1,m2,m3
     """
-    oris = df[oricol].unique()
-    indivsum = {ori:{} for ori in oris}
-    twosites = {ori:{} for ori in oris}
-    for ori in oris:
-        df_ori = df[df["ori"] == ori]
-        probes_dict = dict(tuple(df_ori.groupby(namecol)))
-        for key, curdf in probes_dict.items():
-            # maybe do this just for the first time?
-            if set(curdf[typecol].unique()) != {"wt", "m1", "m2", "m3"}:# skip if incomplete
-                continue
-            g = curdf.set_index([repcol,typecol]).to_dict()[affcol]
-            reps = curdf.groupby(typecol)[repcol].apply(list).to_dict()
+    oris = indf[oricol].unique()
+    df = indf[[namecol, affcol, oricol, typecol, "Sequence"]].sort_values([namecol, oricol])
+    wt = df[df[typecol] == "wt"][[namecol, affcol, oricol]]
+    m1 = df[df[typecol] == "m1"][[namecol, affcol, oricol]]
+    m2 = df[df[typecol] == "m2"][[namecol, affcol, oricol]]
+    m3 = df[df[typecol] == "m3"][[namecol, affcol, oricol]]
+    twodict = {}
+    onedict = {}
+    for o in oris:
+        wt_o = wt[wt[oricol] == o]
+        m1_o = m1[m1[oricol] == o]
+        m2_o = m2[m2[oricol] == o]
+        m3_o = m3[m3[oricol] == o]
+        twodict[o] = wt_o.groupby(namecol)[affcol].apply(list).to_dict()
+        one = m1_o.merge(m2_o, on=namecol).merge(m3_o, on=namecol)
+        one['indiv_aff'] = one["%s_x"%affcol] + one["%s_y"%affcol] - one[affcol]
+        onedict[o] = one.groupby(namecol)["indiv_aff"].apply(list).to_dict()
+    return onedict, twodict
 
-            indivreps = list(itertools.product(*[reps[t] for t in ['m1','m2','m3']]))
-            indivsum_list = []
-            for r in indivreps:
-                i_s = g[(r[0], 'm1')] + g[(r[1], 'm2')] - g[(r[2], 'm3')]
-                indivsum_list.append(i_s)
-            indivsum[ori][key] = indivsum_list
+def permutdict2df(permutdict):
+    """
+    convert indivsum/twosites to a data frame
+    """
+    ld = [{"Name":k, "ori": ori, "affinity":aff} for ori in permutdict for k in permutdict[ori] for aff in permutdict[ori][k]]
+    return pd.DataFrame(ld)
 
-            tworeps = list(itertools.product(*[reps[t] for t in ['wt']]))
-            twosites_list = []
-            for r in tworeps:
-                t_s = g[(r[0], 'wt')]
-                twosites_list.append(t_s)
-            twosites[ori][key] = twosites_list
-    return indivsum, twosites
 
 # --------
 
 def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
                 namecol="Name", valcol="Alexa488Adjusted", extrajoincols=[],
-                title="", cutoff="",
+                title="", cutoff="", ax_in=False,
                 median=False, log=False,
                 shownames=False, path=""):
     """
@@ -112,10 +134,12 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
     # correlation plot of negative controls in chamber 1 vs chamber 2
 
     joincols = [namecol] + extrajoincols
-    dfcombined = dfx.merge(dfy, on=joincols)[joincols + ["%s_x"%valcol, "%s_y"%valcol]]
 
     if median:
-        dfcombined = dfcombined.groupby([namecol] + extrajoincols)[["%s_x"%valcol, "%s_y"%valcol]].median().reset_index()
+        dfx = dfx.groupby([namecol] + extrajoincols)[[valcol]].median().reset_index()
+        dfy = dfy.groupby([namecol] + extrajoincols)[[valcol]].median().reset_index()
+
+    dfcombined = dfx.merge(dfy, on=joincols)[joincols + ["%s_x"%valcol, "%s_y"%valcol]]
     if log:
         dfcombined["%s_x"%valcol] = np.log(dfcombined["%s_x"%valcol])
         dfcombined["%s_y"%valcol] = np.log(dfcombined["%s_y"%valcol])
@@ -125,57 +149,57 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
     # x = [i/10000 for i in x]
     # y= [i/10000 for i in y]
 
-    f = plt.figure()
-    ax = f.add_subplot(111)
+    ax = ax if ax_in else plt.axes()
     # plot diagonal
-    plt.plot([min(min(x),min(y)),max(max(x),max(y))], [min(min(x),min(y)),max(max(x),max(y))], color='blue', label='diagonal') # , linewidth=0.5
+    ax.plot([min(min(x),min(y)),max(max(x),max(y))], [min(min(x),min(y)),max(max(x),max(y))], color='blue', label='diagonal') # , linewidth=0.5
 
     if cutoff:
         c = np.log(cutoff) if log else cutoff
-        plt.axhline(cutoff, color='black', linewidth=0.5, linestyle=":")
-        plt.axvline(cutoff, color='black', linewidth=0.5, linestyle=":")
+        ax.axhline(cutoff, color='black', linewidth=0.5, linestyle=":")
+        ax.axvline(cutoff, color='black', linewidth=0.5, linestyle=":")
 
     slope, intercept = np.polyfit(x, y, 1)
     # Create a list of values in the best fit line
     abline_values = [slope * i + intercept for i in x]
 
     # plot best fit line
-    plt.plot(x, abline_values, color='black', label='best fit')
+    ax.plot(x, abline_values, color='black', label='best fit')
     r_squared = np.corrcoef(x,y)[0,1]**2
-    plt.scatter(x, y, s=1) # color="#FFA07A"
+    ax.scatter(x, y, s=1) # color="#FFA07A"  color="#DCDCDC"
 
     if shownames:
         names = dfcombined[namecol].values
         for i in range(len(names)):
-            plt.text(x[i], y[i], names[i], fontsize=3)
+            ax  .text(x[i], y[i], names[i], fontsize=3)
 
-    plt.xlabel(xlab)
-    plt.ylabel(ylab)
-    plt.xlim(min(x), max(x))
-    plt.ylim(min(y), max(y))
-    plt.title(title)
-    plt.text(0.02, 0.94, 'R² = %0.2f' % r_squared, color='red', fontsize=12, transform = ax.transAxes)
+    ax.set_xlabel(xlab)
+    ax.set_ylabel(ylab)
+    ax.set_xlim(min(x), max(x))
+    ax.set_ylim(min(y), max(y))
+    ax.set_title(title)
+    ax.text(0.02, 0.94, 'R² = %0.2f' % r_squared, color='red', fontsize=12, transform = ax.transAxes)
     sign = '+' if intercept > 0 else '-'
-    plt.text(0.02, 0.9, 'best fit: y=%0.2fx %s %0.2f' % (slope,sign,abs(intercept)), color='red', transform = ax.transAxes, fontsize=12)
-    plt.legend(loc='lower right', prop={'size': 11})
+    ax.text(0.02, 0.9, 'best fit: y=%0.2fx %s %0.2f' % (slope,sign,abs(intercept)), color='red', transform = ax.transAxes, fontsize=12)
+    ax.legend(loc='lower right', prop={'size': 11})
 
-    if path:
-        plt.savefig(path)
-    else:
-        plt.show()
-    plt.clf()
+    if not ax_in:
+        if path:
+            plt.savefig(path)
+        else:
+            plt.show()
+        plt.clf()
     return r_squared
 
 def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa488Adjusted_y",
                            xlab="Chamber1", ylab="Chamber2", log=True, title="", axes=None,
                            shownames=False, namecol="Name", labelcol="label", plotnonsignif=True,
-                           labelnames=["cooperative","additive","anticoop"]):
+                           labelnames=["cooperative","independent","anticooperative"]):
     """
     Desc
 
     Args:
         df: with "Name", "Intensity_one", "Intensity_two", "label".
-            Label -> cooperative, additive, anticoop, fail_cutoff
+            Label -> cooperative, independent, anticooperative, fail_cutoff
             shownames: show names of the probe on the plot, useful for debugging. Names are obtained from namecol.
 
     Return:
@@ -186,10 +210,14 @@ def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa48
         permitted_labels.append("fail_cutoff")
     newdf = df[df[labelcol].isin(permitted_labels)]
 
-    ax = axes if axes else plt.axes()
+    if axes:
+        ax = axes
+    else:
+        plt.clf()
+        ax = plt.axes()
 
-    # red/firebrick, mistyrose, blue, skyblue
-    lblclr = [("fail_cutoff","yellow", 0.7), (labelnames[1],"gray",1), (labelnames[0],"blue",1), (labelnames[2],"red",1)]
+    # red/firebrick, mistyrose, blue, skyblue  blue ["#0343df","#75bbfd"] red ["#b22222","#FFA07A"]
+    lblclr = [("fail_cutoff","yellow", 0.7), (labelnames[0],"#0343df",1), (labelnames[1],"#75bbfd",1), (labelnames[2],"gray",1)]
     if log:
         newdf[col1] = np.log(df[col1])
         newdf[col2] = np.log(df[col2])
@@ -203,7 +231,7 @@ def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa48
             if shownames:
                 names = newdf[newdf['label']==lc[0]][namecol].values
                 for i in range(len(names)):
-                    plt.text(x[i], y[i], names[i], fontsize=5)
+                    ax.text(x[i], y[i], names[i], fontsize=5)
 
     ax.set_xlabel(xlab, fontsize=12)
     ax.set_ylabel(ylab, fontsize=12)
@@ -252,7 +280,7 @@ def scatter_boxplot(input_df, cols=[], log=False,
         p.savefig(path)
         p.clf() # clear canvas
 
-def scatter_boxplot_col(input_df, coltype, colval, plotorder=[], colororder=[], ax=None, path = "box.png", title=""):
+def scatter_boxplot_col(input_df, coltype="type", colval="affinity", plotorder=[], colororder=[], ax=None, path = "box.png", title=""):
     """
     """
     plotlist = []
@@ -274,14 +302,71 @@ def scatter_boxplot_col(input_df, coltype, colval, plotorder=[], colororder=[], 
     for i in range(len(plotlist)):
         y = plotlist[i]
         x = np.random.normal(i+1, 0.04, size=len(y))
-        p.plot(x, y, 'r.', markersize=10, alpha=0.5, c=colororder[i])
+        curc = colororder[i] if len(colororder) > i else None
+        p.plot(x, y, 'r.', markersize=5, alpha=1, c="firebrick")
+        #p.plot(x, y, 'r.', markersize=10, alpha=0.5, c=curc)
 
     if not ax:
         plt.savefig(path)
         plt.clf() # clear canvas
 
+def plot_multi_scatterbox(path, indf, po, co=[], namecol="Name", oricol="ori", affcol="affinity", allplot=True,
+                          numcol=4, numrow=4, typecol="type", thresline=False, fixed_ax=False, pline=True):
+    """
+    po: plot order based on the typecol
+    co: color order
+    allplot: plot the summary of all as the first plot
+    """
+    fig, ax = plt.subplots(numrow, numcol, figsize=(25, 5))
+    plt.subplots_adjust(hspace = 0.4, wspace=0.2)
+    i = 0
+    with PdfPages(path) as pdf:
+        if allplot:
+            fig = plt.figure(figsize=(25,14))
+            fig.subplots_adjust(hspace=0.4,wspace=0.2)
+            i += 1 # start from 1 for the all plot
+            cur_ax = fig.add_subplot(numcol,numrow,i)
+            df_median = indf.groupby([namecol,typecol,oricol]).median().reset_index()
+            main_title = os.path.splitext(path)[0]
+            scatter_boxplot_col(df_median, typecol, affcol, plotorder=po, colororder=co, title=main_title, ax=cur_ax)
+        namelist = indf[namecol].drop_duplicates().tolist()
+        len_namelist = len(namelist)
+        for n_idx in range(len_namelist):
+            print("Progress %d/%d" % (n_idx, len_namelist))
+            n = namelist[n_idx]
+            if i == 0:
+                fig = plt.figure(figsize=(25,14))
+                fig.subplots_adjust(hspace=0.4,wspace=0.2)
+            i += 1
+            cur_ax = fig.add_subplot(numcol,numrow,i)
+            indf_col = indf[indf[namecol] == n]
+            scatter_boxplot_col(indf_col, typecol, affcol, plotorder=po, colororder=co, title=n, ax=cur_ax)
+            # statistical annotation
+            if pline:
+                for pos in [1, 3]:
+                    p = st.wilcox(indf_col[indf_col[typecol] == po[pos-1]][affcol].tolist(),
+                                  indf_col[indf_col[typecol] == po[pos]][affcol].tolist(), 'less')
+                    x1, x2 = pos, pos+1
+                    y, h, col = max(indf_col[affcol]) + 0.2, 0.2, 'k'
+                    plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], c=col)
+                    plt.text((x1+x2)*.5, y+h, "%.4f" % p, ha='center', va='bottom', color=col)
+            if thresline:
+                cur_ax.axhline(thresline, linestyle='--', color="orange", lw=0.5)
+            if fixed_ax:
+                min_y = min(indf[affcol].tolist())
+                max_y = max(indf[affcol].tolist())
+                cur_ax.set_ylim([min_y, max_y])
+            if i == numcol*numrow:
+                pdf.savefig(fig)
+                plt.close()
+                i = 0
+        pdf.savefig(fig)
+    plt.clf()
+    plt.close()
+
 def plot_ori_inconsistency(indivsum_df, twosites_df, lbldf=False, namecol="Name", oricol='ori',
-                affcol="affinity", log=False, fixed_ax=False, prefix_path = "", thresline=False):
+                affcol="affinity",  allplot=True, log=False, fixed_ax=False,
+                prefix_path = "", thresline=False):
     """
     Args:
         indivsum_df: data frame of Name, orientation, affinity of the individual sites sum
@@ -289,7 +374,7 @@ def plot_ori_inconsistency(indivsum_df, twosites_df, lbldf=False, namecol="Name"
         lbldf: data frame of Name, label in first orientation, label in second orientation
         cutoffline: float, plot cutoff line if specified
     """
-    o1, o2 = indivsum_df[oricol].unique() # we assume we can only have 2 ori here
+    o1, o2 = sorted(indivsum_df[oricol].unique()) # we assume we can only have 2 ori here
     indivsum, twosites = indivsum_df.copy(), twosites_df.copy()
     if log:
         indivsum[affcol] = np.log(indivsum[affcol])
@@ -319,48 +404,10 @@ def plot_ori_inconsistency(indivsum_df, twosites_df, lbldf=False, namecol="Name"
         print(perm, curdf[namecol].unique().shape[0])
         if len(curdf[affcol].tolist()) == 0:
             continue
-        min_y = min(curdf[affcol].tolist())
-        max_y = max(curdf[affcol].tolist())
 
-        fig, ax = plt.subplots(numrow, numcol, figsize=(25, 5))
-        plt.subplots_adjust(hspace = 0.4, wspace=0.2)
         all_lbl = "%s%s_%s_%s_%s" % (prefix_path,perm[0],o1,perm[1],o2)
         po = ["one_%s"%o1,"two_%s"%o1,"one_%s"%o2,"two_%s"%o2]
         co = ["red","red","blue","blue"]
-        with PdfPages("%s.pdf" % all_lbl) as pdf:
-            fig = plt.figure(figsize=(25,14))
-            fig.subplots_adjust(hspace=0.4,wspace=0.2)
-            i = 1 # start from 1 for the all plot
-            cur_ax = fig.add_subplot(numcol,numrow,i)
-            df_median = curdf.groupby([namecol,"type",oricol]).median().reset_index()
-            scatter_boxplot_col(df_median, "type", affcol , plotorder=po, colororder=co, title=all_lbl, ax=cur_ax)
-            for n in curdf[namecol].drop_duplicates().tolist():
-                if i == 0:
-                    fig = plt.figure(figsize=(25,14))
-                    fig.subplots_adjust(hspace=0.4,wspace=0.2)
-                i += 1
-                cur_ax = fig.add_subplot(numcol,numrow,i)
-                curdf_col = curdf[curdf[namecol] == n]
-                scatter_boxplot_col(curdf_col, "type", affcol, plotorder=po, colororder=co, title=n, ax=cur_ax)
-                # statistical annotation
-                for pos in [1, 3]:
-                    p = st.wilcox(curdf_col[curdf_col["type"] == po[pos-1]]["affinity"].tolist(),
-                                  curdf_col[curdf_col["type"] == po[pos]]["affinity"].tolist(), 'less')
-                    x1, x2 = pos, pos+1
-                    y, h, col = max(curdf_col["affinity"]) + 0.2, 0.2, 'k'
-                    plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], c=col)
-                    plt.text((x1+x2)*.5, y+h, "%.4f" % p, ha='center', va='bottom', color=col)
-                if thresline:
-                    cur_ax.axhline(thresline, linestyle='--', color="orange", lw=0.5)
-                if fixed_ax:
-                    cur_ax.set_ylim([min_y, max_y])
-                if i == numcol*numrow:
-                    pdf.savefig(fig)
-                    plt.close()
-                    i = 0
-            pdf.savefig(fig)
-    plt.clf()
-    plt.close()
+        plot_multi_scatterbox("%s.pdf" % all_lbl, curdf, po, co, namecol=namecol, oricol=oricol,
+                               allplot=allplot, affcol=affcol, thresline=thresline, fixed_ax=fixed_ax)
     return 0
-
-#def plot_label_change()

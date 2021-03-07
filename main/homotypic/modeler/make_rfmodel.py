@@ -11,7 +11,7 @@ import os, sys
 import pickle
 from sklearn import ensemble, tree
 import chip2probe.modeler.plotlib as pl
-os.chdir("../..")
+os.chdir("../../..")
 
 from chip2probe.modeler.cooptrain import CoopTrain
 from chip2probe.modeler.bestmodel import BestModel
@@ -20,15 +20,14 @@ from chip2probe.sitespredict.imads import iMADS
 from chip2probe.sitespredict.imadsmodel import iMADSModel
 
 if __name__ == "__main__":
-    basepath = "/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe"
-    trainingpath = "%s/output/homotypic/training/training.csv" % basepath
-    df = pd.read_csv(trainingpath)
+    trainingpath =  "input/modeler/training_data/training_p01_adjusted_ets1.tsv"
+    df = pd.read_csv(trainingpath,sep="\t")
     # select only genomic (i.e. non-custom) sequences
     # df = df[~df['name'].str.contains("dist|weak")]
     ct = CoopTrain(df, corelen=4, flip_th=True, positive_cores=["GGAA","GGAT"])
 
     # using custom imads model
-    imads_paths = ["%s/input/site_models/imads_models/Ets1_w12_GGAA.model" % basepath, "%s/input/site_models/imads_models/Ets1_w12_GGAT.model" % basepath]
+    imads_paths = ["input/site_models/imads_models/Ets1_w12_GGAA.model", "input/site_models/imads_models/Ets1_w12_GGAT.model"]
     imads_cores = ["GGAA", "GGAT"]
     imads_models = [iMADSModel(path, core, 12, [1, 2, 3]) for path, core in zip(imads_paths, imads_cores)]
     imads = iMADS(imads_models, 0.19) # 0.2128
@@ -43,10 +42,10 @@ if __name__ == "__main__":
     label = ct.get_numeric_label({'cooperative': 1, 'additive': 0})
 
     rf_param_grid = {
-        'n_estimators': [500], #[500,750,1000],
-        'max_depth': [5], #[5,10,15],
-        "min_samples_leaf": [5], #[5,10,15],
-        "min_samples_split" : [5]#[5,10,15]
+        'n_estimators': [1000], #[500,750,1000],
+        'max_depth': [10], #[5,10,15],
+        "min_samples_leaf": [10], #[5,10,15],
+        "min_samples_split" : [10]#[5,10,15]
     }
 
 
@@ -60,9 +59,9 @@ if __name__ == "__main__":
     pl.plot_model_metrics(best_models, cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Runx1-Ets1")
 
     # # This is usually made based on the best model
-    rf = ensemble.RandomForestClassifier(n_estimators=500, max_depth=5, min_samples_leaf=5, min_samples_split=5)
+    rf = ensemble.RandomForestClassifier(n_estimators=1000, max_depth=10, min_samples_leaf=10, min_samples_split=10)
     rf.fit(train,label)
-    model_name = "dist_12mer.sav"
+    model_name = "dist_ori_12merimads.sav"
     pickle.dump(rf, open(model_name, 'wb'))
     print("Model saved in %s" % model_name)
 

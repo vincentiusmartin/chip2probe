@@ -1,5 +1,5 @@
 import os
-os.chdir("../..")
+os.chdir("../../../..")
 import pandas as pd
 import pickle
 
@@ -13,10 +13,10 @@ from chip2probe.sitespredict.pbmescore import PBMEscore
 from chip2probe.sitespredict.dnasequence import DNASequence
 
 if __name__ == "__main__":
-    trainingpath = "input/modeler/training_data/training_p01_adjusted.tsv"
-    df = pd.read_csv(trainingpath, sep="\t")
+    trainingpath = "output/homotypic/training/training.csv"
+    df = pd.read_csv(trainingpath)
     # select only genomic sequences
-    df = df[~df['name'].str.contains("dist|weak")]
+    df = df[~df['name'].str.contains("dist|weak")] # should already be all genomics
 
     # Load escore object
     escore = PBMEscore("input/site_models/escores/Ets1_8mers_11111111.txt")
@@ -28,17 +28,35 @@ if __name__ == "__main__":
     imads12 = iMADS(imads12_models, 0.19) # 0.2128
 
     print("Number of input rows: %d"%df.shape[0])
-    indf = pd.DataFrame(df[["id","sequence","label"]])
+    indf = pd.DataFrame(df[["sequence","label"]])# "id"
     indf["label"] = indf["label"].replace({"cooperative":1,"additive":0})
 
+    mindist = imads12.sitewidth - 3
+    ct = CoopTrain(indf["sequence"].values.tolist(), corelen=4, flip_th=True, imads=imads12, ignore_sites_err=True)
+    om = ct.df.join(indf.set_index("sequence"), on="sequence", how="inner") # this already include the orientation
+    seqs = []
+    passval = 0
+    for index, row in om.iterrows():
+        sites, sites_specific = DNASequence(row["sequence"], imads12, escore, 0.4, 0).get_sites()
+        if len(sites_specific) != 2: # or sites[1]["core_mid"] - sites[0]["core_mid"] < mindist: #or len(sites_specific) != 2
+            #print(len(sites), sites[1]["core_mid"] - sites[0]["core_mid"], mindist)
+           continue
+        seqs.append(row["sequence"])
+        passval += 1
+    pd.DataFrame({'sequence':seqs}).to_csv("seqs.csv")
+    print("Number of sequences passing the cutoff %d" % passval)
+
+    """
     # 1. Mutate based on affinity
-    aff_m = mut.mutate_affinity(indf, imads12, escore, deep=3)
+    aff_m = mut.mutate_affinity(indf, imads12, escore, deep=6, idcol="name")
+    print(aff_m["seqid"].unique())
 
     # 2. Mutate based on orientation
-    ori_m = mut.mutate_orientation(indf, imads12,  escore, deep=3)
+    ori_m = mut.mutate_orientation(indf, imads12,  escore, deep=6, idcol="name")
 
     # 3. Mutate based on distance
-    dis_m = mut.mutate_dist(indf, imads12, escore, warning=False, deep=3)
+    dis_m = mut.mutate_dist(indf, imads12, escore, warning=False, deep=6, patch=False, idcol="name")
+    print(dis_m[["seqid"]].drop_duplicates().shape[0])
     # dm.to_csv("custom_distance.csv", index=False, header=True)
     # dm = pd.read_csv("custom_distance.csv")
     # we need to add the orientation information for the distance
@@ -68,7 +86,7 @@ if __name__ == "__main__":
         "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True},
         "affinity": {"imads":imads12}
     }
-    train = ct.get_feature_all(feature_dict, aslist=True)
+    train = ct.get_feature_all(feature_dict, rettype="list")
     model = pickle.load(open("input/modeler/coopmodel/dist_ori_12merimads.sav", "rb"))
     pred = model.predict(train)
     prob = model.predict_proba(train)
@@ -88,3 +106,4 @@ if __name__ == "__main__":
           "  main_pred : %d\n" +
           "  shape_pred: %d") % (main_true.shape[0], shape_true.shape[0]))
     print("Number of correctly predicted wt intersection main vs shape: %d" % intersect.shape[0])
+    """

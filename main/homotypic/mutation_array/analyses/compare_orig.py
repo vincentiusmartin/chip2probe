@@ -61,8 +61,12 @@ if __name__ == "__main__":
     # 201128_validation_array_ets1_v2_1/10nMEts1_alexa488_550_20_alldata.txt %s/210102_validation_array_ets1_v2_2/20nMEts1_alexa488_550_10_alldata.txt
     df_cust, neg_cust = read_chfile("%s/210102_validation_array_ets1_v2_2/30nMEts1_alexa488_550_10_alldata.txt" % basepath, "Coop2Ets")
     pd.set_option("display.max_columns",None)
+    print(df_orig)
     df_orig = df_orig[df_orig["Name"].str.contains("_m1_") | df_orig["Name"].str.contains("_m2_") | df_orig["Name"].str.contains("_wt_")]
     df_cust = df_cust[df_cust["Name"].str.contains("_m1_") | df_cust["Name"].str.contains("_m2_") | df_cust["Name"].str.contains("_wt_")]
+
+    import sys
+    sys.exit()
     inter = set(df_orig["Sequence"].unique().tolist()).intersection(set(df_cust["Sequence"].unique().tolist()))
     inter_idx = list(range(len(inter)))
     interseqs = list(zip(inter_idx, inter))

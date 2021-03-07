@@ -1,4 +1,5 @@
 from matplotlib.backends.backend_pdf import PdfPages
+from scipy import stats
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -171,17 +172,16 @@ def plot_delta_ch1ch2(indiv,two):
             d = list(curdf_ori["distance"])
             y = list(curdf_ori["diff"])
             maxd_aff, mind_aff = curdf_ori[curdf_ori["distance"] == max(d)]['diff'].tolist(), curdf_ori[curdf_ori["distance"] == min(d)]['diff'].tolist()
-            p = min(st.wilcox(maxd_aff, mind_aff, 'less'), st.wilcox(maxd_aff, mind_aff, 'greater'))
-            print("%s %s ,p=%0.5f" % (t,o,p))
             ax = plt.figure().add_subplot(111)
-            plt.text(0.5, 0.5, 'dist-%d vs dist-%d, p = %0.5f' % (max(d), min(d), p), color='red', fontsize=12, transform = ax.transAxes)
             plt.scatter(d, y)
             plt.xlim(max(d), min(d))
-            slope, intercept = np.polyfit(d, y, 1)
+            slope, intercept, r, p, std_err = stats.linregress(d, y) #p-val with Wald Test
+            plt.text(0.5, 0.5, 'dist-%d vs dist-%d, p = %0.5f' % (max(d), min(d), p), color='red', fontsize=12, transform = ax.transAxes)
+            print("%s %s ,p=%0.5f" % (t,o,p))
             dist_unique = list(set(d))
             abline_values = [slope * i + intercept for i in dist_unique]
             plt.title("%s_%s, slope %.2f" % (t,o,slope))
-            plt.ylabel("ch4_intensity - ch3_intensity")
+            plt.ylabel("ch2_intensity - ch1_intensity")
             plt.xlabel("distance")
             plt.plot(dist_unique, abline_values, color='black')
             plt.tight_layout()
@@ -217,7 +217,7 @@ def plot_delta_dist(indiv):
 
 if __name__ == "__main__":
     basepath = "/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/output/heterotypic/EtsRunx_v1/customseq"
-    ch = "ch3_ch4"
+    ch = "ch1_ch2"
     key = "_clean_customseq"
     cutoff = np.log(860.98) # 446.035 np.log(860.98)
     pd.set_option("display.max_columns",None)
@@ -232,14 +232,15 @@ if __name__ == "__main__":
     #info = info[info['ori_seq'] == "TTCTCTGCGGTGGCCAGAGTCAGAAGCGGATAAACA"] ###
 
     indiv = read_filter("%s/%s/indiv_df.tsv" % (basepath,ch),key, info, oriseq_dict, coltype)
+    indiv.to_csv("bbb.csv",index=False)
     two = read_filter("%s/%s/two_df.tsv" % (basepath,ch),key, info, oriseq_dict, coltype)
     #lbls =  read_filter("%s/%s/lbl_df.tsv" % (basepath,ch),key, info, oriseq_dict, coltype)
     oriseqs = indiv["ori_seq"].unique()
 
-    plot_delta_ch1ch2(indiv,two)
+    # plot_delta_ch1ch2(indiv,two)
     # plot_delta_dist(indiv)
     # print_shifted_pred(lbls, coltype)
-    # plot_scatter_per_category(indiv, two)
+    plot_scatter_per_category(indiv, two)
     # plot_confidence_change(indiv, two, coltype)
 
 

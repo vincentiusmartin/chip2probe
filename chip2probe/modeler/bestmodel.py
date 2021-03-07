@@ -133,10 +133,6 @@ class BestModel:
                 model = clf.fit(x_train[train],y_train[train])
                 # get predictions
                 predict_label = model.predict(x_train[test])
-                # if self.classifier == "EN" or self.classifier == "lasso":
-                #     predict_proba = predict_label
-                #     predict_label = [1 if i >= 0.5 else 0 for i in predict_label]
-                # else:
                 predict_proba = model.predict_proba(x_train[test])[:,1]
                 # calculate metrics
                 tot_acc += metrics.accuracy_score(y_train[test], predict_label)

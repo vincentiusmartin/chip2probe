@@ -42,10 +42,10 @@ if __name__ == "__main__":
           "xtick.labelsize" : 14, "ytick.labelsize" : 14 , "axes.labelsize" : 14}
     plt.rcParams.update(params)
     basepath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/coop_hetero-PBM_Ets_EtsRunx_v1"
-    dflist = [pd.read_csv("%s/Ets1_70.txt"%basepath,sep="\t"),
-           pd.read_csv("%s/Ets1_Runx1_70.txt"%basepath,sep="\t")]
-    # dflist = [pd.read_csv("%s/Runx1_80.txt"%basepath,sep="\t"),
-    #         pd.read_csv("%s/Runx1_Ets1_80.txt"%basepath,sep="\t")]
+    # dflist = [pd.read_csv("%s/Ets1_70.txt"%basepath,sep="\t"),
+    #        pd.read_csv("%s/Ets1_Runx1_70.txt"%basepath,sep="\t")]
+    dflist = [pd.read_csv("%s/Runx1_80.txt"%basepath,sep="\t"),
+            pd.read_csv("%s/Runx1_Ets1_80.txt"%basepath,sep="\t")]
     dflist = [df[df["Name"].str.contains("seq",na=False)].sort_values(by=["Name"]) for df in dflist]
 
     kompas_ets = Kompas("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/input/site_models/kompas/Ets1_kmer_alignment.txt",
@@ -60,8 +60,8 @@ if __name__ == "__main__":
     # get sequence with the site we want, just need to run this once
     #seqdf = pd.DataFrame(dflist[0][dflist[0]["Name"].str.contains("m1|m2")])
     #get_seq_wsite(seqdf, kompas_runx).to_csv("seq_w1_runx_site.csv")
-    tf_bound = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/output/heterotypic/EtsRunx_v1/seq_w1_ets_site.csv")
-    # tf_bound = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/output/heterotypic/EtsRunx_v1/seq_w1_runx_site.csv")
+    # tf_bound = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/output/heterotypic/EtsRunx_v1/seq_w1_ets_site.csv")
+    tf_bound = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/output/heterotypic/EtsRunx_v1/seq_w1_runx_site.csv")
 
     pd.set_option('display.max_columns', None)
     tf_str = "ets1"
@@ -72,7 +72,8 @@ if __name__ == "__main__":
         # filtdf = fix_naming(filtdf) # to fix the naming error
         # if i == 1: # normalization
         #    filtdf["Alexa488Adjusted"] = (filtdf["Alexa488Adjusted"] - 108.83)/0.87 #(df["Alexa488Adjusted"] - 107.4) / 0.82
-        filtdf = pd.DataFrame(df[df["Name"].str.contains(pattern)]) # for  non negctrl
+        filtdf = pd.DataFrame(df[df["Name"].str.contains(pattern) & df["Name"].str.contains("all_clean_seqs")]) # for  non negctrl
+        print(filtdf.shape[0])
         filtdf = fix_naming(filtdf).merge(tf_bound, on=["Sequence"]) # for  non negctrl
         filtdf = filtdf[filtdf["has_site"] == True].groupby(["Name","ori"]).median().reset_index() # for non negctrl
         filteredlist.append(filtdf)

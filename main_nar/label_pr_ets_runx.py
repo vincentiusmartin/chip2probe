@@ -80,19 +80,29 @@ if __name__ == "__main__":
     neg_percentile = 0.75
     p_default = 0.015
     p_ambiguous = 0.06
-    maintf = "ets1"
-    cooptf = "runx1"
 
     # For plotting
+    # m for main TF, mc for main and cooperator TF
     ch_x =  "Ets1 only"
     ch_y = "Ets1 + Runx1"
     both_title = "Cooperative vs independent binding of Ets1-Runx1"
-
-    # m for main TF, mc for main and cooperator TF
+    maintf = "ets1"
+    cooptf = "runx1"
     df_m, neg_m = pd.read_csv("input/probefiles/Ets1_only_pr_clean.csv"), pd.read_csv("input/probefiles/Ets1_only_neg_clean.csv")
     df_mc, neg_mc = pd.read_csv("input/probefiles/Ets1_Runx1_pr_clean.csv"), pd.read_csv("input/probefiles/Ets1_Runx1_neg_clean.csv")
+    baseoutpath = "output/Ets1Runx1/label_pr/"
+
+    # ch_x =  "Runx1 only"
+    # ch_y = "Runx1 + Ets1"
+    # both_title = "Cooperative vs independent binding of Runx1-Ets1"
+    # maintf = "runx1"
+    # cooptf = "ets1"
     # df_m, neg_m = pd.read_csv("input/probefiles/Runx1_only_pr_clean.csv"), pd.read_csv("input/probefiles/Runx1_only_neg_clean.csv")
     # df_mc, neg_mc = pd.read_csv("input/probefiles/Runx1_Ets1_pr_clean.csv"), pd.read_csv("input/probefiles/Runx1_Ets1_neg_clean.csv")
+    # baseoutpath = "output/Runx1Ets1/label_pr/"
+
+    print("Number of raw probes distinct names %d" % df_m["Name"].nunique())
+
 
     # if main tf ets1, we say cooperative everytime it's cooperative on re orientation
     label_er_re = ["independent", "cooperative"] if maintf == "ets1" else ["cooperative", "independent"]
@@ -105,12 +115,11 @@ if __name__ == "__main__":
     cutoff = float(get_negcutoff(neg_m, cooptf, slope, intercept, neg_percentile))
     print("Negative control cutoff %.3f" % cutoff)
 
-
     df_m = assign_ori_pos(df_m, kompas_ets, kompas_runx, "ets1", "runx1" , "er", "re") # pd.read_csv("%s_%s_main.csv" % (maintf, cooptf)) #a
     df_mc = assign_ori_pos(df_mc, kompas_ets, kompas_runx, "ets1", "runx1", "er", "re") # pd.read_csv("%s_%s_main_cooperator.csv" % (maintf, cooptf))
     df_mc["intensity"] = (df_mc["intensity"] - intercept)/slope
-    df_m.to_csv("%s_%s_main.csv" % (maintf, cooptf),index=False)
-    df_mc.to_csv("%s_%s_main_cooperator.csv" % (maintf, cooptf),index=False)
+    df_m.to_csv("%s/%s_%s_main.csv" % (baseoutpath, maintf, cooptf),index=False)
+    df_mc.to_csv("%s/%s_%s_main_cooperator.csv" % (baseoutpath, maintf, cooptf),index=False)
 
     olist = []
     for ori in ["er","re"]:
@@ -148,6 +157,7 @@ if __name__ == "__main__":
         olist.append(df_lbled)
 
     both_ori = olist[0].merge(olist[1], on=["Name"], suffixes=("_er", "_re"))
+    print("Number of distinct names, above cutoff, after orientation joining" % both_ori[both_ori["label"] != "below_cutoff"]["Name"].nunique())
 
     # labeling the probe using both orientations
     oricoop = "er" if cooptf == "ets1" else "re"
@@ -170,8 +180,8 @@ if __name__ == "__main__":
     both_ori = both_ori[both_ori["label"] != "anticooperative"]
 
     both_ori_plt = both_ori[["Name","intensity_x","intensity_y","label"]]
-    both_ori_plt.to_csv("both_ori_plt_%s_%s.csv" % (maintf,cooptf),index=False)
-    arr.plot_classified_labels(both_ori_plt, path="both_normalized_%s_%s.png" % (maintf,cooptf), col1="intensity_x", col2="intensity_y",
+    both_ori_plt.to_csv("%s/both_ori_plt_%s_%s.csv" % (baseoutpath,maintf,cooptf),index=False)
+    arr.plot_classified_labels(both_ori_plt, path="%s/both_normalized_%s_%s.png" % (baseoutpath,maintf,cooptf), col1="intensity_x", col2="intensity_y",
             title=both_title, xlab=ch_x, ylab=ch_y, plotnonsignif=False, labelnames=["cooperative","independent","anticoop"])
 
     print("Count per label",both_ori_plt[["label","Name"]].groupby("label").count())
@@ -181,4 +191,4 @@ if __name__ == "__main__":
     all_labeled = name_info.merge(both_ori_plt[["Name","label"]], on="Name")
     all_labeled = all_labeled[all_labeled["label"] != "below_cutoff"]
     all_labeled["distance"] = abs(all_labeled["%s_pos" % maintf] - all_labeled["%s_pos" % cooptf])
-    all_labeled.to_csv("seqbled_%s_%s.tsv" % (maintf,cooptf), sep="\t", index=False, columns=["Name", "Sequence", "%s_pos" % maintf, "%s_start" % maintf, "%s_pos" % cooptf, "%s_start" % cooptf, "distance", "ori", "label"])
+    all_labeled.to_csv("%s/seqbled_%s_%s.tsv" % (baseoutpath,maintf,cooptf), sep="\t", index=False, columns=["Name", "Sequence", "%s_pos" % maintf, "%s_start" % maintf, "%s_pos" % cooptf, "%s_start" % cooptf, "distance", "ori", "label"])

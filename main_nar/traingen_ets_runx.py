@@ -28,6 +28,10 @@ if __name__ == "__main__":
     maintf = "ets1"
     cooptf = "runx1"
 
+    # lbled_path = "output/Runx1Ets1/label_pr/seqbled_runx1_ets1.tsv"
+    # maintf = "runx1"
+    # cooptf = "ets1"
+
     if maintf == "ets1":
         pwm_main = PWM("input/sitemodels/%s.txt" % maintf, log=True, reverse=False)
         pwm_coop = PWM("input/sitemodels/%s.txt" % cooptf, 8, 17, log=True, reverse=True)
@@ -50,9 +54,9 @@ if __name__ == "__main__":
     train["orientation"] = train.apply(lambda x: "%s/%s" % (orimap[int(x["%s_ori" % maintf])], orimap[int(x["%s_ori" % cooptf])]),axis=1)
     train = train[(train["ets1_score"] != - 999) & (train["runx1_score"] != - 999)]
     print(train["label"].value_counts())
-    train.to_csv("train_%s_%s.tsv" % (maintf,cooptf),sep="\t", index=False, float_format='%.3f')
+    train.to_csv("output/Ets1Runx1/training/train_%s_%s.tsv" % (maintf,cooptf),sep="\t", index=False, float_format='%.3f')
 
     train.rename(columns={'%s_score' % maintf: '%s strength\n(main TF)' % maintf.capitalize(), '%s_score' % cooptf: '%s strength\n(cooperator TF)' % cooptf.capitalize()}, inplace=True)
-    plot.plot_stacked_categories(train, "distance", path="distance_bar.png", title="Distance distribution", ratio=True, figsize=(17,4))
-    plot.plot_stacked_categories(train, "orientation", path="ori_bar.png", title="Relative sites orientation\ndistribution", ratio=True, figsize=(9,5))
-    plot.plot_box_categories(train, incols=["%s strength\n(main TF)" % maintf.capitalize(), "%s strength\n(cooperator TF)" % cooptf.capitalize()], alternative="smaller")
+    plot.plot_stacked_categories(train, "distance", path="output/Ets1Runx1/training/distance_bar.png", title="Distance distribution", ratio=True, figsize=(17,4))
+    plot.plot_stacked_categories(train, "orientation", path="output/Ets1Runx1/training/ori_bar.png", title="Relative sites orientation\ndistribution", ratio=True, figsize=(9,5))
+    plot.plot_box_categories(train, path="output/Ets1Runx1/training/boxplot.png", incols=["%s strength\n(main TF)" % maintf.capitalize(), "%s strength\n(cooperator TF)" % cooptf.capitalize()], alternative="smaller")

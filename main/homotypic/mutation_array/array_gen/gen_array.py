@@ -1,5 +1,5 @@
 import os
-os.chdir("../..")
+os.chdir("../../../..")
 import pandas as pd
 from chip2probe.sitespredict.imads import iMADS
 from chip2probe.sitespredict.imadsmodel import iMADSModel
@@ -16,8 +16,8 @@ def sanity_check(df, imads, primer):
             print("Progress %d/%d" % (i+1,df.shape[0]))
         i += 1
         nsites = len(imads.predict_sequence(row["sequence"]))
-        if not len(row["sequence"]) == 60:
-            raise Exception("Wrong sequence length", row["id"])
+        # if not len(row["sequence"]) == 60:
+        #     raise Exception("Wrong sequence length", row["id"])
         if not row["sequence"].endswith(primer):
             raise Exception("primer is missing", row["id"])
         if ("wt" in row["id"] and nsites != 2) or \
@@ -64,7 +64,11 @@ if __name__ == "__main__":
     seqids = [x.split("_")[0] for x in seqids]
     arr = []
 
-    negdf = pd.read_csv("input/array_design_files/Coop1Ets/Coop1Ets_NegCtrl.txt",sep="\t",header=None)
+    negdf = pd.read_csv("output/array_design_files/Coop1Ets/Coop1Ets_NegCtrl.txt",sep="\t",header=None)
+    print(negdf)
+    import sys
+    sys.exit(0)
+
     negctrl = negdf[0].tolist()
     negids = [x.split("_")[3] for x in negdf[2].tolist()]
     validneg = []
@@ -131,7 +135,7 @@ if __name__ == "__main__":
                     print("wrong site count", wprimer, v,nsites)
                     flag = False
                     break
-                if not wprimer.endswith(primer) or len(wprimer) != 60:
+                if not wprimer.endswith(primer): # or len(wprimer) != 60:
                     raise Exception("Problematic sequence")
                 cur_arr.append({
                     "sequence": wprimer,

@@ -41,17 +41,18 @@ def read_probe_data(df, keyword):
 if __name__ == "__main__":
     pd.set_option('display.max_columns', None)
     basepath = "/Users/vincentiusmartin/Research/chip2gcPBM/probedata/coop_hetero-PBM_Ets_EtsRunx_v1"
-    # dflist = [pd.read_csv("%s/Runx1_80.txt"%basepath,sep="\t"),
-    #        pd.read_csv("%s/Runx1_Ets1_80.txt"%basepath,sep="\t")]
-    dflist = [pd.read_csv("%s/Ets1_70.txt"%basepath,sep="\t"),
-            pd.read_csv("%s/Ets1_Runx1_70.txt"%basepath,sep="\t")]
+    dflist = [pd.read_csv("%s/Runx1_80.txt"%basepath,sep="\t"),
+           pd.read_csv("%s/Runx1_Ets1_80.txt"%basepath,sep="\t")]
+    # dflist = [pd.read_csv("%s/Ets1_70.txt"%basepath,sep="\t"),
+    #     pd.read_csv("%s/Ets1_Runx1_70.txt"%basepath,sep="\t")]
     cutoff = 446.035 # 446.035 860.98
-    ch_x =  "Ets1 + Ab_Ets1"
-    ch_y = "Ets1 + Runx1 + Ab_Ets1"
-    both_title = "Binding of Ets1 with cooperator Runx1"
+    ch_x =  "Ets only"
+    ch_y = "Ets1 + Runx1"
+    both_title = "Cooperative vs independent binding of Et1-Runx1"
     p_default = 0.015
     p_ambiguous = 0.06
     labele_er_re = ["additive", "cooperative"] #["additive", "cooperative"] ["cooperative", "additive"]
+    oricoop = "er" if 'Runx' in ch_x else "re"
 
     kompas_ets = Kompas("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/input/site_models/kompas/Ets1_kmer_alignment.txt",
                     core_start = 11, core_end = 15, core_center = 12)
@@ -59,7 +60,7 @@ if __name__ == "__main__":
                     core_start = 12, core_end = 17, core_center = 14)
 
     # ------- labeling sequences, for now only take wt -------
-    keyword = "custom" #"all_clean_seqs"
+    keyword = "all_clean_seqs" #"all_clean_seqs"
     # dflist[0][dflist[0]["Name"].str.contains(keyword,na=False) & dflist[0]["Name"].str.contains("wt",na=False) ].sort_values(by=["Name"]).to_csv("custom_probes.csv", index=False)
 
     df_genomics = []
@@ -68,7 +69,8 @@ if __name__ == "__main__":
         df = dflist[i]
         df_gen = read_probe_data(df, keyword)
         if i == 1:
-          df_gen["Alexa488Adjusted"] = (df_gen["Alexa488Adjusted"] - 107.74) / 0.82 # normalize
+            # normalize
+          df_gen["Alexa488Adjusted"] = (df_gen["Alexa488Adjusted"] - 108.83) / 0.87  #- 107.74) / 0.82 or -108.83)/0.87
         df_gen.to_csv("df_custom_ch%d.csv" % (i+1), index=False)
         df_genomics.append(df_gen)
     df_genomics = [pd.read_csv("df_custom_ch1.csv").convert_dtypes(), pd.read_csv("df_custom_ch2.csv").convert_dtypes()]
@@ -132,8 +134,9 @@ if __name__ == "__main__":
 
     print("Saving both orientation label")
     # this doesn't make sense, made just for the sake of having a combined plot
-    both_ori["Alexa488Adjusted_x"] = both_ori["Alexa488Adjusted_x_re"] #(both_ori["Alexa488Adjusted_x_er"] + both_ori["Alexa488Adjusted_x_re"]) / 2
-    both_ori["Alexa488Adjusted_y"] = both_ori["Alexa488Adjusted_y_re"]  #(both_ori["Alexa488Adjusted_y_er"] + both_ori["Alexa488Adjusted_y_re"]) / 2
+    # change
+    both_ori["Alexa488Adjusted_x"] = both_ori["Alexa488Adjusted_x_%s" % oricoop] #(both_ori["Alexa488Adjusted_x_er"] + both_ori["Alexa488Adjusted_x_re"]) / 2
+    both_ori["Alexa488Adjusted_y"] = both_ori["Alexa488Adjusted_y_%s" % oricoop]  #(both_ori["Alexa488Adjusted_y_er"] + both_ori["Alexa488Adjusted_y_re"]) / 2
     both_ori["label"] = both_ori.apply(lambda x:
         "below_cutoff" if x["label_er"] == "below_cutoff" or x["label_re"] == "below_cutoff" else
         "anticoop" if x["p_coop_er"] == 1 and x["p_coop_re"] == 1 else

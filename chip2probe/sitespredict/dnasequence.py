@@ -63,7 +63,7 @@ class DNASequence(object):
             for esite in escore_sites:
                 e_start = esite["startpos"]
                 e_end = esite["startpos"] + esite["escorelength"]
-                if e_start <= c_end and c_start <= e_end:
+                if c_end >= e_start and e_end >= c_start:
                     specific_sites.append(psite)
                     continue
         return predictor_sites, specific_sites

@@ -30,7 +30,7 @@ if __name__ == "__main__":
     sl = sl[(sl["label_o1"] != "anticoop") & (sl["label_o2"] != "anticoop")]
     coop_pcut = 0.05
     add_pcut = 0.4
-    sl = sl[((sl["p_o1"] < coop_pcut) &  (sl["p_o2"] < coop_pcut)) |
+    sl = sl[((sl["p_o1"] <= coop_pcut) &  (sl["p_o2"] <= coop_pcut)) |
             ((sl["p_o1"] > add_pcut) & (sl["p_o2"] > add_pcut) & (sl["label_o1"] == "additive") & (sl["label_o2"] == "additive"))]
     sl['label'] = sl.apply(lambda x: make_label(x["p_o1"],x["p_o2"],coop_pcut),axis=1)
 
@@ -42,30 +42,34 @@ if __name__ == "__main__":
     alldf = allorig.merge(selected, on="sequence")
     alldf = alldf.drop_duplicates(subset=['sequence'])
     alldf = alldf.sort_values(["muttype","seqid","distance"], ascending=[True,True,False])
-    alldf.to_csv("05coop_6add.csv",index=False)
+    alldf.to_csv("05coop_4add.csv",index=False)
     predunique = alldf[["sequence","id","label","main_pred"]].drop_duplicates()
+
     alladd = predunique[predunique["label"] == 0]
     matchadd = alladd[alladd["main_pred"] == 0]
     percentadd = float(matchadd.shape[0]) / alladd.shape[0] * 100
     allcoop = predunique[predunique["label"] == 1]
     matchcoop = allcoop[allcoop["main_pred"] == 1]
     percentcoop = float(matchcoop.shape[0]) / allcoop.shape[0] * 100
-
     print("Matching add %d/%d (%.2f%%), coop %d/%d (%.2f%%)" % (matchadd.shape[0], alladd.shape[0], percentadd, matchcoop.shape[0], allcoop.shape[0], percentcoop), "\n")
 
     g = alldf.groupby("muttype")
 
     totalwt = alldf[(alldf["comment"] == "wt")]
-    wtadd = alldf[(alldf["comment"] == "wt") & (alldf["label"] == 0)].shape[0]
-    wtadd_pred = alldf[(alldf["comment"] == "wt") & (alldf["main_pred"] == 0)].shape[0]
-    wtcoop = alldf[(alldf["comment"] == "wt") & (alldf["label"] == 1)].shape[0]
-    wtcoop_pred = alldf[(alldf["comment"] == "wt") & (alldf["main_pred"] == 1)].shape[0]
-    print("add",wtadd,wtadd_pred,"coop",wtcoop,wtcoop_pred)
+    wtadd = totalwt[totalwt["label"] == 0]
+    wtadd_orig =  wtadd[wtadd["wtlabel"] == 0]
+    wtcoop = totalwt[totalwt["label"] == 1]
+    wtcoop_orig =  wtcoop[wtcoop["wtlabel"] == 1]
+    print("Matching label for wt, original vs custom array:")
+    print("Wt additive %d/%d" % (wtadd_orig.shape[0], wtadd.shape[0]))
+    print("Wt cooperative %d/%d" % (wtcoop_orig.shape[0], wtcoop.shape[0]))
 
     fpr, tpr, _ = metrics.roc_curve(np.array(alldf["label"]), np.array(alldf["main_prob"]))
     auc = metrics.auc(fpr, tpr)
     plt.plot(fpr,tpr, label='AUC all = %.2f' % auc)
 
+    aucs = {}
+    aucs['all'] = auc
     for mtype in ["distance","affinity","orientation"]:
         print("======================================")
         print(mtype)
@@ -86,26 +90,29 @@ if __name__ == "__main__":
         fprtype, tprtype, _ = metrics.roc_curve(np.array(curdf["label"]), np.array(curdf["main_prob"]))
         auctype = metrics.auc(fprtype, tprtype)
         plt.plot(fprtype,tprtype, label='AUC %s = %.2f' % (mtype,auctype))
-        # if mtype == "distance":
-        #     g = curdf.groupby(["distance","label"])["label"].count()
-        #     pl.plot_stacked_categories(curdf, "distance", path="cust_stackedbar_dist.png", ratio=True)
-        # elif mtype == "affinity":
-        #     g = curdf.groupby("seqid")
-        #     ghead = g.head(1)
-        #     ghead = ghead[ghead["label"] == 0][["seqid","id"]]
-        #     gtail = g.tail(1)
-        #     gtail = gtail[gtail["label"] == 1][["seqid","id"]]
-        #     ght = ghead.merge(gtail, on="seqid")
-        #     print(ght)
-        #     # if needed, print
-        # elif mtype == "orientation":
-        #     for ori in ["HH","HT/TH","TT"]:
-        #         oridf = curdf[(curdf["orientation"] == ori)]
-        #         orimatch = oridf[oridf["label"] == oridf["main_pred"]].shape[0]
-        #         print("Orientation %s, match: (%d/%d)" % (ori,orimatch,oridf.shape[0]))
-        #     #pl.plot_stacked_categories(curdf, "orientation", path="cust_stackedbar_ori.png", ratio=True)
+        if mtype == "distance":
+            g = curdf.groupby(["distance","label"])["label"].count()
+            pl.plot_stacked_categories(curdf, "distance", path="cust_stackedbar_dist.png", ratio=True)
+        elif mtype == "affinity":
+            g = curdf.groupby("seqid")
+            ghead = g.head(1)
+            ghead = ghead[ghead["label"] == 0][["seqid","id"]]
+            gtail = g.tail(1)
+            gtail = gtail[gtail["label"] == 1][["seqid","id"]]
+            ght = ghead.merge(gtail, on="seqid")
+            print(ght)
+            # if needed, print
+        elif mtype == "orientation":
+            for ori in ["HH","HT/TH","TT"]:
+                oridf = curdf[(curdf["orientation"] == ori)]
+                orimatch = oridf[oridf["label"] == oridf["main_pred"]].shape[0]
+                print("Orientation %s, match: (%d/%d)" % (ori,orimatch,oridf.shape[0]))
+            toplt = curdf[curdf["comment"] != "wt"]
+            toplt["label"] = toplt['label'].replace({1: 'cooperative', 0: 'additive'})
+            toplt.rename(columns={'comment': 'mutation type'}, inplace=True)
+            pl.plot_stacked_categories(toplt, "mutation type", path="cust_stackedbar_ori.png", ratio=True, title="Orientation distribution")
 
-    plt.legend(loc='lower right')
-    plt.title("ROC curve for validation array")
-    plt.savefig("auc.png")
-    plt.clf()
+    # plt.legend(loc='lower right')
+    # plt.title("ROC curve for validation array")
+    # plt.savefig("auc.png")
+    # plt.clf()

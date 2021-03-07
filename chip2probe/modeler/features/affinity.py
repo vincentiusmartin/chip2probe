@@ -16,7 +16,7 @@ class Affinity(basefeature.BaseFeature):
             NA
         """
         default_args = {
-            "imads" : None,
+            "imads" : False,
             "colnames":("site_wk_score", "site_str_score")
         }
         self.df = traindf
@@ -26,7 +26,6 @@ class Affinity(basefeature.BaseFeature):
             raise Exception("there should be only 2 columns")
         self.col1, self.col2 = self.colnames[0],self.colnames[1]
 
-
     # TODO: make prediction can do without str weak
     def get_feature(self):
         """Get a dictionary of binding site preference scores."""
@@ -34,17 +33,14 @@ class Affinity(basefeature.BaseFeature):
         # if imadsmodel is not provided, we assume the weak and strong site position is provided
         # TODO: make general column name
         for idx, row in self.df.iterrows():
-            if self.colnames:
-                f = {self.col1: row[self.col1],
-                     self.col2: row[self.col2]}
-            else: # imads model is provided
+            if self.imads: # imads model is provided
                 pr = self.imads.predict_sequence(row["sequence"])
                 if len(pr) != 2:
                     #print("Found sites more than 2 sites, using site position in the table as reference")
                     newpr = []
                     # if we suddenly have > 2 predictions, try using position in the training
                     for p in pr:
-                        if p["core_mid"] == row["%s_pos"%col2] or p["core_mid"] == row["%s_pos"%col1]:
+                        if p["core_mid"] == row["%s_pos"%self.col2] or p["core_mid"] == row["%s_pos"%self.col1]:
                             newpr.append(p)
                     if len(newpr) != 2:
                         print("Error on row:\n", row, "with prediction\n", pr)
@@ -52,5 +48,8 @@ class Affinity(basefeature.BaseFeature):
                     pr = newpr
                 f = {"site_wk_score": pr[0]["score"] if pr[0]["score"] < pr[1]["score"] else pr[1]["score"],
                      "site_str_score": pr[0]["score"] if pr[0]["score"] > pr[1]["score"] else pr[1]["score"]}
+            else:
+                f = {self.col1: row[self.col1],
+                     self.col2: row[self.col2]}
             rfeature.append(f)
         return rfeature

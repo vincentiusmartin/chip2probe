@@ -76,7 +76,7 @@ class DNAShape:
     # assume: seq same length, same site position
     #def plot_average(self, labels, site1list, site2list, sequences, pthres=0.05, path="shape.pdf", plotlabel="Average DNA shape"):
     def plot_average(self, df, linemarks=[], path="", lblcol="label",
-            seqcol="sequence", pthres=0.01, pltlabel="", in_fig=None,
+            seqcol="Sequence", pthres=0.01, pltlabel="", in_fig=None,
             lblnames=["cooperative","additive"], base_count=True,
             label_title=False):
         """
@@ -103,10 +103,10 @@ class DNAShape:
         # get the index of each label
         lblidxs = {}
         # get the count of the nucleotide for the mini subplot
-        seqlen = len(df['sequence'].iloc[0])
+        seqlen = len(df[seqcol].iloc[0])
         base_ct = {}
         for l in df[lblcol].unique():
-            seqlist = df[df[lblcol]==l]["sequence"].tolist()
+            seqlist = df[df[lblcol]==l][seqcol].tolist()
             base_ct[l] = self.get_sequence_count(seqlist, avg=False)
 
         labels = df[lblcol].unique()

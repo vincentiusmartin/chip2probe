@@ -7,7 +7,7 @@ from chip2probe.sitespredict.sitesplotter import SitesPlotter
 
 def get_wtdf(path, sl):
     selected = pd.read_csv(path)
-    wtseqs = selected[selected["comment"] == "wt"][["sequence"]].drop_duplicates().rename({"sequence":"Sequence"},axis=1)
+    wtseqs = selected[selected["comment"] == "wt"][["sequence"]].drop_duplicates() #.rename({"sequence":"Sequence"},axis=1)
     wtseqs = wtseqs.merge(sl).rename({"label":"wtlabel"},axis=1).drop_duplicates().reset_index()
     wtseqs["id"] = wtseqs.index + 1
     wtseqs = wtseqs.sort_values("id")
@@ -46,6 +46,9 @@ if __name__ == "__main__":
     wtdf = get_wtdf("%s/chip2probe/output/array_design_files/Coop2Ets_validation/custom_probes_selected.csv" % basepath, seqlbled)
 
     origdf, neg_orig = arr.read_chamber_file("%s/probedata/191030_coop-PBM_Ets1_v1_2nd/2.processed_gpr/20191004_258614510001_ETS1_550_5_1-4_alldata.txt"%basepath, seqcols=["Name","type","rep","ori"], negcols=["Name","rep","ori"], key="Coop1Ets")
+    origdf[["Sequence","type","ori"]].drop_duplicates().to_csv("seqsorig.csv",index=False)
+    import sys
+    sys.exit()
     cust10df, neg10_cust = arr.read_chamber_file("%s/probedata/201128_validation_array_ets1_v2_1/10nMEts1_alexa488_550_20_alldata.txt"%basepath, key="Coop2Ets")
     cust20df, neg20_cust = arr.read_chamber_file("%s/probedata/210102_validation_array_ets1_v2_2/20nMEts1_alexa488_550_10_alldata.txt"%basepath, key="Coop2Ets")
     cust30df, neg30_cust = arr.read_chamber_file("%s/probedata/210102_validation_array_ets1_v2_2/30nMEts1_alexa488_550_10_alldata.txt"%basepath, key="Coop2Ets")

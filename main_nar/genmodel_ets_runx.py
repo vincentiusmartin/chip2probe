@@ -11,7 +11,8 @@ import subprocess
 
 
 if __name__ == "__main__":
-    trainingpath = "output/Ets1Runx1/training/train_ets1_runx1.tsv"
+    # trainingpath = "output/Ets1Runx1/training/train_ets1_runx1.tsv"
+    trainingpath = "output/Ets1Runx1/training/train_runx1_ets1.tsv"
     df = pd.read_csv(trainingpath, sep="\t")
     ct = CoopTrain(df)
     pd.set_option("display.max_columns",None)
@@ -72,7 +73,7 @@ if __name__ == "__main__":
             ).run_all(),
     }
 
-    pl.plot_model_metrics(best_models, cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Ets1-Runx1")
+    pl.plot_model_metrics(best_models, path="output/Ets1Runx1/model/auc.png", cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Ets1-Runx1")
 
     feature_dict = {
         "distance":{"type":"numerical"},
@@ -83,7 +84,7 @@ if __name__ == "__main__":
     label = ct.get_numeric_label({'cooperative': 1, 'independent': 0})
     rf = best_models["distance,orientation,strength"][1]
     rf.fit(train,label)
-    model_name = "ets1_runx1_rfmodel.sav"
+    model_name = "output/Ets1Runx1/model/ets1_runx1_rfmodel.sav"
     pickle.dump(rf, open(model_name, 'wb'))
     print("Model saved in %s" % model_name)
 

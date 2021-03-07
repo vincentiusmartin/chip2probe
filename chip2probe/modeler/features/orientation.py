@@ -26,7 +26,7 @@ class Orientation(basefeature.BaseFeature):
             "positive_cores":[],
             "relative": True,
             "one_hot": False,
-            "pos_cols": ("site_wk_pos", "site_str_pos")
+            "pos_cols": ("site_wk_pos", "site_str_pos"),
         }
         self.df = traindf
         self.set_attrs(params, default_args)
@@ -40,7 +40,7 @@ class Orientation(basefeature.BaseFeature):
         else: # then we need to determine ori from positive cores
             self.ori_cols = []
 
-    def get_feature(self):
+    def get_feature(self, seqcolname="Sequence"):
         """
 
         """
@@ -58,40 +58,39 @@ class Orientation(basefeature.BaseFeature):
                 else:
                     s1, s2 = row[self.ori_cols[1]], row[self.ori_cols[0]]
             else:
-                seq = row["sequence"]
+                seq = row[seqcolname]
                 p1 = seq[site1 - self.motiflen//2:site1 + self.motiflen//2]
                 p2 = seq[site2 - self.motiflen//2:site2 + self.motiflen//2]
                 if p1 in self.positive_cores:
                     s1 = 1
                 elif p1 in negative_cores:
-                    s1 = -1
-                else:
                     s1 = 0
+                else:
+                    s1 = -999
                     print("couldn't find the first site %s in %s in the core list" % (p1,seq))
                 if p2 in self.positive_cores:
                     s2 = 1
                 elif p2 in negative_cores:
-                    s2 = -1
-                else:
                     s2 = 0
+                else:
+                    s2 = -999
                     print("couldn't find the second site %s in %s in the core list" % (p2,seq))
             if self.relative:
-                if s1 == 1 and s2 == 1:
-                    ori = 'HT/TH'
-                elif s1 == -1 and s2 == -1:
-                    ori = 'HT/TH'
-                elif s1 == 1 and s2 == -1:
-                    ori = 'HH'
-                elif s1 == -1 and s2 == 1:
-                    ori = 'TT'
+                # -/+ == TT, +- == HH
+                if s1 == s2:
+                    ori = '+/+'
+                elif s1 == 1 and s2 == 0:
+                    ori = '+/-'
+                elif s1 == 0 and s2 == 1:
+                    ori = '-/+'
                 else:
                     ori = '-1'
                 rfeature.append({"ori":ori})
-            else:
+            if not self.relative:
                 rfeature.append({"ori1":s1, "ori2":s2})
         if self.relative and self.one_hot:
             dum_df = pd.DataFrame(rfeature)
-            notfound = {"HH","HT/TH","TT"} - set(dum_df["ori"].unique())
+            notfound = {"+/+","+/-","-/+"} - set(dum_df["ori"].unique())
             dum_rec = pd.get_dummies(dum_df).to_dict('records')
             for nf in notfound:
                 print("notfound orientation in the dataset: ",nf)

@@ -19,7 +19,7 @@ from sklearn import model_selection, metrics
 import chip2probe.util.stats as st
 
 def plot_stacked_categories(df, x, y="label", path="stackedbar.png",
-                           ratio=False, legend=True, title=""):
+                           ratio=False, legend=True, title="", figsize=None):
     """
     Plot a stacked bar graph for each label.
 
@@ -48,16 +48,13 @@ def plot_stacked_categories(df, x, y="label", path="stackedbar.png",
     all_count = df2.groupby(x).agg('sum').tolist()
     if ratio:
         df2 = df2.groupby(level=0).apply(lambda x: x / float(x.sum()))
-    # ["#0343df","#75bbfd"] ["#b22222","#FFA07A"]
-    ax = df2.unstack(x).fillna(0).T.plot(kind='bar', stacked=True,
-                                         legend=legend, rot=0, color=["#b22222","#FFA07A"],width=0.8 , figsize=(8,4))
+    # blue ["#0343df","#75bbfd"] red ["#b22222","#FFA07A"]
+    ax = df2.unstack(x).fillna(0).T.plot(kind='bar', stacked=True, color=["#b22222","#FFA07A"],
+                                         legend=legend, rot=0, width=0.8 , figsize=figsize) #17,4 & 9,5
     ylabel = "Ratio" if ratio else "count"
-    #ax.set_ylabel(ylabel)
-    #ax.set_xlabel(x)
-    #ax.set_title(title)
-    ax.set_ylabel("")
-    ax.set_xlabel("")
-    ax.set_title("")
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(x)
+    ax.set_title(title)
     if ratio:
         for i in range(len(all_count)):
             ax.annotate(str(all_count[i]), xy=(i,0.90), ha='center', va='bottom', fontsize=17)
@@ -98,15 +95,15 @@ def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", 
     plt.subplots_adjust(hspace =0.4, wspace=0.6)
     grouped = df.groupby(by=by)
     # need to sort to keep the order consistent
-    cols.sort()
+    #cols.sort()
     logstr = ""
     for i in range(len(cols)):
         colname = cols[i]
         cur_group = {elm[0]:list(elm[1]) for elm in grouped[colname]}
         labels, data = [*zip(*cur_group.items())]
         cur_ax = ax.flatten()[i]
-        # ["#0343df","#75bbfd"] ["#b22222","#FFA07A"] , palette=["#b22222","#FFA07A"]
-        sns.boxplot(data=data, width=.6, ax=cur_ax)
+        # blue ["#0343df","#75bbfd"] red  ["#b22222","#FFA07A"]
+        sns.boxplot(data=data, width=.6, ax=cur_ax, palette=["#b22222","#FFA07A"])
         # sns.stripplot(data=data, jitter=True, ax=cur_ax, size=1, color='k')
         cur_ax.set_xticklabels(labels)
         cur_ax.set_title(colname)
@@ -127,10 +124,10 @@ def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", 
             else:
                 p = st.wilcox(data[x1],data[x2],alternative=alternative)
             hfrac = -1 if mval < 0 else 1
-            hfactor = (max2 - max1)**1.5
+            hfactor = (abs(max2) - abs(max1))**1.5
             pline_h = mval * 0.05
             pline_pos = mval * 0.2
-            y, h, col = df[colname].max() + hfactor * pline_pos, pline_h, 'k'
+            y, h, col = df[colname].max(), pline_h, 'k' #  df[colname].max() + hfactor * pline_pos
             logstr += "%s, %s > %s: %4E\n" % (colname, labels[0], labels[1], Decimal(p))
             pstr = "%.2E" % Decimal(p) if p < 0.001 else "%.4f" % p
             cur_ax.plot([x1, x1, x2, x2], [1.01*y, y+h, y+h, 1.01*y], lw=1, c=col)
@@ -170,24 +167,22 @@ def display_output(xy, score_dict, path, title, score_type="auc", varyline=False
     plt.plot([0, 1], [0, 1], color="gray", alpha=0.5, lw=0.3)#linestyle="--",
     i = 0
     for key in  xy:
+        ln = key.split(",")
         score = score_dict[key]
         if varyline:
-            ln = key.split(",")
             if len(ln) > 3 or key == "distance,orientation,strength" :#len(ln) >= 4:
                 lw, ls = 2, "-"
-            elif len(ln) == 3:
+            elif len(ln) > 2: #== 2:
                 lw, ls = 1, "-"
             else:
                 lw, ls = 1, "--"
         else:
             lw, ls = 1, "-"
 
-        if key == "distance,orientation,strength": # len(ln) == 3:
-            plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="brown") # color="brown",
-        elif len(ln) > 3:
-            plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="m")
-        elif len(ln) == 1:
-            plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score)) # color="orange",
+        if key == "distance,orientation,strength": # or len(ln) > 3:
+            plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="brown") #
+        elif len(ln) == 4:
+            plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="m") #
         else:
             plt.plot(xy[key]['x'], xy[key]['y'], lw=lw, linestyle=ls, label='%s: %.2f' % (key,score)) # color=["red", "blue"][i]
             #i += 1
@@ -207,7 +202,7 @@ def display_output(xy, score_dict, path, title, score_type="auc", varyline=False
     plt.savefig(path, dpi=600)
 
 
-def plot_model_metrics(modeldict, plotname="auc.png",
+def plot_model_metrics(modeldict, path="auc.png",
                  title="", cvfold=10, score_type="auc",
                  interp=False, writelog=True, varyline = False,
                  max_fpr=1):
@@ -314,8 +309,8 @@ def plot_model_metrics(modeldict, plotname="auc.png",
             "Confusion_matrix (tn,fp,fn,tp): %s"
             ) % (str(acc), score_type, str(scoreval), str(confmat))
     if writelog:
-        logpath = "%s.log" % os.path.splitext(plotname)[0]
+        logpath = "%s.log" % os.path.splitext(path)[0]
         with open(logpath, 'w') as f:
             f.write(logstr)
 
-    display_output(mets, scoreval, path=plotname, title=title, score_type=score_type, varyline=varyline, max_x=max_fpr)
+    display_output(mets, scoreval, path=path, title=title, score_type=score_type, varyline=varyline, max_x=max_fpr)

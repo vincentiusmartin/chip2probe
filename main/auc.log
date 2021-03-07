@@ -1,3 +1,0 @@
-Mean accuracy: {'all': 0.8429027113237639}
-Mean auc: {'all': 0.8970765989012126}
-Confusion_matrix (tn,fp,fn,tp): {'all': array([799,  62, 135, 258])}

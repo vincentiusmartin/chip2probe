@@ -28,8 +28,8 @@ if __name__ == "__main__":
     fastadict = dict(zip(df["Name"], df["sequence"]))
     ds = ds.DNAShape(fastadict)
 
-    df[(df['distance'] == 5) & (df['orientation'] == "-/-")].to_csv("seq.csv",index=False)
-    df = df[df['distance'] == 5]
+    #df[(df['distance'] == 5) & (df['orientation'] == "-/-")].to_csv("seq.csv",index=False)
+    #df = df[df['distance'] == 5].sort_values("orientation").to_csv("seqtest.csv",index=False)
     print(df.groupby(["orientation","label"])["Name"].count())
     n = 0
     for ori in ["-/-"]:
