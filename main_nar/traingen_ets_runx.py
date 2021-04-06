@@ -24,13 +24,18 @@ def predict_strength(train, pred, tfname, flanklen=0):
 
 if __name__ == "__main__":
     pd.set_option("display.max_columns",None)
-    lbled_path = "output/Ets1Runx1/label_pr/seqbled_ets1_runx1.tsv"
-    maintf = "ets1"
-    cooptf = "runx1"
 
-    # lbled_path = "output/Runx1Ets1/label_pr/seqbled_runx1_ets1.tsv"
-    # maintf = "runx1"
-    # cooptf = "ets1"
+    # basepath = "output/Ets1Runx1"
+    # lbled_path = "%s/label_pr/seqbled_ets1_runx1.tsv" % basepath
+    # maintf = "ets1"
+    # cooptf = "runx1"
+    # color = ["#b22222","#FFA07A"]
+
+    basepath = "output/Runx1Ets1"
+    lbled_path = "%s/label_pr/seqbled_runx1_ets1.tsv" % basepath
+    maintf = "runx1"
+    cooptf = "ets1"
+    color = ["#0343df","#75bbfd"]
 
     if maintf == "ets1":
         pwm_main = PWM("input/sitemodels/%s.txt" % maintf, log=True, reverse=False)
@@ -54,9 +59,9 @@ if __name__ == "__main__":
     train["orientation"] = train.apply(lambda x: "%s/%s" % (orimap[int(x["%s_ori" % maintf])], orimap[int(x["%s_ori" % cooptf])]),axis=1)
     train = train[(train["ets1_score"] != - 999) & (train["runx1_score"] != - 999)]
     print(train["label"].value_counts())
-    train.to_csv("output/Ets1Runx1/training/train_%s_%s.tsv" % (maintf,cooptf),sep="\t", index=False, float_format='%.3f')
+    train.to_csv("%s/training/train_%s_%s.tsv" % (basepath,maintf,cooptf),sep="\t", index=False, float_format='%.3f')
 
     train.rename(columns={'%s_score' % maintf: '%s strength\n(main TF)' % maintf.capitalize(), '%s_score' % cooptf: '%s strength\n(cooperator TF)' % cooptf.capitalize()}, inplace=True)
-    plot.plot_stacked_categories(train, "distance", path="output/Ets1Runx1/training/distance_bar.png", title="Distance distribution", ratio=True, figsize=(17,4))
-    plot.plot_stacked_categories(train, "orientation", path="output/Ets1Runx1/training/ori_bar.png", title="Relative sites orientation\ndistribution", ratio=True, figsize=(9,5))
-    plot.plot_box_categories(train, path="output/Ets1Runx1/training/boxplot.png", incols=["%s strength\n(main TF)" % maintf.capitalize(), "%s strength\n(cooperator TF)" % cooptf.capitalize()], alternative="smaller")
+    plot.plot_stacked_categories(train, "distance", path="%s/training/distance_bar.png" % basepath, title="Distance distribution", ratio=True, figsize=(17,4), color=color)
+    plot.plot_stacked_categories(train, "orientation", path="%s/training/ori_bar.png" % basepath, title="Relative sites orientation\ndistribution", ratio=True, figsize=(9,5), color=color)
+    plot.plot_box_categories(train, path="%s/training/boxplot.png" % basepath, incols=["%s strength\n(main TF)" % maintf.capitalize(), "%s strength\n(cooperator TF)" % cooptf.capitalize()], alternative="smaller", color=color)

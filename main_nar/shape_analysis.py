@@ -46,7 +46,7 @@ if __name__ == "__main__":
     print(df.groupby(["distance","orientation"]).count()[["Name"]])
 
     with PdfPages("%s/model/shapepos/shape_plots.pdf" % basepath) as pdf:
-        for d in [13]:
+        for d in dist:
             curdf_dist = pd.DataFrame(df[df['distance'] == d])
             for ori in oris: # oris
                 curdf = pd.DataFrame(curdf_dist[curdf_dist['orientation'] == ori])

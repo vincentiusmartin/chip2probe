@@ -42,23 +42,28 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Generate clean probe file with just the necessary information')
     parser.add_argument(action="store", dest="path", type=str, help='File input path')
     parser.add_argument('-k', '--key', action="store", dest="key", type=str,  help='include key string')
+    parser.add_argument('-l', '--keycol', action="store", dest="keycol", type=str, default="Name",  help='column for the main probes key')
     parser.add_argument('-e', '--exkey', action="store", dest="exkey", type=str,  help='exclude key string')
     parser.add_argument('-n', '--negkey', action="store", dest="negkey", default="NegativeCtrl", type=str, help='include negctrl key string')
     parser.add_argument('-c', '--seqcols', action="store", dest="sc", default="Name,type,rep,ori", type=str, help='sequence cols order, str separated by comma')
     parser.add_argument('-d', '--negcols', action="store", dest="nc", default="Name,rep,ori", type=str, help='negctrl cols order, str separated by comma')
     parser.add_argument('-f', '--fixnaming', action="store_true", dest="fixnaming", help='fix naming error in the orientatiion files')
     parser.add_argument('-g', '--fixdup', action="store_true", dest="fixdup", help='fix naming duplicates')
+    parser.add_argument('-i', '--probeid', action="store_true", dest="prbid", help='include probe id in the output')
     args = parser.parse_args()
 
     # python3 clean_file.py input/original/Ets1_Ets1.txt -k "ets1" -e "dist|weak" -g
+    # python3 clean_file.py input/original/Ets1_Ets1_validation.txt -k "Coop2Ets" -l "ID" -c "Name,type,ori,rep" -d "Name,ori,rep"
     # python3 clean_file.py input/original/Ets1_only.txt -k "all_clean_seqs" -n "negative_controls" -f
     # python3 clean_file.py input/original/Ets1_Runx1.txt -k "all_clean_seqs" -n "negative_controls" -f
     # python3 clean_file.py input/original/Runx1_only.txt -k "all_clean_seqs" -n "negative_controls" -f
     # python3 clean_file.py input/original/Runx1_Ets1.txt -k "all_clean_seqs" -n "negative_controls" -f
 
+    pd.set_option("display.max_columns",None)
     filename = Path(args.path).stem
-    df, neg = arr.read_chamber_file(args.path, includekey=args.key, negkey=args.negkey, excludekey=args.exkey,
-                seqcols=args.sc.split(","), negcols=args.nc.split(","))
+    df, neg = arr.read_chamber_file(args.path, includekey=args.key, keycol=args.keycol, negkey=args.negkey, excludekey=args.exkey,
+                seqcols=args.sc.split(","), negcols=args.nc.split(","), include_id=args.prbid)
+
     df.rename(columns={"Alexa488Adjusted": "intensity"}, inplace=True)
     neg.rename(columns={"Alexa488Adjusted": "intensity"}, inplace=True)
 

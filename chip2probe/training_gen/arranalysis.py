@@ -8,23 +8,25 @@ import os
 
 import chip2probe.util.stats_r as st
 
-def read_chamber_file(path, includekey, excludekey=None, seqcols=["Name","type","ori","rep"], negcols=["Name","ori","rep"],
-                     negkey="NegativeCtrl"):
+def read_chamber_file(path, includekey, excludekey=None, keycol="Name", seqcols=["Name","type","ori","rep"], negcols=["Name","ori","rep"],
+                     negkey="NegativeCtrl", include_id=False):
     """
     the ori, rep order might be different
     """
-    df = pd.read_csv(path, sep="\t")[["Name", "Sequence", "Alexa488Adjusted"]]
+    cols = ["Name", "Sequence", "Alexa488Adjusted"] if not include_id else ["ID_REF","ID", "Name", "Sequence", "Alexa488Adjusted"]
+
+    df = pd.read_csv(path, sep="\t").rename(columns={"Column":"ID_REF"})
     df["Sequence"] = df["Sequence"].str[:36]
 
-    # get negctrl
-    negdf = df[df["Name"].str.contains(negkey, na=False)]
-    print(negdf["Name"])
-    negdf[negcols] =  negdf["Name"].str.rsplit("_", n = 2, expand = True)
 
-    df = df[~df["Name"].str.contains("NegativeCtrl", na=False) & df["Name"].str.contains(includekey, na=False)]
+    # get negctrl
+    negdf = df[df["Name"].str.contains(negkey, na=False)][cols]
+    negdf[negcols] =  negdf["Name"].str.rsplit("_", n = 2, expand = True)
+    negdf["type"] = "negctrl"
+
+    df = df[~df["Name"].str.contains("NegativeCtrl", na=False) & df[keycol].str.contains(includekey, na=False)][cols]
     if excludekey != None:
         df = df[~df['Name'].str.contains(excludekey, na=False)]
-
 
     df[seqcols] = df["Name"].str.rsplit("_", n = 3, expand = True)
     return df.sort_values(["Name","ori","type","rep"]), negdf
@@ -103,7 +105,7 @@ def permutdict2df(permutdict):
     """
     convert indivsum/twosites to a data frame
     """
-    ld = [{"Name":k, "ori": ori, "affinity":aff} for ori in permutdict for k in permutdict[ori] for aff in permutdict[ori][k]]
+    ld = [{"Name":k, "ori": ori, "intensity":aff} for ori in permutdict for k in permutdict[ori] for aff in permutdict[ori][k]]
     return pd.DataFrame(ld)
 
 
@@ -217,7 +219,7 @@ def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa48
         ax = plt.axes()
 
     # red/firebrick, mistyrose, blue, skyblue  blue ["#0343df","#75bbfd"] red ["#b22222","#FFA07A"]
-    lblclr = [("fail_cutoff","yellow", 0.7), (labelnames[0],"#0343df",1), (labelnames[1],"#75bbfd",1), (labelnames[2],"gray",1)]
+    lblclr = [("fail_cutoff","yellow", 0.7), (labelnames[0],"#b22222",1), (labelnames[1],"#FFA07A",1), (labelnames[2],"gray",1)]
     if log:
         newdf[col1] = np.log(df[col1])
         newdf[col2] = np.log(df[col2])
@@ -303,8 +305,8 @@ def scatter_boxplot_col(input_df, coltype="type", colval="affinity", plotorder=[
         y = plotlist[i]
         x = np.random.normal(i+1, 0.04, size=len(y))
         curc = colororder[i] if len(colororder) > i else None
-        p.plot(x, y, 'r.', markersize=5, alpha=1, c="firebrick")
-        #p.plot(x, y, 'r.', markersize=10, alpha=0.5, c=curc)
+        # red/firebrick, mistyrose, blue, skyblue  blue ["#0343df","#75bbfd"] red ["#b22222","#FFA07A"]
+        p.plot(x, y, 'r.', markersize=5, alpha=1, c="#0343df")
 
     if not ax:
         plt.savefig(path)
@@ -401,7 +403,7 @@ def plot_ori_inconsistency(indivsum_df, twosites_df, lbldf=False, namecol="Name"
             cur_indiv = indivsum
             cur_two = twosites
         curdf = pd.concat([cur_indiv, cur_two])
-        print(perm, curdf[namecol].unique().shape[0])
+        #print(perm, curdf[namecol].unique().shape[0])
         if len(curdf[affcol].tolist()) == 0:
             continue
 

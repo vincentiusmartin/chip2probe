@@ -22,9 +22,12 @@ class Affinity(basefeature.BaseFeature):
         self.df = traindf
         self.set_attrs(params, default_args)
 
-        if len(self.colnames) != 2:
-            raise Exception("there should be only 2 columns")
-        self.col1, self.col2 = self.colnames[0],self.colnames[1]
+        if len(self.colnames) > 2 or len(self.colnames) == 0:
+            raise Exception("there should be only 1 or 2 columns")
+        if len(self.colnames) == 1:
+            self.col1, self.col2 = self.colnames[0], None
+        else:
+            self.col1, self.col2 = self.colnames[0], self.colnames[1]
 
     # TODO: make prediction can do without str weak
     def get_feature(self):
@@ -49,7 +52,6 @@ class Affinity(basefeature.BaseFeature):
                 f = {"site_wk_score": pr[0]["score"] if pr[0]["score"] < pr[1]["score"] else pr[1]["score"],
                      "site_str_score": pr[0]["score"] if pr[0]["score"] > pr[1]["score"] else pr[1]["score"]}
             else:
-                f = {self.col1: row[self.col1],
-                     self.col2: row[self.col2]}
+                f = {self.col1: row[self.col1]} if self.col2 == None else {self.col1: row[self.col1], self.col2: row[self.col2]}
             rfeature.append(f)
         return rfeature

@@ -10,6 +10,8 @@ from chip2probe.sitespredict.kompas import Kompas
 import chip2probe.modeler.plotlib as pl
 from chip2probe.util import bio
 
+from chip2probe.modeler.cooptrain import CoopTrain
+
 def get_sites_pos(df, kompas, pwm, seqcol="Sequence"):
     """
     Get site position for each sequence
@@ -18,6 +20,8 @@ def get_sites_pos(df, kompas, pwm, seqcol="Sequence"):
         df: input data frame
 
     """
+    if  df.empty:
+        return df
     seqlist = df[seqcol].unique().tolist()
     poslist = []
     misscount = 0
@@ -50,6 +54,16 @@ def get_sites_pos(df, kompas, pwm, seqcol="Sequence"):
     posdf = df.merge(posdf,on=seqcol)
     return posdf
 
+def gen_training(df, pwm, kompas):
+    train = get_sites_pos(df, kompas, pwm)
+    # reverse -- to ++
+    train00 = train[train["orientation"] == "-/-"][["Name","Sequence","label"]]
+    train00["Sequence"] = train00["Sequence"].apply(lambda x: bio.revcompstr(x))
+    train00 = get_sites_pos(train00, kompas, pwm)
+    train = pd.concat([train[train["orientation"] != "-/-"], train00])
+    return train.drop_duplicates()
+
+
 if __name__ == "__main__":
     pd.set_option("display.max_columns",None)
 
@@ -59,13 +73,7 @@ if __name__ == "__main__":
                     core_start = 11, core_end = 15, core_center = 12)
     df = pd.read_csv("output/Ets1Ets1/label_pr/ets_ets_seqlabeled.csv").drop_duplicates()
     df = df[(df["label"] == "cooperative") | (df["label"] == "independent")]
-
-    train = get_sites_pos(df, kompas_ets, pwm_ets)
-    # reverse -- to ++
-    train00 = train[train["orientation"] == "-/-"][["Name","Sequence","label"]]
-    train00["Sequence"] = train00["Sequence"].apply(lambda x: bio.revcompstr(x))
-    train00 = get_sites_pos(train00, kompas_ets, pwm_ets)
-    train = pd.concat([train[train["orientation"] != "-/-"], train00])
+    train = gen_training(df, pwm_ets, kompas_ets)
 
     print(train["label"].value_counts())
     train.to_csv("output/Ets1Ets1/training/train_ets1_ets1.tsv", index=False, sep="\t")

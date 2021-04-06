@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+import pickle
 
 from chip2probe.modeler.cooptrain import CoopTrain
 from chip2probe.modeler.bestmodel import BestModel
@@ -87,3 +88,18 @@ if __name__ == "__main__":
     }
 
     pl.plot_model_metrics(best_models, path="%s/model/auc_posfeatures.png"%basepath, cvfold=10, score_type="auc", varyline=True, title="AUC Shape features")
+
+
+    rf = best_models["distance,orientation,shape"][1]
+    train = ct.get_feature_all({
+        "distance":{"type":"numerical"},
+        "orientation": {"relative":rel_ori, "one_hot":one_hot_ori, "pos_cols": {"%s_pos"%s1:"%s_ori"%s1, "%s_pos"%s2:"%s_ori"%s2}},
+        "shape_in":{"seqin":5, "poscols":['%s_pos'%s1,'%s_pos'%s2], "smode":smode},
+        "shape_out":{"seqin":-2, "poscols":['%s_pos'%s1,'%s_pos'%s2], "smode":smode}
+    })
+    label = ct.get_numeric_label({'cooperative': 1, 'independent': 0})
+
+    rf.fit(train,label)
+    model_name = "output/Ets1Ets1/model/ets1_ets1_rfshapemodel.sav"
+    pickle.dump(rf, open(model_name, 'wb'))
+    print("Model saved in %s" % model_name)

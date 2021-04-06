@@ -11,17 +11,21 @@ import subprocess
 
 
 if __name__ == "__main__":
+    # basepath = "output/Ets1Runx1"
     # trainingpath = "output/Ets1Runx1/training/train_ets1_runx1.tsv"
-    trainingpath = "output/Ets1Runx1/training/train_runx1_ets1.tsv"
+
+    basepath = "output/Runx1Ets1"
+    trainingpath = "%s/training/train_runx1_ets1.tsv" % basepath
+
     df = pd.read_csv(trainingpath, sep="\t")
     ct = CoopTrain(df)
     pd.set_option("display.max_columns",None)
 
     rf_param_grid = {
-        'n_estimators': [500], #[500,750,1000],
-        'max_depth': [5], #[5,10,15],
-        "min_samples_leaf": [5], #[5,10,15],
-        "min_samples_split" : [5]#[5,10,15]
+        'n_estimators': [500,750,1000],
+        'max_depth': [5,10,15],
+        "min_samples_leaf": [5,10,15],
+        "min_samples_split" : [5,10,15]
     }
 
     best_models = {
@@ -73,7 +77,7 @@ if __name__ == "__main__":
             ).run_all(),
     }
 
-    pl.plot_model_metrics(best_models, path="output/Ets1Runx1/model/auc.png", cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Ets1-Runx1")
+    pl.plot_model_metrics(best_models, path="%s/model/pr.png" % basepath, cvfold=10, score_type="pr", varyline=True, title="Average ROC Curves for Ets1-Runx1")
 
     feature_dict = {
         "distance":{"type":"numerical"},
@@ -84,7 +88,7 @@ if __name__ == "__main__":
     label = ct.get_numeric_label({'cooperative': 1, 'independent': 0})
     rf = best_models["distance,orientation,strength"][1]
     rf.fit(train,label)
-    model_name = "output/Ets1Runx1/model/ets1_runx1_rfmodel.sav"
+    model_name = "%s/model/ets1_runx1_rfmodel.sav" % basepath
     pickle.dump(rf, open(model_name, 'wb'))
     print("Model saved in %s" % model_name)
 

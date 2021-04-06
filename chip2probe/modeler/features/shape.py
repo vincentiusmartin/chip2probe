@@ -59,7 +59,7 @@ class Shape(basefeature.BaseFeature):
             namelist = self.df[self.namecol].tolist()
         else:
             namelist = next(iter(self.shapes.values())).keys()
-        self.shapes = {k:[v[n] for n in namelist] for k, v in self.shapes.items()}
+        self.shapes = {k:[v[str(n)] for n in namelist] for k, v in self.shapes.items()}
         if self.direction == "orientation":
             ori = Orientation(self.df, {"positive_cores":self.positive_cores}).get_feature()
             self.df["orientation"] = [o["ori"] for o in ori]
@@ -87,6 +87,7 @@ class Shape(basefeature.BaseFeature):
                     site1, site2 = row["site_wk_pos"], row["site_str_pos"]
                     s1type, s2type = "wk", "str"
             # get flanking shape based on direction
+            site1, site2 = int(site1), int(site2)
             if self.direction == "inout":
                 rfeature.append(self.get_shape_inout(idx, site1, site2, s1type, s2type))
             else:

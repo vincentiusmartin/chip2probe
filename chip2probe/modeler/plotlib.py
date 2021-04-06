@@ -19,7 +19,7 @@ from sklearn import model_selection, metrics
 import chip2probe.util.stats as st
 
 def plot_stacked_categories(df, x, y="label", path="stackedbar.png",
-                           ratio=False, legend=True, title="", figsize=None):
+                           ratio=False, legend=True, title="", figsize=None, color=None):
     """
     Plot a stacked bar graph for each label.
 
@@ -49,7 +49,7 @@ def plot_stacked_categories(df, x, y="label", path="stackedbar.png",
     if ratio:
         df2 = df2.groupby(level=0).apply(lambda x: x / float(x.sum()))
     # blue ["#0343df","#75bbfd"] red ["#b22222","#FFA07A"]
-    ax = df2.unstack(x).fillna(0).T.plot(kind='bar', stacked=True, color=["#b22222","#FFA07A"],
+    ax = df2.unstack(x).fillna(0).T.plot(kind='bar', stacked=True, color=color,
                                          legend=legend, rot=0, width=0.8 , figsize=figsize) #17,4 & 9,5
     ylabel = "Ratio" if ratio else "count"
     ax.set_ylabel(ylabel)
@@ -63,7 +63,7 @@ def plot_stacked_categories(df, x, y="label", path="stackedbar.png",
     plt.savefig(path)
     plt.clf()
 
-def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", alternative="greater"):
+def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", alternative="greater", color=None):
     """
     Make boxplot.
 
@@ -103,7 +103,7 @@ def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", 
         labels, data = [*zip(*cur_group.items())]
         cur_ax = ax.flatten()[i]
         # blue ["#0343df","#75bbfd"] red  ["#b22222","#FFA07A"]
-        sns.boxplot(data=data, width=.6, ax=cur_ax, palette=["#b22222","#FFA07A"])
+        sns.boxplot(data=data, width=.6, ax=cur_ax, palette=color)
         # sns.stripplot(data=data, jitter=True, ax=cur_ax, size=1, color='k')
         cur_ax.set_xticklabels(labels)
         cur_ax.set_title(colname)
@@ -179,13 +179,20 @@ def display_output(xy, score_dict, path, title, score_type="auc", varyline=False
         else:
             lw, ls = 1, "-"
 
+
+        # if "Ets1" in key:
+        #     plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="red")
+        # else:
+        #     plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="blue")
+
+
         if key == "distance,orientation,strength": # or len(ln) > 3:
             plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="brown") #
         elif len(ln) == 4:
             plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="m") #
         else:
             plt.plot(xy[key]['x'], xy[key]['y'], lw=lw, linestyle=ls, label='%s: %.2f' % (key,score)) # color=["red", "blue"][i]
-            #i += 1
+            i += 1
 
         # Show the ROC curves for all classifiers on the same plot
         if score_type == "pr":

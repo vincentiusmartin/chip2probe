@@ -3,7 +3,6 @@ import chip2probe.training_gen.arranalysis as arr
 import numpy as np
 import chip2probe.util.stats as st
 
-
 if __name__=="__main__":
     pd.set_option('display.max_columns',None)
     basepath = "/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/output/heterotypic/EtsRunx_v1/ch3_ch4/coop_ch3_vs_ch4/tables"

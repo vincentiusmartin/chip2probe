@@ -15,6 +15,20 @@ cooperative    510
 
 --------------------------------------
 
+Validation array homotypic
+
+Number of distinct names 7280
+Negative control cutoff 146.13330780262018
+
+Label count 
+independent        4400
+fail_cutoff        2811
+cooperative          68
+anticooperative       1
+
+
+--------------------------------------
+
 Heterotypic
 
 EtsRunx

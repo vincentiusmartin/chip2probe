@@ -2,6 +2,7 @@ import chip2probe.training_gen.arranalysis as arr
 import pandas as pd
 import numpy as np
 from chip2probe.sitespredict.kompas import Kompas
+import matplotlib.pyplot as plt
 
 import chip2probe.util.stats_r as st
 
@@ -70,6 +71,20 @@ def assign_ori_pos(df, pred1, pred2, tf1, tf2, o1name, o2name, seqcol="Sequence"
     probedf = seqdf.merge(dfgen, on="Sequence")[["Name","Sequence","intensity","%s_pos" % tf1, "%s_start" % tf1, "%s_pos" % tf2, "%s_start" % tf2, "ori","rep"]]
     return probedf
 
+def plot_pval(df, path):
+    dfin = pd.DataFrame(df[(df["label_er"] != "below_cutoff") & (df["label_re"] != "below_cutoff")])
+    df_er_c = dfin[['p_coop_er']].rename(columns={'p_coop_er':'p_coop'})
+    df_er_c = df_er_c.groupby('p_coop')['p_coop'].count().reset_index(name="count_er")
+
+    df_re_c = df[['p_coop_re']].rename(columns={'p_coop_re':'p_coop'})
+    df_re_c = df_re_c.groupby('p_coop')['p_coop'].count().reset_index(name="count_re")
+
+    curdf = df_re_c.merge(df_er_c, on=["p_coop"]).sort_values("p_coop")
+    curdf['p_coop'] = curdf['p_coop'].apply(lambda x: "%.4f" % x)
+    curdf = curdf.set_index('p_coop')
+    curdf.plot.barh(rot=0)
+    plt.savefig(path)
+
 
 # label the probes for ets1 ets1
 kompas_ets = Kompas("input/sitemodels/Ets1_kmer_alignment.txt", core_start = 11, core_end = 15, core_center = 12)
@@ -115,11 +130,13 @@ if __name__ == "__main__":
     cutoff = float(get_negcutoff(neg_m, cooptf, slope, intercept, neg_percentile))
     print("Negative control cutoff %.3f" % cutoff)
 
-    df_m = assign_ori_pos(df_m, kompas_ets, kompas_runx, "ets1", "runx1" , "er", "re") # pd.read_csv("%s_%s_main.csv" % (maintf, cooptf)) #a
-    df_mc = assign_ori_pos(df_mc, kompas_ets, kompas_runx, "ets1", "runx1", "er", "re") # pd.read_csv("%s_%s_main_cooperator.csv" % (maintf, cooptf))
-    df_mc["intensity"] = (df_mc["intensity"] - intercept)/slope
-    df_m.to_csv("%s/%s_%s_main.csv" % (baseoutpath, maintf, cooptf),index=False)
-    df_mc.to_csv("%s/%s_%s_main_cooperator.csv" % (baseoutpath, maintf, cooptf),index=False)
+    # df_m = assign_ori_pos(df_m, kompas_ets, kompas_runx, "ets1", "runx1" , "er", "re") # pd.read_csv("%s_%s_main.csv" % (maintf, cooptf)) #a
+    # df_mc = assign_ori_pos(df_mc, kompas_ets, kompas_runx, "ets1", "runx1", "er", "re") # pd.read_csv("%s_%s_main_cooperator.csv" % (maintf, cooptf))
+    # df_mc["intensity"] = (df_mc["intensity"] - intercept)/slope
+    # df_m.to_csv("%s/%s_%s_main.csv" % (baseoutpath, maintf, cooptf),index=False)
+    # df_mc.to_csv("%s/%s_%s_main_cooperator.csv" % (baseoutpath, maintf, cooptf),index=False)
+    df_m = pd.read_csv("%s/%s_%s_main.csv" % (baseoutpath, maintf, cooptf))
+    df_mc = pd.read_csv("%s/%s_%s_main_cooperator.csv" % (baseoutpath, maintf, cooptf))
 
     olist = []
     for ori in ["er","re"]:
@@ -157,7 +174,6 @@ if __name__ == "__main__":
         olist.append(df_lbled)
 
     both_ori = olist[0].merge(olist[1], on=["Name"], suffixes=("_er", "_re"))
-    print("Number of distinct names, above cutoff, after orientation joining" % both_ori[both_ori["label"] != "below_cutoff"]["Name"].nunique())
 
     # labeling the probe using both orientations
     oricoop = "er" if cooptf == "ets1" else "re"
@@ -178,6 +194,9 @@ if __name__ == "__main__":
     )
     # filter out anticoop since we only have a few
     both_ori = both_ori[both_ori["label"] != "anticooperative"]
+    both_ori.to_csv("%s/both_%s_%s.csv" % (baseoutpath,maintf,cooptf), index=False)
+    plot_pval(both_ori, "%s/pval.png" % baseoutpath)
+    print("Number of distinct names, above cutoff, after orientation joining %d" % both_ori[both_ori["label"] != "below_cutoff"]["Name"].nunique())
 
     both_ori_plt = both_ori[["Name","intensity_x","intensity_y","label"]]
     both_ori_plt.to_csv("%s/both_ori_plt_%s_%s.csv" % (baseoutpath,maintf,cooptf),index=False)
