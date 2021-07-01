@@ -21,32 +21,36 @@ def predict_strength(train, pred, tfname, flanklen=0):
         afflist.append(aff)
     return afflist
 
-
 if __name__ == "__main__":
-    pd.set_option("display.max_columns",None)
+    pd.set_option("display.max_rows",None)
 
-    # basepath = "output/Ets1Runx1"
-    # lbled_path = "%s/label_pr/seqbled_ets1_runx1.tsv" % basepath
-    # maintf = "ets1"
-    # cooptf = "runx1"
-    # color = ["#b22222","#FFA07A"]
+    basepath = "output/Ets1Runx1"
+    lbled_path = "%s/label_pr/seqlbled_ets1_runx1.tsv" % basepath
+    maintf = "ets1"
+    cooptf = "runx1"
+    color = ["#b22222","#FFA07A"]
 
-    basepath = "output/Runx1Ets1"
-    lbled_path = "%s/label_pr/seqbled_runx1_ets1.tsv" % basepath
-    maintf = "runx1"
-    cooptf = "ets1"
-    color = ["#0343df","#75bbfd"]
+    # basepath = "output/Runx1Ets1"
+    # lbled_path = "%s/label_pr/seqlbled_runx1_ets1.tsv" % basepath
+    # maintf = "runx1"
+    # cooptf = "ets1"
+    # color = ["#0343df","#75bbfd"]
+
+    # train = pd.read_csv("%s/training/train_%s_%s.tsv" % (basepath,maintf,cooptf), sep='\t')
+    # lbled = pd.read_csv("%s/label_pr/seqlbled_runx1_ets1.tsv" % basepath, sep='\t')
+    # lbled = lbled[lbled["label"] != "ambiguous"]
+    # x = set(lbled["Sequence"].tolist()) - set(train["Sequence"].tolist())
+    # print(x)
 
     if maintf == "ets1":
         pwm_main = PWM("input/sitemodels/%s.txt" % maintf, log=True, reverse=False)
         pwm_coop = PWM("input/sitemodels/%s.txt" % cooptf, 8, 17, log=True, reverse=True)
     else:
-        pwm_main = PWM("input/sitemodels/%s.txt" % maintf, 8, 17, log=True, reverse=False)
-        pwm_coop = PWM("input/sitemodels/%s.txt" % cooptf, log=True, reverse=True)
+        pwm_main = PWM("input/sitemodels/%s.txt" % maintf, 8, 17, log=True, reverse=True)
+        pwm_coop = PWM("input/sitemodels/%s.txt" % cooptf, log=True, reverse=False)
 
     train = pd.read_csv(lbled_path, sep="\t").drop_duplicates(subset=["Name"], keep="first")
     train = train[(train["label"] == "cooperative") | (train["label"] == "independent")]
-
 
     corelendict = {"ets1":4,"runx1":5}
     flanklendict = {"ets1":3,"runx1":2}
@@ -58,10 +62,14 @@ if __name__ == "__main__":
     orimap = {0:"-",1:"+"}
     train["orientation"] = train.apply(lambda x: "%s/%s" % (orimap[int(x["%s_ori" % maintf])], orimap[int(x["%s_ori" % cooptf])]),axis=1)
     train = train[(train["ets1_score"] != - 999) & (train["runx1_score"] != - 999)]
-    print(train["label"].value_counts())
-    train.to_csv("%s/training/train_%s_%s.tsv" % (basepath,maintf,cooptf),sep="\t", index=False, float_format='%.3f')
 
+    # print(train.groupby(["distance","orientation"])["label"].value_counts())
+    # train.to_csv("%s/training/train_%s_%s.tsv" % (basepath,maintf,cooptf),sep="\t", index=False, float_format='%.3f')
+    train = train[(train["distance"] != 5) | (train["orientation"] != "+/+")]
+
+    outputpath = "%s/training" % basepath
+    outputpath = "."
     train.rename(columns={'%s_score' % maintf: '%s strength\n(main TF)' % maintf.capitalize(), '%s_score' % cooptf: '%s strength\n(cooperator TF)' % cooptf.capitalize()}, inplace=True)
-    plot.plot_stacked_categories(train, "distance", path="%s/training/distance_bar.png" % basepath, title="Distance distribution", ratio=True, figsize=(17,4), color=color)
-    plot.plot_stacked_categories(train, "orientation", path="%s/training/ori_bar.png" % basepath, title="Relative sites orientation\ndistribution", ratio=True, figsize=(9,5), color=color)
-    plot.plot_box_categories(train, path="%s/training/boxplot.png" % basepath, incols=["%s strength\n(main TF)" % maintf.capitalize(), "%s strength\n(cooperator TF)" % cooptf.capitalize()], alternative="smaller", color=color)
+    plot.plot_stacked_categories(train, "distance", path="%s/distance_bar.png" % outputpath, title="Distance distribution", ratio=True, figsize=(17,4), color=color)
+    plot.plot_stacked_categories(train, "orientation", path="%s/ori_bar.png" % outputpath, title="Relative sites orientation\ndistribution", ratio=True, figsize=(9,5), color=color)
+    plot.plot_box_categories(train, path="%s/boxplot.png" % outputpath, incols=["%s strength\n(main TF)" % maintf.capitalize(), "%s strength\n(cooperator TF)" % cooptf.capitalize()], alternative="smaller", color=color)

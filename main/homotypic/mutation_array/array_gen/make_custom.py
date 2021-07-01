@@ -4,6 +4,7 @@ import pandas as pd
 import pickle
 
 import chip2probe.modeler.mutation as mut
+import chip2probe.training_gen.traingen as tg
 from chip2probe.modeler.cooptrain import CoopTrain
 from chip2probe.modeler.shapemodel import ShapeModel
 
@@ -12,9 +13,13 @@ from chip2probe.sitespredict.imadsmodel import iMADSModel
 from chip2probe.sitespredict.pbmescore import PBMEscore
 from chip2probe.sitespredict.dnasequence import DNASequence
 
+from chip2probe.sitespredict.pwm import PWM
+from chip2probe.sitespredict.kompas import Kompas
+
+pd.set_option("display.max_columns",None)
 if __name__ == "__main__":
-    trainingpath = "output/homotypic/training/training.csv"
-    df = pd.read_csv(trainingpath)
+    trainingpath = "output/array_design_files/Coop3Ets_validation/train.tsv"
+    df = pd.read_csv(trainingpath,sep="\t")
     # select only genomic sequences
     df = df[~df['name'].str.contains("dist|weak")] # should already be all genomics
 
@@ -29,10 +34,10 @@ if __name__ == "__main__":
 
     print("Number of input rows: %d"%df.shape[0])
     indf = pd.DataFrame(df[["sequence","label"]])# "id"
-    indf["label"] = indf["label"].replace({"cooperative":1,"additive":0})
+    indf["label"] = indf["label"].replace({"cooperative":1,"independent":0})
 
     mindist = imads12.sitewidth - 3
-    ct = CoopTrain(indf["sequence"].values.tolist(), corelen=4, flip_th=True, imads=imads12, ignore_sites_err=True)
+    ct = CoopTrain(indf["sequence"].values.tolist(), corelen=4, flip_th=True, imads=imads12, ignore_sites_err=True, seqcolname="sequence")
     om = ct.df.join(indf.set_index("sequence"), on="sequence", how="inner") # this already include the orientation
     seqs = []
     passval = 0
@@ -46,7 +51,6 @@ if __name__ == "__main__":
     pd.DataFrame({'sequence':seqs}).to_csv("seqs.csv")
     print("Number of sequences passing the cutoff %d" % passval)
 
-    """
     # 1. Mutate based on affinity
     aff_m = mut.mutate_affinity(indf, imads12, escore, deep=6, idcol="name")
     print(aff_m["seqid"].unique())
@@ -63,19 +67,25 @@ if __name__ == "__main__":
 
     mutdf = pd.concat([aff_m, dis_m, ori_m]) # ,
     mutdf.to_csv("custom.csv", index=False, header=True)
-    mutdf = pd.read_csv("custom.csv")
+    mut_aff = mutdf.rename(columns={"sequence":"Sequence"})[["Sequence","site1_affinity","site2_affinity"]].drop_duplicates()
+
+    pwm_ets = PWM("main_nar/input/sitemodels/ets1.txt", log=True)
+    kompas_ets = Kompas("main_nar/input/sitemodels/Ets1_kmer_alignment.txt", core_start = 11, core_end = 15, core_center = 12)
+    mutdf = pd.read_csv("custom.csv")[["seqid","sequence","muttype","comment","wtlabel"]].rename(columns={"sequence":"Sequence"})
+    mutr = tg.gen_training(mutdf["Sequence"].tolist(), pwm_ets, kompas_ets)
+    mutdf = mutdf.merge(mutr,on="Sequence")
 
     # not the most effective way since we calculate cooptrain twice...
-    ct = CoopTrain(mutdf["sequence"].values.tolist(), corelen=4, flip_th=True, positive_cores=["GGAA","GGAT"], imads=imads12)
+    ct = CoopTrain(mutdf)
     feature_dict = {
         "distance":{"type":"numerical"},
-         "shape_in": {"seqin":4, "smode":"strength", "direction":"inout"}, # maximum seqin is 4
-         "shape_out": {"seqin":-4, "smode":"strength", "direction":"inout"}
+        "orientation": {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}},
+        "shape_in":{"seqin":5, "poscols":['site_str_pos','site_wk_pos'], "smode":"relative"},
+        "shape_out":{"seqin":-2, "poscols":['site_str_pos','site_wk_pos'], "smode":"relative"}
     }
-    cols = ['dist_numeric', 'ProT_outer_str_pos_2', 'MGW_inner_str_pos_3', 'ProT_outer_wk_pos_2', 'ProT_outer_wk_pos_1', 'Roll_inner_str_pos_2',  'ProT_inner_wk_pos_1', 'HelT_inner_str_pos_2', 'Roll_inner_wk_pos_2', 'MGW_inner_str_pos_2']
-    train_df1 = pd.DataFrame(ct.get_feature_all(feature_dict))[cols]
-    train1 = train_df1.values.tolist()
-    model1 = pickle.load(open("input/modeler/coopmodel/dist_shapeio.sav", "rb"))
+    # cols = ['dist_numeric', 'ProT_outer_str_pos_2', 'MGW_inner_str_pos_3', 'ProT_outer_wk_pos_2', 'ProT_outer_wk_pos_1', 'Roll_inner_str_pos_2',  'ProT_inner_wk_pos_1', 'HelT_inner_str_pos_2', 'Roll_inner_wk_pos_2', 'MGW_inner_str_pos_2']
+    train1 = ct.get_feature_all(feature_dict) #[cols]
+    model1 = pickle.load(open("main_nar/output/Ets1Ets1/model/ets1_ets1_rfshapemodel.sav", "rb"))
     pred1 = model1.predict(train1)
     prob1 = model1.predict_proba(train1)
     mutdf["shape_pred"] = pred1
@@ -83,27 +93,28 @@ if __name__ == "__main__":
 
     feature_dict = {
         "distance":{"type":"numerical"},
-        "orientation": {"positive_cores":["GGAA","GGAT"], "one_hot":True},
-        "affinity": {"imads":imads12}
+        "affinity": {"colnames": ("site_str_score","site_wk_score")},
+        "orientation": {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}}
     }
-    train = ct.get_feature_all(feature_dict, rettype="list")
-    model = pickle.load(open("input/modeler/coopmodel/dist_ori_12merimads.sav", "rb"))
+    train = ct.get_feature_all(feature_dict)
+    model = pickle.load(open("main_nar/output/Ets1Ets1/model/ets1_ets1_rfmodel.sav", "rb"))
     pred = model.predict(train)
     prob = model.predict_proba(train)
     mutdf["main_pred"] = pred
     mutdf["main_prob"] = [prob[i][1] for i in range(len(pred))] # use the probability of being cooperative
-    mutdf.to_csv("custom_withpred.csv", index=False, header=True)
+    seqnmap = df[["name","sequence"]].rename(columns={"sequence":"Sequence"})
+    mutdf = mutdf.merge(seqnmap, on="Sequence", how="left")
+    mutdf.merge(mut_aff, on="Sequence").to_csv("custom_withpred.csv", index=False, header=True)
 
     mutdf = pd.read_csv("custom_withpred.csv")
 
     # ------ Get statistics of the wild type sequences ------
-    wtdf = mutdf.loc[mutdf["comment"] == "wt"][["seqid","sequence","wtlabel","shape_pred","main_pred"]].drop_duplicates()
+    wtdf = mutdf.loc[mutdf["comment"] == "wt"][["seqid","Sequence","wtlabel","shape_pred","main_pred"]].drop_duplicates()
     main_true = wtdf.loc[wtdf["main_pred"] == wtdf["wtlabel"]]
     shape_true = wtdf.loc[wtdf["shape_pred"] == wtdf["wtlabel"]]
-    intersect = main_true.merge(shape_true, on=["seqid","sequence"])
+    intersect = main_true.merge(shape_true, on=["seqid","Sequence"])
     print("Number of wt sequence: %d" % wtdf.shape[0])
     print(("Number of correctly predicted wt training:\n" +
           "  main_pred : %d\n" +
           "  shape_pred: %d") % (main_true.shape[0], shape_true.shape[0]))
     print("Number of correctly predicted wt intersection main vs shape: %d" % intersect.shape[0])
-    """

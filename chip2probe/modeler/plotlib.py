@@ -103,8 +103,9 @@ def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", 
         labels, data = [*zip(*cur_group.items())]
         cur_ax = ax.flatten()[i]
         # blue ["#0343df","#75bbfd"] red  ["#b22222","#FFA07A"]
-        sns.boxplot(data=data, width=.6, ax=cur_ax, palette=color)
-        # sns.stripplot(data=data, jitter=True, ax=cur_ax, size=1, color='k')
+        sns.boxplot(data=data, width=.6, ax=cur_ax, palette=["gray","#DCDCDC"] if i == 0 else color)
+        cur_ax.set_yticks([-5, 0, 5, 10, 15])
+        cur_ax.set_ylim(-8,19)
         cur_ax.set_xticklabels(labels)
         cur_ax.set_title(colname)
         #boxplot = self.df.boxplot(column=colname,by=by,ax=ax.flatten()[i],return_type="dict") # pandas version
@@ -131,7 +132,8 @@ def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", 
             logstr += "%s, %s > %s: %4E\n" % (colname, labels[0], labels[1], Decimal(p))
             pstr = "%.2E" % Decimal(p) if p < 0.001 else "%.4f" % p
             cur_ax.plot([x1, x1, x2, x2], [1.01*y, y+h, y+h, 1.01*y], lw=1, c=col)
-            cur_ax.text((x1+x2)*.5, y + h, "p = %s"%(pstr), ha='center', va='bottom', color="red", fontsize=14)
+            cur_ax.text((x1+x2)*.5, y + h, "p = %s"%(pstr), ha='center', va='bottom', color="black", fontsize=14)
+            # cur_ax.set_ylim(-10,18)
 
             adj_ylim = (y+h) * 1.1
             if adj_ylim > ylim: ylim = adj_ylim
@@ -180,13 +182,18 @@ def display_output(xy, score_dict, path, title, score_type="auc", varyline=False
             lw, ls = 1, "-"
 
 
-        # if "Ets1" in key:
+        # if key == "strength,distance,orientation":
+        #     plt.plot(xy[key]['x'], xy[key]['y'],  lw=2, linestyle='-' , label='%s: %.2f' % (key,score), color="brown")
+        # elif "Ets1" in key:
         #     plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="red")
         # else:
         #     plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="blue")
 
 
-        if key == "distance,orientation,strength": # or len(ln) > 3:
+        print(key, score)
+        if "avg" in key:
+            plt.plot(xy[key]['x'], xy[key]['y'],  lw=2, linestyle='--' , label='%s: %.2f' % (key,score))
+        elif key == "distance,orientation,strength": # or len(ln) > 3:
             plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="brown") #
         elif len(ln) == 4:
             plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="m") #
@@ -287,6 +294,7 @@ def plot_model_metrics(modeldict, path="auc.png",
                        'x': np.insert(base_x,0,0),
                        'y': np.insert(avgscr,0,0),
                        }
+            print(k,scores)
             scoreval[k] = np.mean(scores)
     else:
         ytrue_dict = {k:np.concatenate(ytrue_dict[k]) for k in ytrue_dict}

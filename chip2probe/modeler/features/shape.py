@@ -64,7 +64,7 @@ class Shape(basefeature.BaseFeature):
             ori = Orientation(self.df, {"positive_cores":self.positive_cores}).get_feature()
             self.df["orientation"] = [o["ori"] for o in ori]
 
-    def get_feature(self):
+    def get_feature(self,seqcolname="Sequence"):
         """
         Get the shape features based on the features:
             - self.seqin:

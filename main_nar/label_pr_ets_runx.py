@@ -17,28 +17,37 @@ def get_med_m1m2(df, seqbound):
     d =  df[(df["type"] == "m1") | (df["type"] == "m2")]
     d = d.merge(seqbound, on="Sequence")
     d =  d[d["has_site"] == True]
-    d = d.groupby(["Name","ori"])[["intensity"]].median().reset_index()
+    d = d.groupby(["Name","Sequence","ori"])[["intensity"]].median().reset_index()
     return d
 
-def get_normalization_coefs(df1, df2, predictor):
+def get_normalization_coefs(df1, df2, predictor, xlab, ylab):
     """
     Using m1|m2 which are sequences with sites mutated
     """
-    oneseqdf = get_one_site_seq(df1, predictor) # pd.read_csv("input/seq_w1_ets_site.csv") #
+    oneseqdf = get_one_site_seq(df1, predictor) # pd.read_csv("input/seq_w1_ets_site.csv") # get_one_site_seq(df1, predictor)
     oneseqdf["Sequence"] = oneseqdf["Sequence"].str[:36]
     med1, med2 = get_med_m1m2(df1, oneseqdf), get_med_m1m2(df2, oneseqdf)
     arr.plot_chamber_corr(med1, med2, median=False,
-                           extrajoincols=["ori"], path="m1m2_log.png", log=False,
-                           title="Correlation between chambers", xlab="Main TF only", ylab="Main TF + Cooperator TF", valcol="intensity")
-    medcomb = med1.merge(med2, on=["Name","ori"])[["Name","ori", "intensity_x", "intensity_y"]]
+                           extrajoincols=["ori"], path="%s/m1m2_all_log.pdf" % baseoutpath, showlog=True,
+                           title="Correlation between chambers", xlab=xlab, ylab=ylab, valcol="intensity")
+    medcomb = med1.merge(med2, on=["Name","Sequence","ori"])
+    medcomb_csv = medcomb[["Name","Sequence","intensity_x", "intensity_y"]]
+    medcmb = medcomb[["Name","ori", "intensity_x", "intensity_y"]]
     slope, intercept = np.polyfit(medcomb["intensity_x"], medcomb["intensity_y"], 1)
+    return slope, intercept, medcomb_csv
 
-    return slope, intercept
+def get_negcutoff(negdf_m, tf_str, slope, intercept, percentile):
+    # median -- group by orientation replicates, take median
+    negdf_m = negdf_m[negdf_m["Name"].str.contains(tf_str)]
+    seqnm = negdf_m[["Name","Sequence"]].drop_duplicates(subset="Name")
 
-def get_negcutoff(negdf, tf_str, slope, intercept, percentile):
-    negdf = negdf[negdf["Name"].str.contains(tf_str)]
-    negdf["intensity"]  = list(((negdf["intensity"] - intercept)/slope).values)
-    return negdf[["intensity"]].quantile(percentile)
+    # get median intensity of the negative control
+    negdf_m = negdf_m[["Name","intensity"]].groupby("Name") \
+            .median().reset_index() \
+            .merge(seqnm, on="Name")[["Sequence","intensity"]]
+
+    negdf_m.to_csv("%s/negdf.csv" % baseoutpath,index=False)
+    return negdf_m[["intensity"]].quantile(percentile)
 
 # =======
 
@@ -84,6 +93,7 @@ def plot_pval(df, path):
     curdf = curdf.set_index('p_coop')
     curdf.plot.barh(rot=0)
     plt.savefig(path)
+    plt.clf()
 
 
 # label the probes for ets1 ets1
@@ -98,7 +108,7 @@ if __name__ == "__main__":
 
     # For plotting
     # m for main TF, mc for main and cooperator TF
-    ch_x =  "Ets1 only"
+    ch_x =  "Ets1"
     ch_y = "Ets1 + Runx1"
     both_title = "Cooperative vs independent binding of Ets1-Runx1"
     maintf = "ets1"
@@ -106,8 +116,9 @@ if __name__ == "__main__":
     df_m, neg_m = pd.read_csv("input/probefiles/Ets1_only_pr_clean.csv"), pd.read_csv("input/probefiles/Ets1_only_neg_clean.csv")
     df_mc, neg_mc = pd.read_csv("input/probefiles/Ets1_Runx1_pr_clean.csv"), pd.read_csv("input/probefiles/Ets1_Runx1_neg_clean.csv")
     baseoutpath = "output/Ets1Runx1/label_pr/"
-
-    # ch_x =  "Runx1 only"
+    colors = ["#b22222","#FFA07A"]
+    
+    # ch_x =  "Runx1"
     # ch_y = "Runx1 + Ets1"
     # both_title = "Cooperative vs independent binding of Runx1-Ets1"
     # maintf = "runx1"
@@ -115,26 +126,35 @@ if __name__ == "__main__":
     # df_m, neg_m = pd.read_csv("input/probefiles/Runx1_only_pr_clean.csv"), pd.read_csv("input/probefiles/Runx1_only_neg_clean.csv")
     # df_mc, neg_mc = pd.read_csv("input/probefiles/Runx1_Ets1_pr_clean.csv"), pd.read_csv("input/probefiles/Runx1_Ets1_neg_clean.csv")
     # baseoutpath = "output/Runx1Ets1/label_pr/"
+    # colors = ["#0343df","#75bbfd"]
+
+    oricoop = "er" if cooptf == "ets1" else "re"
 
     print("Number of raw probes distinct names %d" % df_m["Name"].nunique())
-
 
     # if main tf ets1, we say cooperative everytime it's cooperative on re orientation
     label_er_re = ["independent", "cooperative"] if maintf == "ets1" else ["cooperative", "independent"]
     #ori_er_re = "re" if maintf == "ets1" else "er"
     main_predictor = kompas_ets if maintf == "ets1" else kompas_runx
 
-    slope,intercept = get_normalization_coefs(df_m, df_mc, main_predictor)
+    slope,intercept, onesitedf = get_normalization_coefs(df_m, df_mc, main_predictor, ch_x, ch_y)
     print("Normalization using y = %.2fx + %.2f" % (slope,intercept))
+    onesitedf.sort_values("Name") \
+             .rename(columns={'intensity_x':ch_x, "intensity_y":ch_y})[["Sequence",ch_x,ch_y]]  \
+             .to_csv("%s/onesite.csv" % baseoutpath,index=False)
 
     cutoff = float(get_negcutoff(neg_m, cooptf, slope, intercept, neg_percentile))
+    # cutoff = 412.568
     print("Negative control cutoff %.3f" % cutoff)
 
-    # df_m = assign_ori_pos(df_m, kompas_ets, kompas_runx, "ets1", "runx1" , "er", "re") # pd.read_csv("%s_%s_main.csv" % (maintf, cooptf)) #a
-    # df_mc = assign_ori_pos(df_mc, kompas_ets, kompas_runx, "ets1", "runx1", "er", "re") # pd.read_csv("%s_%s_main_cooperator.csv" % (maintf, cooptf))
-    # df_mc["intensity"] = (df_mc["intensity"] - intercept)/slope
-    # df_m.to_csv("%s/%s_%s_main.csv" % (baseoutpath, maintf, cooptf),index=False)
-    # df_mc.to_csv("%s/%s_%s_main_cooperator.csv" % (baseoutpath, maintf, cooptf),index=False)
+
+    df_m = assign_ori_pos(df_m, kompas_ets, kompas_runx, "ets1", "runx1" , "er", "re") # pd.read_csv("%s_%s_main.csv" % (maintf, cooptf))
+    df_mc = assign_ori_pos(df_mc, kompas_ets, kompas_runx, "ets1", "runx1", "er", "re") # pd.read_csv("%s_%s_main_cooperator.csv" % (maintf, cooptf))
+    df_mc["unnormalized_intensity"] = df_mc["intensity"]
+    df_mc["intensity"] = (df_mc["intensity"] - intercept)/slope
+    df_m.to_csv("%s/%s_%s_main.csv" % (baseoutpath, maintf, cooptf),index=False)
+    df_mc.to_csv("%s/%s_%s_main_cooperator.csv" % (baseoutpath, maintf, cooptf),index=False)
+
     df_m = pd.read_csv("%s/%s_%s_main.csv" % (baseoutpath, maintf, cooptf))
     df_mc = pd.read_csv("%s/%s_%s_main_cooperator.csv" % (baseoutpath, maintf, cooptf))
 
@@ -142,7 +162,7 @@ if __name__ == "__main__":
     for ori in ["er","re"]:
         print("Orientation %s" % ori)
         cur_m = df_m[df_m["ori"] == ori][["Name","rep","intensity"]]
-        cur_mc = df_mc[df_mc["ori"] == ori][["Name","rep","intensity"]]
+        cur_mc = df_mc[df_mc["ori"] == ori][["Name","rep","intensity","unnormalized_intensity"]]
         comb = cur_m.merge(cur_mc, on=["Name","rep"])
 
         print("Number of distinct names before filtering %d" % comb["Name"].nunique())
@@ -176,9 +196,9 @@ if __name__ == "__main__":
     both_ori = olist[0].merge(olist[1], on=["Name"], suffixes=("_er", "_re"))
 
     # labeling the probe using both orientations
-    oricoop = "er" if cooptf == "ets1" else "re"
     both_ori["intensity_x"] = both_ori["intensity_x_%s" % oricoop] #(both_ori["intensity_x_er"] + both_ori["intensity_x_re"]) / 2
     both_ori["intensity_y"] = both_ori["intensity_y_%s" % oricoop]  #(both_ori["intensity_y_er"] + both_ori["intensity_y_re"]) / 2
+    both_ori["unnormalized_intensity"] = both_ori["unnormalized_intensity_%s" % oricoop] #(both_ori["intensity_x_er"] + both_ori["intensity_x_re"]) / 2
     both_ori["label"] = both_ori.apply(lambda x:
         "below_cutoff" if x["label_er"] == "below_cutoff" or x["label_re"] == "below_cutoff" else
         "anticooperative" if x["p_coop_er"] == 1 and x["p_coop_re"] == 1 else
@@ -192,22 +212,36 @@ if __name__ == "__main__":
         "ambiguous",
         axis=1
     )
+
     # filter out anticoop since we only have a few
     both_ori = both_ori[both_ori["label"] != "anticooperative"]
-    both_ori.to_csv("%s/both_%s_%s.csv" % (baseoutpath,maintf,cooptf), index=False)
-    plot_pval(both_ori, "%s/pval.png" % baseoutpath)
+    both_ori.sort_values("Name").to_csv("%s/both_%s_%s.csv" % (baseoutpath,maintf,cooptf), index=False)
+    plot_pval(both_ori, "%s/pval.pdf" % baseoutpath)
     print("Number of distinct names, above cutoff, after orientation joining %d" % both_ori[both_ori["label"] != "below_cutoff"]["Name"].nunique())
 
-    both_ori_plt = both_ori[["Name","intensity_x","intensity_y","label"]]
-    both_ori_plt.to_csv("%s/both_ori_plt_%s_%s.csv" % (baseoutpath,maintf,cooptf),index=False)
-    arr.plot_classified_labels(both_ori_plt, path="%s/both_normalized_%s_%s.png" % (baseoutpath,maintf,cooptf), col1="intensity_x", col2="intensity_y",
-            title=both_title, xlab=ch_x, ylab=ch_y, plotnonsignif=False, labelnames=["cooperative","independent","anticoop"])
+    both_ori_plt = both_ori[["Name","intensity_x","intensity_y","unnormalized_intensity","label"]]
+    both_ori_plt[both_ori_plt["label"] != "below_cutoff"].sort_values("Name").to_csv("%s/both_ori_plt_%s_%s.csv" % (baseoutpath,maintf,cooptf),index=False)
 
-    print("Count per label",both_ori_plt[["label","Name"]].groupby("label").count())
+    both_ori_plt = pd.read_csv("%s/both_ori_plt_%s_%s.csv" % (baseoutpath,maintf,cooptf))
+    arr.plot_classified_labels(both_ori_plt, path="%s/unnormalized_%s_%s.pdf" % (baseoutpath,maintf,cooptf), col1="intensity_x", col2="unnormalized_intensity", title=both_title, xlab=ch_x, ylab=ch_y, plotnonsignif=False, labelnames=["cooperative","independent","anticoop"], colors=["black","black"], showlog=True, showlegend=False)
+    arr.plot_classified_labels(both_ori_plt, path="%s/normalized_%s_%s.pdf" % (baseoutpath,maintf,cooptf), col1="intensity_x", col2="intensity_y",
+            title=both_title, xlab=ch_x, ylab=ch_y, plotnonsignif=False, labelnames=["cooperative","independent","anticoop"], colors=colors, showlog=True)
+    arr.plot_classified_labels(both_ori_plt, path="%s/normalized_%s_%s_black.pdf" % (baseoutpath,maintf,cooptf), col1="intensity_x", col2="intensity_y",
+            title=both_title, xlab=ch_x, ylab=ch_y, plotnonsignif=False, labelnames=["cooperative","independent","anticoop"], colors=["black","black"], showlog=True, showlegend=False)
 
     # we use sequence where ets1 is on the left for simplicity
+    nmsqmap = df_m[df_m["ori"] == "er"][["Name","Sequence"]].drop_duplicates()
+    # here, we print tables with the necessary information
+    seq_er_intensity = both_ori_plt[both_ori_plt["label"] != "below_cutoff"].merge(nmsqmap, on="Name")[["Sequence","intensity_x","intensity_y","unnormalized_intensity","label"]] \
+             .rename(columns={'intensity_x':ch_x, "unnormalized_intensity": "%s_unnormalized"%ch_y, "intensity_y":"%s_normalized"%ch_y}) \
+             .drop_duplicates("Sequence")
+    print(seq_er_intensity)
+    seq_er_intensity.to_csv("%s/seq_er_intensity.csv" % baseoutpath,index=False)
+
+    print("Count per label",seq_er_intensity[["label","Sequence"]].groupby("label").count())
+
     name_info = df_m[df_m["ori"] == "er"][["Name","Sequence","%s_pos" % maintf,"%s_start" % maintf, "%s_pos" % cooptf, "%s_start" % cooptf, "ori"]].drop_duplicates()
     all_labeled = name_info.merge(both_ori_plt[["Name","label"]], on="Name")
-    all_labeled = all_labeled[all_labeled["label"] != "below_cutoff"]
+    all_labeled = all_labeled[all_labeled["label"] != "below_cutoff"].drop_duplicates("Sequence")
     all_labeled["distance"] = abs(all_labeled["%s_pos" % maintf] - all_labeled["%s_pos" % cooptf])
-    all_labeled.to_csv("%s/seqbled_%s_%s.tsv" % (baseoutpath,maintf,cooptf), sep="\t", index=False, columns=["Name", "Sequence", "%s_pos" % maintf, "%s_start" % maintf, "%s_pos" % cooptf, "%s_start" % cooptf, "distance", "ori", "label"])
+    all_labeled.to_csv("%s/seqlbled_%s_%s.tsv" % (baseoutpath,maintf,cooptf), sep="\t", index=False, columns=["Name", "Sequence", "%s_pos" % maintf, "%s_start" % maintf, "%s_pos" % cooptf, "%s_start" % cooptf, "distance", "ori", "label"])

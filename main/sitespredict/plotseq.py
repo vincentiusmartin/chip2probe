@@ -14,12 +14,12 @@ import matplotlib.patches as patches
 
 if __name__=="__main__":
     single_sequence = "CGGCTGTTTTCCAGGATGTTGTGGTCATGGCGGTGT"
-    many_sequences = ["AATCAGAGGAAACAGATAGACTGAGGAAGTGAAGAA","AATCAGAGGAAACAGATAGACTGAGGAGGTGAAGAA","AATCAGAGGACACAGATAGACTGAGGAAGTGAAGAA","AATCAGAGGACACAGATAGACTGAGGAGGTGAAGAA"] #, "CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC"]
+    many_sequences = ['CATGACGAAGGGGAAGGATGTGGTTTGAGGGCAGCA'] #, "CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC"]
     df = pd.DataFrame(list(zip(many_sequences, ['seq1','seq2'])), columns=['sequence', 'key'])
 
     # ========= PWM =========
-    # pwmr = PWM("input/site_models/pwm/runx1.txt", 6, 16)
-    # pwme = PWM("input/site_models/pwm/ets1.txt")
+    # pwmr = PWM("input/sitemodels/pwm/runx1.txt", 6, 16)
+    # pwme = PWM("input/sitemodels/pwm/ets1.txt")
     # pwm_prede = pwme.predict_sequence(single_sequence)
     # pwm_predr = pwmr.predict_sequence(single_sequence)
     # pwm_pred_listr = pwmr.predict_sequences(many_sequences)
@@ -27,7 +27,7 @@ if __name__=="__main__":
     # print(pwm_predr)
 
     # ========= Escore =========
-    escore = PBMEscore("input/site_models/escores/Ets1_8mers_11111111.txt")
+    escore = PBMEscore("input/sitemodels/escores/Ets1_8mers_11111111.txt")
 
     escore_pred = escore.predict_sequence(single_sequence)
     escore_pred_list = escore.predict_sequences(many_sequences)
@@ -35,7 +35,7 @@ if __name__=="__main__":
 
     # ========= iMADS =========
     # load imads model, the cores should be loaded in the same order with the model
-    # imads_paths = ["input/site_models/imads_models/Ets1_w12_GGAA.model", "input/site_models/imads_models/Ets1_w12_GGAT.model"]
+    # imads_paths = ["input/sitemodels/imads_models/Ets1_w12_GGAA.model", "input/sitemodels/imads_models/Ets1_w12_GGAT.model"]
     # imads_cores = ["GGAA", "GGAT"]
     # imads_models = [iMADSModel(path, core, 12, [1, 2, 3]) for path, core in zip(imads_paths, imads_cores)]
     # imads = iMADS(imads_models, 0.19) # 0.2128
@@ -45,7 +45,7 @@ if __name__=="__main__":
     # imads_pred_df = imads.predict_sequences(df, key_colname="key")
 
     # ========= Kompas =========
-    kompas = Kompas("input/site_models/kompas/Ets1_kmer_alignment.txt",
+    kompas = Kompas("input/sitemodels/kompas/Ets1_kmer_alignment.txt",
                     core_start = 11, core_end = 15, core_center = 12)
     kompas_pred = kompas.predict_sequence(single_sequence)
     kompas_pred_list = kompas.predict_sequences(many_sequences)
@@ -61,4 +61,4 @@ if __name__=="__main__":
 
     # Generate sequence plot
     sp = SitesPlotter()
-    sp.plot_seq_combine([kompas_plot, escore_plot], filepath="plot.pdf")
+    sp.plot_seq_combine([kompas_plot], filepath="plot.pdf")

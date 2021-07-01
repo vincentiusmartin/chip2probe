@@ -12,7 +12,7 @@ class BaseFeature:
         pass
 
     @abc.abstractmethod
-    def get_feature(self):
+    def get_feature(self,seqcolname="Sequence"):
         pass
 
 

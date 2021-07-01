@@ -177,21 +177,6 @@ def pick_largest_affdif(df, m, n , sitetarget):
         m: top m with larger affinity difference to take
         n: how many elements from each group to take, aside from min max
     """
-    # g = no_wt_df.groupby('seqid')
-    # allwts = g.take([0], axis=0).reset_index(drop=True)
-    # pd.set_option('display.max_columns', None)
-    # print(allwts)
-    # allwts["coltarget"] = coltarget
-    # if afftype == "str":
-    #     allwts["coltarget"] = allwts.apply(lambda row: "site1"
-    #                                 if row["site1_affinity"] > row["site2_affinity"]
-    #                                 else "site2", axis=1)
-    # else:
-    #     allwts["coltarget"] = allwts.apply(lambda row: "site1"
-    #                             if row["site1_affinity"] < row["site2_affinity"]
-    #                             else "site2", axis=1)
-    # allwts = allwts[["seqid", "coltarget"]].drop_duplicates().set_index("seqid")
-    #coltarget = "site_%s_affinity" % afftype
 
     affdf = pd.DataFrame(df.loc[df["comment"] != "wt"])
     coltarget = "%s_affinity" % sitetarget
@@ -204,7 +189,7 @@ def pick_largest_affdif(df, m, n , sitetarget):
             .assign(diff = lambda d: d["max"]-d["min"]) \
             .sort_values(by=["diff"], ascending=False) \
             .head(m)[["diff"]]
-    subselect = affdf.join(affg, on="seqid", how='inner') \
+    subselect = affdf.merge(affg, on="seqid", how='inner') \
             .drop(["diff", "coltarget"],axis=1) \
             .sort_values(by=["seqid",coltarget])
 
@@ -278,50 +263,37 @@ def pick_positive_ctrl(df, m, n, col1, col2, mincoop=0.5 , coopthres = 0.6, addt
     selected["select"] = "positive_ctrl"
     return selected
 
-def get_selected_nm(df, namemap):
-    dfsub = df[df["comment"] == "wt"][["sequence"]].drop_duplicates()
-    print("Number of wt sequences %d" % dfsub.shape[0])
-    return dfsub.merge(namemap, on="sequence")[["Name","sequence"]].drop_duplicates()
+def plot_coop(df, lb,suffix):
+    dfsub = df[df["comment"] == "wt"][["Name"]].drop_duplicates()
+    ax = plt.axes()
+    arr.plot_classified_labels(lb, col1="indiv_median", col2="two_median", log=True, plotnonsignif=False,
+                       xlab="M1-M3+M2-M3", ylab="WT-M3", path="labeled_log_one_both.png", title="Cooperative vs independent binding of Ets1-Ets1",
+                       labelnames=["cooperative","independent","anticooperative"], axes=ax)
+    wtavail = lb.merge(dfsub)
+    ax.scatter(np.log(wtavail["indiv_median"]), np.log(wtavail["two_median"]), color="cyan", s=1, label="wt_selected")
+    ax.legend()
+    plt.savefig("in_%s.png" % suffix)
+    plt.clf()
 
-def plot_coop(df, namemap,lo1,lo2,lb,suffix):
-    dfnm = get_selected_nm(df,namemap)
-    oris = {"o1":lo1, "o2":lo2, "both":lb}
-    # lbnm = lb[lb["label"] != "fail_cutoff"][["Name"]].drop_duplicates()
-    for o in ["o1","o2","both"]:
-        ax = plt.axes()
-        arr.plot_classified_labels(oris[o], col1="indiv_median", col2="two_median", log=True,
-            xlab="log(m1-m3+m2-m3)", ylab="log(wt-m3)", path="labeled_log_%s.png" % o,
-            title="Cooperative plot, %s" % o, axes=ax)
-        wtavail = oris[o].merge(dfnm[["Name"]])
-        ax.scatter(np.log(wtavail["indiv_median"]), np.log(wtavail["two_median"]), color="cyan", s=1, label="wt_selected")
-        plt.savefig("in_ori_%s_%s.png" % (o,suffix))
-        plt.clf()
-
-def filter_by_delta(df, namemap,lb,ncoop=300,nadd=300):
-    dfnm = get_selected_nm(df,namemap)
-    wtavail = lb.merge(dfnm[["Name"]])
+def filter_by_delta(df, lb, ncoop=300,nadd=300):
+    """
+    get point farthest from the diagonal
+    """
+    dfnm = df[["Name"]].drop_duplicates()
+    wtavail = lb.merge(dfnm)
     wtavail["delta"] = abs(wtavail["two_median"] - wtavail["indiv_median"]) / np.sqrt(2)
-    wtcoop = wtavail[wtavail["label"] == "cooperative"].nlargest(330,'two_median')[["Name"]]
-    wtadd = wtavail[wtavail["label"] == "additive"].nsmallest(300,'delta')[["Name"]]
+    wtcoop = wtavail[wtavail["label"] == "cooperative"].nlargest(ncoop,'delta')[["Name"]]
+    wtadd = wtavail[wtavail["label"] == "independent"].nsmallest(nadd,'delta')[["Name"]]
     selected = pd.concat([wtcoop,wtadd])
-    seqids_sel = selected.merge(dfnm)[["sequence"]].merge(df)[["seqid"]]
+    seqids_sel = df.merge(selected)[["seqid"]].drop_duplicates()
     return df.merge(seqids_sel, on="seqid")
 
-
 if __name__ == "__main__":
-    df = pd.read_csv("custom_withpred.csv")
-    #df = pd.read_csv("output/homotypic/training/training.csv")
-    # df = pd.read_csv("seqs.csv")
-    nm = pd.read_csv("output/homotypic/training/seqnamemap.csv")
-    lo1 = pd.read_csv("output/homotypic/training/lbled_o1.csv")
-    lo2 = pd.read_csv("output/homotypic/training/lbled_o2.csv")
-    lb = pd.read_csv("output/homotypic/training/lbled_both.csv")
+    df = pd.read_csv("custom_withpred.csv").rename(columns={"name":"Name","Sequence":"sequence"})
 
-    # plt.scatter(df['main_prob'], df['shape_prob'], s=1, c='blue')
-    # plt.savefig("corr.png")
-    # plt.clf()
-    # r = df['main_prob'].corr(df['shape_prob'])
-    plot_coop(df,nm,lo1,lo2,lb,"all")
+    lbled = pd.read_csv("main_nar/output/Ets1Ets1/label_pr/lbled_o1_selected.csv")
+
+    plot_coop(df,lbled,"all")
     # TODO: remove duplicates
 
     # First we select only groups where predictions and wtlabel are the same
@@ -335,7 +307,7 @@ if __name__ == "__main__":
     pd.set_option("display.max_columns",None)
     # filter the data frame to take only where wt matches
     df = df.merge(match_wt, on="seqid")
-    df = filter_by_delta(df,nm,lb)
+    df = filter_by_delta(df,lbled)
     print("wt filtered",df.loc[df["comment"] == "wt"][["sequence"]].drop_duplicates().shape[0])
 
     muttypes = {"distance": {"ascending":False, "col":"distance"},
@@ -370,7 +342,7 @@ if __name__ == "__main__":
 
     # # Analysis part:
     allpicks = pd.read_csv("custom_probes_selected.csv")
-    plot_coop(allpicks,nm,lo1,lo2,lb,"after")
+    plot_coop(allpicks,lbled,"after")
 
     #
     # # get the farthest distance from each group

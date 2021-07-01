@@ -1,7 +1,9 @@
 import pandas as pd
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.ticker import ScalarFormatter
 import itertools
 import statsmodels.stats.multitest as sm
 import os
@@ -17,7 +19,6 @@ def read_chamber_file(path, includekey, excludekey=None, keycol="Name", seqcols=
 
     df = pd.read_csv(path, sep="\t").rename(columns={"Column":"ID_REF"})
     df["Sequence"] = df["Sequence"].str[:36]
-
 
     # get negctrl
     negdf = df[df["Name"].str.contains(negkey, na=False)][cols]
@@ -63,7 +64,9 @@ def label_replicas_permutation(indiv, two, arrdf, cutoff=0, oricol="ori", nameco
             if median_dict[(k,ori,'wt')] < cutoff or median_dict[(k,ori,'m3')] > cutoff:
                 rowdict['label'], rowdict['p'] = "fail_cutoff", 1
             else:
-                rowdict['label'], rowdict['p'] =  create_cooplbl(indiv[ori][k], two[ori][k], pcut)
+                if not (len(indiv[ori][k]) == 27 and len(two[ori][k]) == 3):
+                    continue
+                rowdict['label'], rowdict['p'] = create_cooplbl(indiv[ori][k], two[ori][k], pcut)
             rowdict['indiv_median'] = np.median(indiv[ori][k])
             rowdict['two_median'] = np.median(two[ori][k])
             rowdict['Name'] = k
@@ -71,8 +74,13 @@ def label_replicas_permutation(indiv, two, arrdf, cutoff=0, oricol="ori", nameco
         labeled_dict[ori] = pd.DataFrame(orilbls)
         labeled_dict[ori].to_csv("%s.csv"%ori,index=False)
         if fdrcor:
+            newdf = pd.DataFrame()
+            newdf["Name"] = labeled_dict[ori]['Name']
+            newdf["p_old"] = labeled_dict[ori]['p']
             labeled_dict[ori]['p'] = sm.fdrcorrection(labeled_dict[ori]['p'])[1]
-        labeled_dict[ori]['label'] = labeled_dict[ori].apply(lambda row: assign_fdrcor_class(row['p'],row['label'],pcut),axis=1)
+            newdf["p_new"] = labeled_dict[ori]['p']
+            newdf.to_csv("p_%s.csv"%ori,index=False)
+            labeled_dict[ori]['label'] = labeled_dict[ori].apply(lambda row: assign_fdrcor_class(row['p'],row['label'],pcut),axis=1)
     return labeled_dict
 
 def make_replicas_permutation(indf, oricol="ori", namecol="Name", affcol="affinity", typecol="type"):
@@ -108,13 +116,12 @@ def permutdict2df(permutdict):
     ld = [{"Name":k, "ori": ori, "intensity":aff} for ori in permutdict for k in permutdict[ori] for aff in permutdict[ori][k]]
     return pd.DataFrame(ld)
 
-
 # --------
 
 def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
                 namecol="Name", valcol="Alexa488Adjusted", extrajoincols=[],
                 title="", cutoff="", ax_in=False,
-                median=False, log=False,
+                median=False, log=False, showlog=False,
                 shownames=False, path=""):
     """
     Get correlation between 2 chambers
@@ -133,6 +140,8 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
     Return:
         R^2
     """
+    # if showlog and log:
+    #     raise ValueError("showlog and log could not be both True")
     # correlation plot of negative controls in chamber 1 vs chamber 2
 
     joincols = [namecol] + extrajoincols
@@ -142,6 +151,8 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
         dfy = dfy.groupby([namecol] + extrajoincols)[[valcol]].median().reset_index()
 
     dfcombined = dfx.merge(dfy, on=joincols)[joincols + ["%s_x"%valcol, "%s_y"%valcol]]
+    dfcombined.to_csv("cmb.csv",index=False)
+
     if log:
         dfcombined["%s_x"%valcol] = np.log(dfcombined["%s_x"%valcol])
         dfcombined["%s_y"%valcol] = np.log(dfcombined["%s_y"%valcol])
@@ -153,7 +164,7 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
 
     ax = ax if ax_in else plt.axes()
     # plot diagonal
-    ax.plot([min(min(x),min(y)),max(max(x),max(y))], [min(min(x),min(y)),max(max(x),max(y))], color='blue', label='diagonal') # , linewidth=0.5
+    ax.plot([min(min(x),min(y)),max(max(x),max(y))], [min(min(x),min(y)),max(max(x),max(y))], color='black', label='diagonal') # , linewidth=0.5
 
     if cutoff:
         c = np.log(cutoff) if log else cutoff
@@ -161,18 +172,27 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
         ax.axvline(cutoff, color='black', linewidth=0.5, linestyle=":")
 
     slope, intercept = np.polyfit(x, y, 1)
-    # Create a list of values in the best fit line
     abline_values = [slope * i + intercept for i in x]
 
-    # plot best fit line
-    ax.plot(x, abline_values, color='black', label='best fit')
+    ax.plot([min(x),max(x)], [min(abline_values),max(abline_values)], color='red', linestyle='dashed', label='best fit')
+
+    if showlog:
+        ax.loglog(base=np.e)
+        for axis in [ax.xaxis, ax.yaxis]:
+            axis.set_major_formatter(ScalarFormatter())
+
+        # locs, labels = plt.xticks()
+        # labels = [np.exp(item) for item in locs]
+        # print(labels)
+        # plt.xticks(locs, labels)ax.set_xticks([250,1000,3000,10000,25000,60000, 150000])
+    #ax.plot([min(x), max(x)], [min(abline_values),max(abline_values)], color='black', label='best fit')
     r_squared = np.corrcoef(x,y)[0,1]**2
     ax.scatter(x, y, s=1) # color="#FFA07A"  color="#DCDCDC"
 
     if shownames:
         names = dfcombined[namecol].values
         for i in range(len(names)):
-            ax  .text(x[i], y[i], names[i], fontsize=3)
+            ax.text(x[i], y[i], names[i], fontsize=3)
 
     ax.set_xlabel(xlab)
     ax.set_ylabel(ylab)
@@ -181,7 +201,8 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
     ax.set_title(title)
     ax.text(0.02, 0.94, 'R² = %0.2f' % r_squared, color='red', fontsize=12, transform = ax.transAxes)
     sign = '+' if intercept > 0 else '-'
-    ax.text(0.02, 0.9, 'best fit: y=%0.2fx %s %0.2f' % (slope,sign,abs(intercept)), color='red', transform = ax.transAxes, fontsize=12)
+    prefix = "linear " if showlog else ""
+    ax.text(0.02, 0.9, '%sbest fit: y=%0.2fx %s %0.2f' % (prefix,slope,sign,abs(intercept)), color='red', transform = ax.transAxes, fontsize=12)
     ax.legend(loc='lower right', prop={'size': 11})
 
     if not ax_in:
@@ -193,9 +214,10 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
     return r_squared
 
 def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa488Adjusted_y",
-                           xlab="Chamber1", ylab="Chamber2", log=True, title="", axes=None,
+                           xlab="Chamber1", ylab="Chamber2", log=False, showlog=False , title="", axes=None,
                            shownames=False, namecol="Name", labelcol="label", plotnonsignif=True,
-                           labelnames=["cooperative","independent","anticooperative"]):
+                           labelnames=["cooperative","independent","anticooperative"], colors=["#b22222","#FFA07A"],
+                           showlegend=True):
     """
     Desc
 
@@ -203,10 +225,15 @@ def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa48
         df: with "Name", "Intensity_one", "Intensity_two", "label".
             Label -> cooperative, independent, anticooperative, fail_cutoff
             shownames: show names of the probe on the plot, useful for debugging. Names are obtained from namecol.
+        showlog: show the plot in log
 
     Return:
 
     """
+    plt.clf()
+    if log and showlog:
+        raise ValueError("log and showlog can't be both true")
+
     permitted_labels = list(labelnames)
     if plotnonsignif:
         permitted_labels.append("fail_cutoff")
@@ -215,14 +242,13 @@ def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa48
     if axes:
         ax = axes
     else:
-        plt.clf()
         ax = plt.axes()
 
     # red/firebrick, mistyrose, blue, skyblue  blue ["#0343df","#75bbfd"] red ["#b22222","#FFA07A"]
-    lblclr = [("fail_cutoff","yellow", 0.7), (labelnames[0],"#b22222",1), (labelnames[1],"#FFA07A",1), (labelnames[2],"gray",1)]
+    lblclr = [("fail_cutoff","yellow", 0.7), (labelnames[0],colors[0],1), (labelnames[1],colors[1],1), (labelnames[2],"gray",1)]
     if log:
-        newdf[col1] = np.log(df[col1])
-        newdf[col2] = np.log(df[col2])
+        newdf.loc[:,col1] = np.log(newdf[col1].tolist())
+        newdf.loc[:,col2] = np.log(newdf[col2].tolist())
 
     for lc in lblclr:
         if not newdf[newdf[labelcol]==lc[0]].empty:
@@ -235,19 +261,30 @@ def plot_classified_labels(df, path="", col1="Alexa488Adjusted_x", col2="Alexa48
                 for i in range(len(names)):
                     ax.text(x[i], y[i], names[i], fontsize=5)
 
+
     ax.set_xlabel(xlab, fontsize=12)
     ax.set_ylabel(ylab, fontsize=12)
     x,y = newdf[col1].values, newdf[col2].values
     ax.plot([min(min(x),min(y)),max(max(x),max(y))], [min(min(x),min(y)),max(max(x),max(y))], color='black')
-    ax.legend(loc="lower right", markerscale=5, fontsize=10)
     ax.set_title(title, fontsize=15)
 
+    if showlegend:
+        ax.legend(loc="lower right", markerscale=5, fontsize=10)
+
+    if showlog:
+        ax.set_xlim(left=0.8*min(x),right=1.2*max(x))
+        ax.loglog(base=np.e)
+        ax.set_xticks([250,1000,3000,10000,25000,60000, 150000])
+        ax.set_yticks([250,1000,3000,10000,25000,60000, 150000])
+        ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        ax.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+
     if not axes:
-        if not path:
+        if path == "":
             plt.show()
         else:
             plt.savefig(path)
-        plt.clf()
+    #     plt.clf()
 
 def scatter_boxplot(input_df, cols=[], log=False,
                     ax=None, path = "box.png", repcol="rep",
@@ -282,7 +319,7 @@ def scatter_boxplot(input_df, cols=[], log=False,
         p.savefig(path)
         p.clf() # clear canvas
 
-def scatter_boxplot_col(input_df, coltype="type", colval="affinity", plotorder=[], colororder=[], ax=None, path = "box.png", title=""):
+def scatter_boxplot_col(input_df, coltype="type", colval="affinity", plotorder=[], colororder=[], ax=None, path = "", title=""):
     """
     """
     plotlist = []
@@ -299,6 +336,10 @@ def scatter_boxplot_col(input_df, coltype="type", colval="affinity", plotorder=[
         plt.boxplot(plotlist)
         plt.xticks(idxs,plotorder)
         plt.title(title)
+    ax = plt.axes()
+    # ax.set_yscale("log")
+    # ax.set_yticks([1000,3000,10000,25000,60000])
+    # ax.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
 
     p = plt if not ax else ax
     for i in range(len(plotlist)):
@@ -306,9 +347,9 @@ def scatter_boxplot_col(input_df, coltype="type", colval="affinity", plotorder=[
         x = np.random.normal(i+1, 0.04, size=len(y))
         curc = colororder[i] if len(colororder) > i else None
         # red/firebrick, mistyrose, blue, skyblue  blue ["#0343df","#75bbfd"] red ["#b22222","#FFA07A"]
-        p.plot(x, y, 'r.', markersize=5, alpha=1, c="#0343df")
+        p.plot(x, y, 'r.', markersize=5, alpha=1, c="#b22222")
 
-    if not ax:
+    if path != "":
         plt.savefig(path)
         plt.clf() # clear canvas
 

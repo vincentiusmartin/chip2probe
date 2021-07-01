@@ -30,14 +30,14 @@ class Affinity(basefeature.BaseFeature):
             self.col1, self.col2 = self.colnames[0], self.colnames[1]
 
     # TODO: make prediction can do without str weak
-    def get_feature(self):
+    def get_feature(self,seqcolname="Sequence"):
         """Get a dictionary of binding site preference scores."""
         rfeature = []
         # if imadsmodel is not provided, we assume the weak and strong site position is provided
         # TODO: make general column name
         for idx, row in self.df.iterrows():
             if self.imads: # imads model is provided
-                pr = self.imads.predict_sequence(row["sequence"])
+                pr = self.imads.predict_sequence(row[seqcolname])
                 if len(pr) != 2:
                     #print("Found sites more than 2 sites, using site position in the table as reference")
                     newpr = []

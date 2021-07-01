@@ -7,7 +7,6 @@ Authors: Vincentius Martin, Farica Zhuang
 """
 from chip2probe.probe_generator.probefilter import sitespredict
 from sitespredict.sitesplotter import SitesPlotter
-from sitespredict.imads import iMADS
 from sitespredict.sequence import Sequence
 from sitespredict.kompas import Kompas
 from cooperative import coopfilter
@@ -151,7 +150,7 @@ def clean_junctions(seqlst, proteins, escores, models, mutate_cutoff=0.38,
                                          max_mutate_count=2)
             if new_seq == seq:
                 seqlst[i] = ""
-        
+
     # check reverse complement
     for i in range(len(seqlst)):
         # get the sequence

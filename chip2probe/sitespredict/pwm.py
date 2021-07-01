@@ -26,21 +26,22 @@ class PWM(basemodel.BaseModel):
 
     def read_pwm(self, pwmfile, startidx=0, endidx=-1, log=True, reverse=False):
         with open(pwmfile,'r') as f:
-            end = len(f.readline().split(":")[1].split("\t")) if endidx == -1 else endidx
+            end = len(f.readline().split(":")[1].split()) if endidx == -1 else endidx
         pwm_fwd = {}
         bases = []
         with open(pwmfile,'r') as f:
-            for line in f:
-                base,scores = line.strip().split(":")
-                base = base.strip()
-                bases.append(base)
-                scores = scores.strip().split("\t")[startidx:end]
-                if log:
-                    with np.errstate(divide='ignore'): # ignore divide by zero warning
-                        pwm_fwd[base] = [np.log2(float(score)/0.25) for score in scores]
+            fclean = f.read().strip().split("\n")
+        for line in fclean:
+            base,scores = line.strip().split(":")
+            base = base.strip()
+            bases.append(base)
+            scores = scores.strip().split()[startidx:end]
+            if log:
+                with np.errstate(divide='ignore'): # ignore divide by zero warning
+                    pwm_fwd[base] = [np.log2(float(score)/0.25) for score in scores]
 
-                else:
-                    pwm_fwd[base] = [float(score) for score in scores]
+            else:
+                pwm_fwd[base] = [float(score) for score in scores]
         bases_rev = bases[::-1]
         if not reverse: # just take the rc as the reverse
             pwm_rev = {bases[i] : pwm_fwd[bases_rev[i]][::-1] for i in range(len(bases))}
@@ -51,6 +52,13 @@ class PWM(basemodel.BaseModel):
         #     print(a,"\t".join(map(str,pwm_rev[a])))
         return pwm_fwd, pwm_rev
 
+    def generate_pwm_file(self, path):
+        bases = ['A','C','G','T']
+        text = ""
+        for b in bases:
+            text += "%s:\t%s\n" % (b,"\t".join([str(n) for n in self.pwm_fwd[b]]))
+        with open(path,'w') as f:
+            f.write(text[:-2])
 
     def predict_sequence(self, sequence, zero_thres=True):
         """

@@ -23,7 +23,7 @@ class Distance(basefeature.BaseFeature):
         self.df = traindf
         self.set_attrs(params, default_args)
 
-    def get_feature(self):
+    def get_feature(self,seqcolname="Sequence"):
         """
         Return a list of dictionaries for distance feature.
         Key is the column name and value is the column value

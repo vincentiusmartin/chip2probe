@@ -11,16 +11,17 @@ import pickle
 
 pd.set_option("display.max_columns",None)
 if __name__ == "__main__":
-    trainingpath = "output/Ets1Ets1/training/train_ets1_ets1.tsv"
+    basepath = "output/Ets1Ets1_v2"
+    trainingpath = "%s/training/train_ets1_ets1.tsv" % basepath
     df = pd.read_csv(trainingpath,sep="\t")
     ct = CoopTrain(df)
     pd.set_option("display.max_columns",None)
 
     rf_param_grid = {
-        'n_estimators': [500], #[500,750,1000],
-        'max_depth': [10], #[5,10,15],
-        "min_samples_leaf": [10], #[5,10,15],
-        "min_samples_split" : [20], #[5,10,15]
+        'n_estimators': [500,750,1000],
+        'max_depth': [5,10,15],
+        "min_samples_leaf": [5,10,15],
+        "min_samples_split" : [5,10,15]
     }
 
     # {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}}
@@ -74,7 +75,7 @@ if __name__ == "__main__":
             ).run_all()
     }
 
-    pl.plot_model_metrics(best_models, path="output/Ets1Ets1/model/auc_all.png", cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Ets1-Ets1")
+    pl.plot_model_metrics(best_models, path="%s/model/auc_all.png" % basepath, cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Ets1-Ets1", interp=True)
 
     rf = best_models["distance,orientation,strength"][1]
 
@@ -86,7 +87,7 @@ if __name__ == "__main__":
     label = ct.get_numeric_label({'cooperative': 1, 'independent': 0})
 
     rf.fit(train,label)
-    model_name = "output/Ets1Ets1/model/ets1_ets1_rfmodel.sav"
+    model_name = "%s/model/ets1_ets1_rfmodel.sav" % basepath
     pickle.dump(rf, open(model_name, 'wb'))
     print("Model saved in %s" % model_name)
 
@@ -94,7 +95,7 @@ if __name__ == "__main__":
     feature_dict = {
         "distance":{"type":"numerical"},
         "affinity": {"colnames": ("ets_score","runx_score")},
-        "orientation": {"relative":False, "pos_cols": {"ets_pos":"ets_ori", "runx_pos":"runx_ori"}}
+        "orientation": {"relative":False, "one_hot":True, "pos_cols": {"ets_pos":"ets_ori", "runx_pos":"runx_ori"}}
     }
     train = ct.get_feature_all(feature_dict)
     label = ct.get_numeric_label({'cooperative': 1, 'additive': 0})

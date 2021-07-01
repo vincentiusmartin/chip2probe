@@ -66,7 +66,7 @@ if __name__ == "__main__":
                     "affinity": {"colnames": ("ets1_score","runx1_score")}
                 }, label_map={'cooperative': 1, 'independent': 0})
             ).run_all(),
-        "distance,orientation,strength":
+        "strength,distance,orientation":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
               train_data=ct.get_training_df({
@@ -77,7 +77,7 @@ if __name__ == "__main__":
             ).run_all(),
     }
 
-    pl.plot_model_metrics(best_models, path="%s/model/pr.png" % basepath, cvfold=10, score_type="pr", varyline=True, title="Average ROC Curves for Ets1-Runx1")
+    pl.plot_model_metrics(best_models, path="%s/model/auc.png" % basepath, cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Ets1-Runx1", interp=True)
 
     feature_dict = {
         "distance":{"type":"numerical"},
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     }
     train = ct.get_feature_all(feature_dict)
     label = ct.get_numeric_label({'cooperative': 1, 'independent': 0})
-    rf = best_models["distance,orientation,strength"][1]
+    rf = best_models["strength,distance,orientation"][1]
     rf.fit(train,label)
     model_name = "%s/model/ets1_runx1_rfmodel.sav" % basepath
     pickle.dump(rf, open(model_name, 'wb'))

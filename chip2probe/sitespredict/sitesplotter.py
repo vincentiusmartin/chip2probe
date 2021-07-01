@@ -33,7 +33,7 @@ class SitesPlotter(object):
         return {"indices":[*range(-pos,len(maxseq)-pos)], "maxseq":maxseq, "minseq":minseq}
 
     def plot_seq_combine(self, plotlist, filepath = "plot.pdf" ,
-                         numcol=4, numrow=4, bottom_cutoff=0):
+                         numcol=4, numrow=4, bottom_cutoff=0, top_cutoff=1):
         plt.close('all')
         n = 0
         plot_count = 0
@@ -79,14 +79,14 @@ class SitesPlotter(object):
                 if not skip_seq:
                     n += 1
                     plot_count += 1
-                    ax = fig.add_subplot(numcol,numrow,n) # how many plots are in a col,row
+                    ax = fig.add_subplot(numrow,numcol,n) # how many plots are in a col,row
                     # ======= plot each element in plotdict =======
                     for siteobj in plotlist:
                         cmds = siteobj[key]["plt"] # get the commands for this key
                         for cmd in cmds:
                             getattr(ax,cmd["func"])(*cmd["args"],**cmd["kwargs"])
                     ax.axhline(y=0,color='gray')
-                    ax.set_ylim(bottom=bottom_cutoff, top=0.55) # this is based on the pwm
+                    ax.set_ylim(bottom=bottom_cutoff, top=top_cutoff) # this is based on the pwm, ,
 
                     # custom the first x axis, we put negative axis if one sequence is longer
                     # that other

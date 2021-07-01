@@ -66,8 +66,6 @@ if __name__ == "__main__":
 
     negdf = pd.read_csv("output/array_design_files/Coop1Ets/Coop1Ets_NegCtrl.txt",sep="\t",header=None)
     print(negdf)
-    import sys
-    sys.exit(0)
 
     negctrl = negdf[0].tolist()
     negids = [x.split("_")[3] for x in negdf[2].tolist()]

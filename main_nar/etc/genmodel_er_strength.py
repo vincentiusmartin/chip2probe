@@ -12,14 +12,8 @@ import subprocess
 
 
 if __name__ == "__main__":
-    # basepath = "output/Ets1Runx1"
-    # trainingpath = "output/Ets1Runx1/training/train_ets1_runx1.tsv"
-
-    # basepath = "output/Runx1Ets1"
-    # trainingpath = "%s/training/train_runx1_ets1.tsv" % basepath
-
-    basepath = "output/Ets1Ets1"
-    trainingpath = "%s/training/train_ets1_ets1.tsv" % basepath
+    basepath = "output/Ets1Runx1"
+    trainingpath = "output/Ets1Runx1/training/train_ets1_runx1.tsv"
 
     df = pd.read_csv(trainingpath, sep="\t")
     ct = CoopTrain(df)
@@ -33,41 +27,50 @@ if __name__ == "__main__":
     }
 
     best_models = {
-        "Weaker site strength":
+        "Runx1 (cooperator TF) strength":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
               train_data=ct.get_training_df({
-                    "affinity": {"colnames": ["site_str_score"]}
+                    "affinity": {"colnames": ["runx1_score"]}
                 }, label_map={'cooperative': 1, 'independent': 0})
             ).run_all(),
-        "Stronger site strength":
+        "Ets1 (main TF) strength":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
               train_data=ct.get_training_df({
-                    "affinity": {"colnames": ["site_wk_score"]}
+                    "affinity": {"colnames": ["ets1_score"]}
                 }, label_map={'cooperative': 1, 'independent': 0})
             ).run_all(),
-        "distance,orientation,wkr_strength":
+        "distance,orientation,Runx1 strength":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
               train_data=ct.get_training_df({
                     "distance":{"type":"numerical"},
-                    "affinity": {"colnames": ["site_str_score"]},
-                    "orientation": {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}}
+                    "affinity": {"colnames": ["runx1_score"]},
+                    "orientation": {"relative":False, "pos_cols": {"ets1_pos":"ets1_ori", "runx1_pos":"runx1_ori"}}
                 }, label_map={'cooperative': 1, 'independent': 0})
             ).run_all(),
-        "distance,orientation,str_strength":
+        "distance,orientation,Ets1 strength":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
               train_data=ct.get_training_df({
                     "distance":{"type":"numerical"},
-                    "affinity": {"colnames": ["site_wk_score"]},
-                    "orientation": {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}}
+                    "affinity": {"colnames": ["ets1_score"]},
+                    "orientation": {"relative":False, "pos_cols": {"ets1_pos":"ets1_ori", "runx1_pos":"runx1_ori"}}
+                }, label_map={'cooperative': 1, 'independent': 0})
+            ).run_all(),
+        "strength,distance,orientation":
+            BestModel(clf="sklearn.ensemble.RandomForestClassifier",
+              param_grid=rf_param_grid,
+              train_data=ct.get_training_df({
+                    "distance":{"type":"numerical"},
+                    "affinity": {"colnames": ("ets1_score","runx1_score")},
+                    "orientation": {"relative":False, "pos_cols": {"ets1_pos":"ets1_ori", "runx1_pos":"runx1_ori"}}
                 }, label_map={'cooperative': 1, 'independent': 0})
             ).run_all(),
     }
 
-    pl.plot_model_metrics(best_models, path="%s/model/auc_separate_str.png" % basepath, cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Ets1-Runx1")
+    pl.plot_model_metrics(best_models, path="%s/model/auc_separate_str.png" % basepath, cvfold=10, score_type="auc", varyline=True, title="Average ROC Curves for Ets1-Runx1", interp=True)
 
     # tree.export_graphviz(m.estimators_[5], out_file='tree.dot',
     #         feature_names = train.columns,

@@ -7,7 +7,7 @@ pu_tf2_path <- args[4]
 nrwp_tf2_path <- args[5]
 outpath <- args[6]
 
-setwd("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator" )
+setwd("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/chip2probe/probe_generator")
 pu_tf1_path <- "/Users/vincentiusmartin/Research/chip2gcPBM/result/ets1_k562/macs_result/ets1_k562_bothreplicates_treat_pileup.bdg"
 nrwp_tf1_path <- "/Users/vincentiusmartin/Research/chip2gcPBM/result/ets1_k562/idr_result/idr_001p_wlist.narrowPeak"
 pu_tf2_path <- "/Users/vincentiusmartin/Research/chip2gcPBM/result/runx1_k562/macs_result/runx1_k562_bothreplicates_treat_pileup.bdg"

@@ -1,3 +1,3 @@
-Mean accuracy: {'distance,orientation': 0.7913165266106442, 'distance,orientation,sequence': 0.7815126050420168, 'distance,orientation,shape': 0.8081232492997199, 'distance,orientation,sequence,shape': 0.7941176470588235, 'distance,orientation,strength': 0.8305322128851541}
-Mean auc: {'distance,orientation': 0.8402398650091846, 'distance,orientation,sequence': 0.8438228886325772, 'distance,orientation,shape': 0.8682408475372719, 'distance,orientation,sequence,shape': 0.8508522363193645, 'distance,orientation,strength': 0.896646588918792}
-Confusion_matrix (tn,fp,fn,tp): {'distance,orientation': array([738, 180, 118, 392]), 'distance,orientation,sequence': array([800, 118, 194, 316]), 'distance,orientation,shape': array([816, 102, 172, 338]), 'distance,orientation,sequence,shape': array([811, 107, 187, 323]), 'distance,orientation,strength': array([794, 124, 118, 392])}
+Mean accuracy: {'distance,orientation,shape': 0.811624649859944}
+Mean auc: {'distance,orientation,shape': 0.8708039642872399}
+Confusion_matrix (tn,fp,fn,tp): {'distance,orientation,shape': array([816, 102, 167, 343])}

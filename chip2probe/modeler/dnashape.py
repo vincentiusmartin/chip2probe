@@ -151,8 +151,11 @@ class DNAShape:
                     arr_coop = [y[i] for y in yall[cooplbl]]
                     arr_add = [y[i] for y in yall[addlbl]]
                     if not any(np.isnan(x) for x in arr_coop) and not any(np.isnan(x) for x in arr_add):
-                        p1 = st.wilcox(arr_coop,arr_add,"greater")
-                        p2 = st.wilcox(arr_coop,arr_add,"less")
+                        if arr_coop.count(arr_coop[0]) == len(arr_coop) and arr_add.count(arr_add[0]) == len(arr_add):
+                            p1, p2 = 1,1
+                        else:
+                            p1 = st.wilcox(arr_coop,arr_add,"greater")
+                            p2 = st.wilcox(arr_coop,arr_add,"less")
                         if p1 <= pthres:
                             signiflabel.append(keystolabel[cooplbl])
                         elif p2 <= pthres:

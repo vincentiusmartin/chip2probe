@@ -56,6 +56,7 @@ def get_sites_pos(df, kompas, pwm, seqcol="Sequence"):
 
 def gen_training(df, pwm, kompas):
     train = get_sites_pos(df, kompas, pwm)
+    train.to_csv("bla.csv",index=False)
     # reverse -- to ++
     train00 = train[train["orientation"] == "-/-"][["Name","Sequence","label"]]
     train00["Sequence"] = train00["Sequence"].apply(lambda x: bio.revcompstr(x))
@@ -64,21 +65,35 @@ def gen_training(df, pwm, kompas):
     return train.drop_duplicates()
 
 
+df1 = pd.read_csv("output/Ets1Ets1_v2/label_pr/m1m2m3wt.csv")
+df2 = pd.read_csv("output/Ets1Ets1_v2/label_pr/ets_ets_seqlabeled.csv").drop_duplicates("Sequence")
+pwm = PWM("input/sitemodels/ets1.txt", log=True)
+kompas = Kompas("input/sitemodels/Ets1_kmer_alignment.txt",
+                core_start = 11, core_end = 15, core_center = 12)
+df2 = get_sites_pos(df2, kompas, pwm)
+
+# print(df2["label"].value_counts())
+# merged = df1.merge(df2[["Sequence"]], on="Sequence")
+# print(merged["label"].value_counts())
+# merged.to_csv("wtm1m2m3_trimmed.csv", index=False)
+
 if __name__ == "__main__":
     pd.set_option("display.max_columns",None)
+    basepath = "output/Ets1Ets1_v2"
 
     # using pwm
     pwm_ets = PWM("input/sitemodels/ets1.txt", log=True)
     kompas_ets = Kompas("input/sitemodels/Ets1_kmer_alignment.txt",
                     core_start = 11, core_end = 15, core_center = 12)
-    df = pd.read_csv("output/Ets1Ets1/label_pr/ets_ets_seqlabeled.csv").drop_duplicates()
+    df = pd.read_csv("%s/label_pr/ets_ets_seqlabeled.csv" % basepath).drop_duplicates()
     df = df[(df["label"] == "cooperative") | (df["label"] == "independent")]
-    train = gen_training(df, pwm_ets, kompas_ets)
+    print(df[["label"]].value_counts())
+    train = gen_training(df, pwm_ets, kompas_ets).drop_duplicates(["Sequence"])
 
     print(train["label"].value_counts())
-    train.to_csv("output/Ets1Ets1/training/train_ets1_ets1.tsv", index=False, sep="\t")
+    train.to_csv("%s/training/train_ets1_ets1.tsv" % basepath, index=False, sep="\t")
 
     train.rename(columns={'site_str_score': 'Binding strength of the stronger site', 'site_wk_score': 'Binding strength of the weaker site'}, inplace=True)
-    pl.plot_stacked_categories(train, "distance", path="output/Ets1Ets1/training/distance_bar.png", title="Distance distribution", ratio=True, figsize=(17,4))
-    pl.plot_stacked_categories(train, "orientation", path="output/Ets1Ets1/training/ori_bar.png", title="Relative sites orientation\ndistribution", ratio=True, figsize=(9,5))
-    pl.plot_box_categories(train, path="output/Ets1Ets1/training/boxplot.png" , incols=["Binding strength of the stronger site", "Binding strength of the weaker site"], alternative="smaller")
+    pl.plot_stacked_categories(train, "distance", path="%s/training/distance_bar.png" % basepath, title="Distance distribution", ratio=True, figsize=(17,4), color = ["#b22222","#FFA07A"])
+    pl.plot_stacked_categories(train, "orientation", path="%s/training/ori_bar.png" % basepath, title="Relative sites orientation\ndistribution", ratio=True, figsize=(9,5), color = ["#b22222","#FFA07A"])
+    pl.plot_box_categories(train, path="%s/training/boxplot.png" % basepath, incols=["Binding strength of the stronger site", "Binding strength of the weaker site"], alternative="smaller", color = ["#b22222","#FFA07A"])
