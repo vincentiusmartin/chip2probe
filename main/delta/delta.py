@@ -45,18 +45,18 @@ if __name__ == "__main__":
 
     ct = CoopTrain(dft)
     feature_dict = {
-        # "distance":{"type":"numerical"},
-        # "affinity": {"colnames": ("site_str_score","site_wk_score")}, # strength
-        # "orientation": {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}},
-        # "shape_in":{"seqin":5, "poscols":['site_str_pos','site_wk_pos'], "smode":"relative"},
-        # "shape_out":{"seqin":-2, "poscols":['site_str_pos','site_wk_pos'], "smode":"relative"},
+        "distance":{"type":"numerical"},
+        "affinity": {"colnames": ("site_str_score","site_wk_score")}, # strength
+        "orientation": {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}},
+        "shape_in":{"seqin":5, "poscols":['site_str_pos','site_wk_pos'], "smode":"relative"},
+        "shape_out":{"seqin":-2, "poscols":['site_str_pos','site_wk_pos'], "smode":"relative"},
         "sequence_in":{"seqin":5, "poscols":['site_str_pos','site_wk_pos'], "namecol":"Name", "smode":"relative"},
         "sequence_out":{"seqin":-3, "poscols":['site_str_pos','site_wk_pos'], "namecol":"Name", "smode":"relative"}
     }
     X = ct.get_feature_all(feature_dict).values.tolist()
     print(X)
-    import sys
-    sys.exit()
+    # import sys
+    # sys.exit()
     X = StandardScaler().fit_transform(X)
     ytrue = ct.df["delta"].values.tolist()
 
