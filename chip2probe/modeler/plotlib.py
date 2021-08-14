@@ -102,10 +102,11 @@ def plot_box_categories(df, by=["label"], incols="default", path="boxplot.png", 
         cur_group = {elm[0]:list(elm[1]) for elm in grouped[colname]}
         labels, data = [*zip(*cur_group.items())]
         cur_ax = ax.flatten()[i]
-        # blue ["#0343df","#75bbfd"] red  ["#b22222","#FFA07A"]
-        sns.boxplot(data=data, width=.6, ax=cur_ax, palette=["gray","#DCDCDC"] if i == 0 else color)
-        cur_ax.set_yticks([-5, 0, 5, 10, 15])
-        cur_ax.set_ylim(-8,19)
+        # blue ["#0343df","#75bbfd"] red  ["#b22222","#FFA07A"] gray ["gray","#DCDCDC"]
+        #sns.boxplot(data=data, width=.6, ax=cur_ax, palette=["gray","#DCDCDC"] if i == 0 else color)
+        sns.boxplot(data=data, width=.6, ax=cur_ax, palette=color)
+        # cur_ax.set_yticks([-5, 0, 5, 10, 15])
+        # cur_ax.set_ylim(-9,18)
         cur_ax.set_xticklabels(labels)
         cur_ax.set_title(colname)
         #boxplot = self.df.boxplot(column=colname,by=by,ax=ax.flatten()[i],return_type="dict") # pandas version

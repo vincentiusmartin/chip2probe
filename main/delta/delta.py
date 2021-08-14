@@ -65,9 +65,9 @@ if __name__ == "__main__":
     # regr = SVR(**param)
     # print("Best",param)
 
-    regr.fit(X,ytrue)
-    ypred = regr.predict(X)
-    print("Training accuracy",metrics.r2_score(ytrue, ypred))
+    # regr.fit(X,ytrue)
+    # ypred = regr.predict(X)
+    # print("Training accuracy",metrics.r2_score(ytrue, ypred))
 
     cv_results = cross_validate(regr, X, ytrue, cv=10, scoring=('r2', 'neg_mean_squared_error'))
     print(cv_results)

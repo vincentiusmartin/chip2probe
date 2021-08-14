@@ -58,7 +58,7 @@ if __name__ == "__main__":
         abline_values = [slope * i + intercept for i in x]
         plt.xlabel("PWM delta")
         plt.ylabel("iMADS delta")
-        plt.plot([min(x),max(x)], [min(abline_values),max(abline_values)], color='red', linestyle='dashed')
+        plt.plot(x, abline_values, color='red', linestyle='dashed')
         plt.title("Delta %s" % s)
         plt.savefig('scatter_%s.png'%s)
         plt.clf()

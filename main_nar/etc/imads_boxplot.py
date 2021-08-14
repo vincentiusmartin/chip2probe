@@ -8,14 +8,14 @@ from chip2probe.sitespredict.imadsmodel import iMADSModel
 def make_imads_pred(df, imads):
     seqpred = []
     for idx, row in df.iterrows():
-        rowdict = {}
+        rowdict = {"Name":row["Name"]}
         for tf in imads:
             preds = imads[tf].predict_sequence(row["Sequence"])
             for p in preds:
                 if p["core_start"] == row["%s_start" % tf]:
                     rowdict["%s_score" % tf] = p["score"]
                     break
-        if len(rowdict) == 2:
+        if len(rowdict) == 3:
             rowdict["label"] = row["label"]
             seqpred.append(rowdict)
     return pd.DataFrame(seqpred)
@@ -49,6 +49,7 @@ if __name__ == "__main__":
     df = pd.read_csv("../output/Runx1Ets1/training/train_runx1_ets1.tsv", sep="\t")
     maintf, cooptf = "runx1", "ets1"
     dfpred = make_imads_pred(df, imads_dict)
+    dfpred.to_csv("withimads.csv",index=False)
 
 
     dfpred.rename(columns={'%s_score' % maintf: '%s strength\n(main TF)' % maintf.capitalize(), '%s_score' % cooptf: '%s strength\n(cooperator TF)' % cooptf.capitalize()}, inplace=True)

@@ -65,9 +65,9 @@ if __name__ == "__main__":
     pickle.dump(rf, open(model_name, 'wb'))
     print("Model saved in %s" % model_name)
 
-    # tree.export_graphviz(m.estimators_[5], out_file='tree.dot',
-    #         feature_names = xt_df.columns,
-    #         class_names = ['additive','cooperative'],
-    #         rounded = True, proportion = False,
-    #         precision = 2, filled = True)
-    # subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])
+    tree.export_graphviz(m.estimators_[5], out_file='tree.dot',
+            feature_names = xt_df.columns,
+            class_names = ['additive','cooperative'],
+            rounded = True, proportion = False,
+            precision = 2, filled = True)
+    subprocess.call(['dot', '-Tpdf', 'tree.dot', '-o', 'tree.pdf', '-Gdpi=600'])

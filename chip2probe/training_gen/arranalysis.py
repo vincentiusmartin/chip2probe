@@ -174,7 +174,7 @@ def plot_chamber_corr(dfx, dfy, xlab="Chamber 1", ylab="Chamber 2",
     slope, intercept = np.polyfit(x, y, 1)
     abline_values = [slope * i + intercept for i in x]
 
-    ax.plot([min(x),max(x)], [min(abline_values),max(abline_values)], color='red', linestyle='dashed', label='best fit')
+    ax.plot(x, abline_values, color='red', linestyle='dashed', label='best fit')
 
     if showlog:
         ax.loglog(base=np.e)
