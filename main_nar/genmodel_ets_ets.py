@@ -18,27 +18,27 @@ if __name__ == "__main__":
     pd.set_option("display.max_columns",None)
 
     rf_param_grid = {
-        'n_estimators': [500,750,1000],
-        'max_depth': [5,10,15],
-        "min_samples_leaf": [5,10,15],
-        "min_samples_split" : [5,10,15]
+        'n_estimators': [500] ,#[500,750,1000],
+        'max_depth': [10],#[5,10,15],
+        "min_samples_leaf": [15],#[5,10,15],
+        "min_samples_split" : [10],#[5,10,15]
     }
 
     # {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}}
 
     best_models = {
-        "distance":
-            BestModel(clf="sklearn.ensemble.RandomForestClassifier",
-              param_grid=rf_param_grid,
-              train_data=ct.get_training_df({
-                    "distance":{"type":"numerical"}
-                }, label_map={'cooperative': 1, 'independent': 0})
-            ).run_all(),
         "strength":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
               train_data=ct.get_training_df({
                     "affinity": {"colnames": ("site_str_score","site_wk_score")}
+                }, label_map={'cooperative': 1, 'independent': 0})
+            ).run_all(),
+        "distance":
+            BestModel(clf="sklearn.ensemble.RandomForestClassifier",
+              param_grid=rf_param_grid,
+              train_data=ct.get_training_df({
+                    "distance":{"type":"numerical"}
                 }, label_map={'cooperative': 1, 'independent': 0})
             ).run_all(),
         "orientation":
@@ -56,7 +56,7 @@ if __name__ == "__main__":
                     "orientation": {"relative":True, "one_hot":True, "pos_cols": {"site_str_pos":"site_str_ori", "site_wk_pos":"site_wk_ori"}}
                 }, label_map={'cooperative': 1, 'independent': 0})
             ).run_all(),
-        "distance,strength":
+        "strength,distance":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
               train_data=ct.get_training_df({
@@ -64,7 +64,7 @@ if __name__ == "__main__":
                     "affinity": {"colnames": ("site_str_score","site_wk_score")}
                 }, label_map={'cooperative': 1, 'independent': 0})
             ).run_all(),
-        "distance,orientation,strength":
+        "strength,distance,orientation":
             BestModel(clf="sklearn.ensemble.RandomForestClassifier",
               param_grid=rf_param_grid,
               train_data=ct.get_training_df({

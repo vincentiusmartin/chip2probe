@@ -13,18 +13,13 @@ def get_median_wt(df,train,tfname):
 
 pd.set_option("display.max_columns",None)
 if __name__ == "__main__":
-    df = pd.read_csv("output/Ets1Runx1/training/train_ets1_runx1.tsv", sep="\t")
-    print(df)
-    # runx_raw = pd.read_csv("input/probefiles/Runx1_only_pr_clean.csv")
-    # df = get_median_wt(runx_raw,dftrain,"runx")
-
-    # df = pd.read_csv("etc/withimads.csv")[["Name","runx1_score"]] \
-    #         .merge(dftrain[["Name","distance","orientation","label"]], on="Name")
-
-    labels = df["label"].drop_duplicates().tolist()
-    targetcol = "runx1_score"
+    df = pd.read_csv("output/Runx1Ets1/training/train_runx1_ets1.tsv", sep="\t")
+    # print(df)
+    targetcol = "ets1_score"
     minrow = 5
     lbltarget = "independent"
+
+    labels = df["label"].drop_duplicates().tolist()
 
     coop_prop = df.groupby(["distance","orientation"]) \
         .apply(lambda g: pd.Series({"prop":g[g["label"] == lbltarget].shape[0]/g.shape[0]})) \
@@ -42,17 +37,16 @@ if __name__ == "__main__":
     coop_df["lbl"] = coop_df.apply(lambda x: "d=%s,%s" % (x["distance"],x["orientation"]), axis=1)
     coop_df.plot.scatter(x='median', y='prop', c="black")
 
-    # for i, row in coop_df.iterrows():
-    #     plt.annotate(row["lbl"], (row["median"], row["prop"]), fontsize=10)
+    for i, row in coop_df.iterrows():
+        plt.annotate(row["lbl"], (row["median"], row["prop"]), fontsize=10)
 
     x,y = coop_df["median"], coop_df["prop"]
     plt.plot(np.unique(x), np.poly1d(np.polyfit(x, y, 1))(np.unique(x)), color='black', linestyle='dashed')
     slope, intercept = np.polyfit(x, y, 1)
-    print(slope,intercept)
+    print("slope",slope,"intercept",intercept)
     abline_values = [slope * i + intercept for i in x]
 
-    # plt.plot((min(x),max(abline_values)), (max(x),min(abline_values)))
-    plt.xlabel('Runx1 strength median for %s probes' % lbltarget)
+    plt.xlabel('Ets1 strength median for %s probes' % lbltarget)
     plt.ylabel('Fraction of %s probes' % lbltarget)
 
     slope, intercept, r, p, std_err = stats.linregress(x,y)
@@ -65,4 +59,4 @@ if __name__ == "__main__":
 
     fig = plt.gcf()
     # fig.set_size_inches(8, 4)
-    fig.savefig('strength_%s_nolabel.png' % lbltarget)
+    fig.savefig('strength_%s_lbled.png' % lbltarget)

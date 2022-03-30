@@ -22,12 +22,12 @@ maintf_lbl = '%s strength\n(main TF)' % maintf.capitalize()
 cooptf_lbl = '%s strength\n(cooperator TF)' % cooptf.capitalize()
 df.rename(columns={'%s_score' % maintf: maintf_lbl, '%s_score' % cooptf: cooptf_lbl}, inplace=True)
 
-"""
 dfcoop = df[df["label"] == "cooperative"]
 dfcoop = dfcoop.groupby(by=["distance","orientation"]).filter(lambda x: len(x) >= 5)
 selected_dist_ori = dfcoop[["distance","orientation"]].drop_duplicates().sort_values(["distance","orientation"])
 do_list = ["%d\n%s"%(x[0],x[1]) for x in selected_dist_ori.values.tolist()]
 df = df.merge(selected_dist_ori, on=("distance","orientation")).sort_values(["distance","orientation"])
+df = df[df["label"] == "cooperative"] ###
 
 plt.rcParams["figure.figsize"] = (20,5.5)
 df["xtick"] = df.apply(lambda x: "%d\n%s"%(x["distance"],x["orientation"]),axis=1)
@@ -36,13 +36,16 @@ col_y = '%s strength\n(cooperator TF)' % cooptf.capitalize()
 grouped_coop = df[df["label"] == "cooperative"].groupby(by=["xtick"])[col_y].apply(list).to_dict()
 grouped_indep = df[df["label"] == "independent"].groupby(by=["xtick"])[col_y].apply(list).to_dict()
 
+"""
 ax = sns.boxplot(data=df, x="xtick", y=col_y,
                 hue="label", width=0.9, palette=colors)
 ax.set_ylim(top=18)
 
-pdict = {k:st.wilcox(grouped_coop[k],grouped_indep[k],alternative="greater") for k in do_list}
+pdict = {k:st.wilcox(grouped_coop[k],grouped_indep[k],alternative="greater") for k in do_list if k in grouped_coop and k in grouped_indep}
 for i in range(len(do_list)):
     k = do_list[i]
+    if not (k in grouped_coop and k in grouped_indep):
+        continue
     p = st.wilcox(grouped_coop[k],grouped_indep[k],alternative="greater")
     y = 1.075*max(grouped_coop[k]), 1.075*max(grouped_indep[k])
     maxy = max(y[0],y[1])
@@ -64,30 +67,32 @@ for i in range(len(do_list)):
 # df = df[df["label"] == "cooperative"]
 # ax = sns.boxplot(data=df, x="xtick", y='%s strength\n(cooperator TF)' % cooptf.capitalize(),width=.6,color=colors[0])
 # ax.set_ylim(-8,23)
+# ax.set_yticks([-5, 0, 5, 10, 15])
+# ax.get_legend().remove()
+# plt.title("Cooperative Runx1 (cooperator TF) strength")
+# plt.savefig("box.png")
+"""
 
-ax.set_yticks([-5, 0, 5, 10, 15])
-ax.get_legend().remove()
-plt.title("Cooperative Runx1 (cooperator TF) strength")
-plt.savefig("box.png")
+filtered_grp = {k: list(v) for k, v in df.groupby(["distance","orientation"])['%s strength\n(cooperator TF)' % cooptf.capitalize()]}
 
 allps = {y: st.wilcox(filtered_grp[(5, '+/+')], filtered_grp[y], alternative="less") for y in list(filtered_grp.keys())}
-allps = {k: v for k, v in sorted(allps.items(), key=lambda item: item[1])}
+# allps = {k: v for k, v in sorted(allps.items(), key=lambda item: item[1])}
 for x in allps:
     pval = '{:0.2e}'.format(allps[x]) if allps[x] < 0.1 else "%.2f"%allps[x]
     print(x,":", pval)
 
+"""
 p1 = st.wilcox(cur_group["+/+"],cur_group["+/-"],alternative="less")
 p2 = st.wilcox(cur_group["+/+"],cur_group["-/+"],alternative="less")
 p3 = st.wilcox(cur_group["+/+"],cur_group["-/-"],alternative="less")
 print("%.3e" % Decimal(p1),"%.3e" % Decimal(p2),"%.3e" % Decimal(p3))
-"""
 
 g1 = df[(df["distance"] == 5) & (df["orientation"] == "+/+")]
 g2 = df[~((df["distance"] == 5) & (df["orientation"] == "+/+"))]
 
 for lbl in ["cooperative","independent"]:
-    g1_c = g1[g1["label"] == lbl][cooptf_lbl]
-    g2_c = g2[g2["label"] == lbl][cooptf_lbl]
+    g1_c = g1[g1["label"] == lbl][maintf_lbl]
+    g2_c = g2[g2["label"] == lbl][maintf_lbl]
     dat = [g1_c.tolist(),g2_c.tolist()]
     print(lbl, len(dat[0]), len(dat[1]))
     p_gr = st.wilcox(g1_c,g2_c,alternative="greater")
@@ -108,3 +113,4 @@ for lbl in ["cooperative","independent"]:
 # for idx,group in grp_ori:
 #     name_id = idx.replace("/","")
 #     plot.plot_box_categories(group, path="boxplot_%s.png" % name_id, incols=["%s strength\n(main TF)" % maintf.capitalize(), "%s strength\n(cooperator TF)" % cooptf.capitalize()], alternative="smaller", color=color)
+"""

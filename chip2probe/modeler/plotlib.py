@@ -173,10 +173,10 @@ def display_output(xy, score_dict, path, title, score_type="auc", varyline=False
         ln = key.split(",")
         score = score_dict[key]
         if varyline:
-            if len(ln) > 3 or key == "distance,orientation,strength" :#len(ln) >= 4:
+            if len(ln) > 2 or key == "strength,distance,orientation" :#len(ln) >= 4:
                 lw, ls = 2, "-"
-            elif len(ln) > 2: #== 2:
-                lw, ls = 1, "-"
+            elif len(ln) == 2:
+                lw, ls = 1, "--"
             else:
                 lw, ls = 1, "--"
         else:
@@ -191,10 +191,10 @@ def display_output(xy, score_dict, path, title, score_type="auc", varyline=False
         #     plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="blue")
 
 
-        print(key, score)
+        # print(key, score)
         if "avg" in key:
             plt.plot(xy[key]['x'], xy[key]['y'],  lw=2, linestyle='--' , label='%s: %.2f' % (key,score))
-        elif key == "distance,orientation,strength": # or len(ln) > 3:
+        elif key == "strength,distance,orientation": # or len(ln) > 3:
             plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="brown") #
         elif len(ln) == 4:
             plt.plot(xy[key]['x'], xy[key]['y'],  lw=lw, linestyle=ls , label='%s: %.2f' % (key,score), color="m") #

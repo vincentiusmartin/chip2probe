@@ -29,10 +29,10 @@ if __name__ == "__main__":
     pd.set_option("display.max_columns",None)
 
     rf_param_grid = {
-        'n_estimators': [500,750,1000],
-        'max_depth': [5,10,15],
-        "min_samples_leaf":  [5,10,15],
-        "min_samples_split" :  [5,10,15]
+        'n_estimators': [500],#[500,750,1000],
+        'max_depth': [10],#[5,10,15],
+        "min_samples_leaf": [10] ,#[5,10,15],
+        "min_samples_split" :  [10]#[5,10,15]
     }
 
     best_models = {

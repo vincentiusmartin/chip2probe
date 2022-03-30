@@ -65,12 +65,12 @@ def gen_training(df, pwm, kompas):
     return train.drop_duplicates()
 
 
-df1 = pd.read_csv("output/Ets1Ets1_v2/label_pr/m1m2m3wt.csv")
-df2 = pd.read_csv("output/Ets1Ets1_v2/label_pr/ets_ets_seqlabeled.csv").drop_duplicates("Sequence")
-pwm = PWM("input/sitemodels/ets1.txt", log=True)
-kompas = Kompas("input/sitemodels/Ets1_kmer_alignment.txt",
-                core_start = 11, core_end = 15, core_center = 12)
-df2 = get_sites_pos(df2, kompas, pwm)
+# df1 = pd.read_csv("output/Ets1Ets1_v2/label_pr/m1m2m3wt.csv")
+# df2 = pd.read_csv("output/Ets1Ets1_v2/label_pr/ets_ets_seqlabeled.csv").drop_duplicates("Sequence")
+# pwm = PWM("input/sitemodels/ets1.txt", log=True)
+# kompas = Kompas("input/sitemodels/Ets1_kmer_alignment.txt",
+#                 core_start = 11, core_end = 15, core_center = 12)
+# df2 = get_sites_pos(df2, kompas, pwm)
 
 # print(df2["label"].value_counts())
 # merged = df1.merge(df2[["Sequence"]], on="Sequence")

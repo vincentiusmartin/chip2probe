@@ -14,8 +14,14 @@ import matplotlib.patches as patches
 
 if __name__=="__main__":
     single_sequence = "CGGCTGTTTTCCAGGATGTTGTGGTCATGGCGGTGT"
-    many_sequences = ['CATGACGAAGGGGAAGGATGTGGTTTGAGGGCAGCA'] #, "CAGCTGGCCGGAACCTGCGTCCCCTTCCCCCGCCGC"]
-    df = pd.DataFrame(list(zip(many_sequences, ['seq1','seq2'])), columns=['sequence', 'key'])
+    pd.set_option("display.max_columns",None)
+
+
+    many_sequences = ["GATCCCAAACAGGATATCTGTGGTAAGCA"]
+    df = pd.DataFrame(list(zip(many_sequences, ['wt','m1','m2','m3'])), columns=['sequence', 'key'])
+
+    # df = pd.read_csv("/Users/vincentiusmartin/Research/chip2gcPBM/chip2probe/main_nar/input/probefiles/Ets1_Ets1_pr_clean.csv")
+    # df = df[(df["ori"] == "o2") & (df["rep"] == "r1")].rename(columns={"Sequence": "sequence", "Name": "key"})[["sequence","key"]].head(500)
 
     # ========= PWM =========
     # pwmr = PWM("input/sitemodels/pwm/runx1.txt", 6, 16)
@@ -30,7 +36,7 @@ if __name__=="__main__":
     escore = PBMEscore("input/sitemodels/escores/Ets1_8mers_11111111.txt")
 
     escore_pred = escore.predict_sequence(single_sequence)
-    escore_pred_list = escore.predict_sequences(many_sequences)
+    escore_pred_list = escore.predict_sequences(df)
     #escore_pred_df = escore.predict_sequences(df, key_colname="key")
 
     # ========= iMADS =========
@@ -48,7 +54,7 @@ if __name__=="__main__":
     kompas = Kompas("input/sitemodels/kompas/Ets1_kmer_alignment.txt",
                     core_start = 11, core_end = 15, core_center = 12)
     kompas_pred = kompas.predict_sequence(single_sequence)
-    kompas_pred_list = kompas.predict_sequences(many_sequences)
+    kompas_pred_list = kompas.predict_sequences(df)
 
     # ========= Plot the sequence =========
 
@@ -61,4 +67,4 @@ if __name__=="__main__":
 
     # Generate sequence plot
     sp = SitesPlotter()
-    sp.plot_seq_combine([kompas_plot], filepath="plot.pdf")
+    sp.plot_seq_combine([kompas_plot,escore_plot], filepath="plot.pdf", top_cutoff=0.6)
